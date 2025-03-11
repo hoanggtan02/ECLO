@@ -1,22 +1,22 @@
 <div class="container">
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <div>
-            <h4 class="mb-0 fw-bold text-body">Danh sách nhân viên</h4>
+            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
             <ul class="breadcrumb small mb-0">
                 <li class="breadcrumb-item small">
-                    <a href="/" class="pjax-load link-secondary">Trang chủ</a>
+                    <a href="/" class="pjax-load link-secondary"><?=$jatbi->lang("Trang chủ")?></a>
                 </li>
-                <li class="breadcrumb-item small text-body" aria-current="page">Danh sách nhân viên</li>
+                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title?></li>
             </ul>
         </div>
         <div class="filter-search">
             <div class="d-flex align-items-center justify-content-end">
                 <div class="dropdown">
                     <button class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="ti ti-filter fs-5 me-2"></i> Điều kiện lọc
+                        <i class="ti ti-filter fs-5 me-2"></i> <?=$jatbi->lang("Điều kiện lọc")?>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width" style="--min-width:300px;">
-                        <div class="fw-semibold py-2 px-3">Điều kiện lọc</div>
+                        <div class="fw-semibold py-2 px-3"><?=$jatbi->lang("Điều kiện lọc")?></div>
                         <hr class="border-secondary border-opacity-50 my-2">
                         <div class="px-3">
                             <select name="type" class="form-select filter-name mt-2">
@@ -36,25 +36,29 @@
             </div>
         </div>
     </div>
-
-    <div class="position-fixed bottom right z-3 dropup" style="--bottom:20px;--right:20px">
-        <button class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center" style="--width:60px;--height:60px;" data-bs-toggle="dropdown">
-            <i class="ti ti-menu-2 fs-2"></i>
-        </button>
-        <ul class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2" style="--min-width:100%">
-            <li class="my-2">
-                <a class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-checkbox="input.checker" data-url="/manager/employee-deleted" style="--width:50px;--height:50px;">
-                    <i class="ti ti-trash fs-3"></i>
-                </a>
-            </li>
-            <li class="my-2">
-                <a class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-url="/manager/employee-add" style="--width:50px;--height:50px;">
-                    <i class="ti ti-plus fs-3"></i>
-                </a>
-            </li>
-        </ul>
-    </div>
-
+    <?php if($jatbi->permission(['accounts.deleted']) == 'true' || $jatbi->permission(['accounts.add']) == 'true'){ ?>
+        <div class="position-fixed bottom right z-3 dropup-center dropup" style="--bottom:20px;--right:20px">
+            <button class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center " style="--width:60px;--height:60px;" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="ti ti-menu-2 fs-2" aria-hidden="true"></i>
+            </button>
+            <ul class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2" style="--min-width:100%">
+                <?php if($jatbi->permission(['accounts.deleted']) == 'true'){ ?>
+                <li class="my-2">
+                    <a class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-checkbox="input.checker" data-url="/users/accounts-deleted" style="--width:50px;--height:50px;">
+                        <i class="ti ti-trash fs-3" aria-hidden="true"></i>
+                    </a> 
+                </li>
+                <?php } ?>
+                <?php if($jatbi->permission(['accounts.add']) == 'true'){ ?>
+                <li class="my-2">
+                    <a class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-url="/users/accounts-add" style="--width:50px;--height:50px;">
+                        <i class="ti ti-plus fs-3" aria-hidden="true"></i>
+                    </a>
+                </li>
+                <?php } ?>
+            </ul>
+        </div>
+        <?php } ?>
     <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-end mb-3">
@@ -63,6 +67,7 @@
             </div>
             <table id="datatable" 
                    class="table align-middle"
+                   data-processing="true" 
                    data-page-length="10"
                    data-searching="true"
                    data-paging="true"
@@ -94,7 +99,7 @@
                                 <td><?= htmlspecialchars($person["name"]) ?></td>
                                 <td><?= htmlspecialchars($person["type"]) ?></td>
                                 <td class="text-end">
-                                    <div class="dropdown">
+                                    <div class="dropdown"> 
                                         <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="ti ti-dots-vertical"></i>
                                         </button>
