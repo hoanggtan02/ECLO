@@ -85,6 +85,44 @@
                         'trash'          =>$jatbi->lang("Thùng rác"),
                     ]
                 ],
+                'employee'=>[
+                    "menu"=>$jatbi->lang("Quản lý"),
+                    "url"=>'/employee',
+                    "icon"=>'<i class="ti ti-user "></i>',
+                    "sub"=>[
+                        'employee'      =>[
+                            "name"  => $jatbi->lang("Nhân viên"),
+                            "router"=> '/manager/employee',
+                            "icon"  => '<i class="ti ti-user"></i>',
+                        ],
+                        'face_employee'    =>[
+                            "name"  => $jatbi->lang("Khuôn mặt"),
+                            "router"=> '/manager/face_employee',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
+                        'checkinout'      =>[
+                            "name"  => $jatbi->lang("Hồ sơ ra vào"),
+                            "router"=> '/manager/checkinout',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
+                    ],
+                    "controllers"=>"controllers/core/employee.php",
+                    "main"=>'false',
+                    "permission"=>[
+                        'employee'      =>$jatbi->lang("Nhân viên"),
+                        'employee.add'  =>$jatbi->lang("Thêm Nhân viên"),
+                        'employee.edit' =>$jatbi->lang("Sửa Nhân viên"),
+                        'employee.deleted'=>$jatbi->lang("Xóa Nhân viên"),
+                        'department'    =>$jatbi->lang("Phòng ban"),
+                        'department.add'=>$jatbi->lang("Thêm Phòng ban"),
+                        'department.edit'=>$jatbi->lang("Sửa Phòng ban"),
+                        'department.deleted'=>$jatbi->lang("Xóa Phòng ban"),
+                        'position'      =>$jatbi->lang("Chức vụ"),
+                        'position.add'  =>$jatbi->lang("Thêm Chức vụ"),
+                        'position.edit' =>$jatbi->lang("Sửa Chức vụ"),
+                        'position.deleted'=>$jatbi->lang("Xóa Chức vụ"),
+                    ]
+                ],
             ],
         ],
     ];
