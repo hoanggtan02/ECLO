@@ -106,9 +106,13 @@
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item text-danger" href="/manager/employee-delete?id=<?= $person["sn"] ?>">
+                                                <a class="dropdown-item text-warning" href="#" data-url="/employee/employee-deleted?id=<?= $person["sn"] ?></a>" data-action="modal">
                                                     <i class="ti ti-trash me-1"></i> Xóa
                                                 </a>
+                                                
+                                                <!-- <a class="dropdown-item text-danger" href="/employee/employee-deleted" data-bs-toggle="modal">
+                                                    <i class="ti ti-trash me-1"></i> Xóa
+                                                </a> -->
                                             </li>
                                         </ul>
                                     </div>

@@ -59,5 +59,27 @@
         }
     })->setPermissions(['employee.add']);
     
+    //xóa employee
+    $app->router("/employee/employee-deleted", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xóa Nhân Viên");
+
+        echo $app->render('templates/common/deleted.html', $vars, 'global');
+    })->setPermissions(['employee.deleted']);
+    
+    $app->router("/employee/employee-deleted", 'POST', function($vars) use ($app,$jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+        $sn = $app->xss($_GET['id']);
+        // echo "<script>alert('Hello, đây là id: " . $sn . "');</script>";
+        $data = $app->select("employee","*",["sn"=>$sn]);
+        if(count($data)>0){
+            $app->delete("employee", ["sn" => $sn]);
+            echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Cập nhật thành công")]);
+        }
+        else {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra")]);
+        }
+    })->setPermissions(['employee.deleted']);
 ?>
 
