@@ -139,6 +139,7 @@
         }
     })->setPermissions(['employee.add']);
     
+
     //xóa employee
     $app->router("/employee/employee-deleted", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Xóa Nhân Viên");
@@ -151,14 +152,39 @@
             'Content-Type' => 'application/json',
         ]);
         $sn = $app->xss($_GET['id']);
-        // echo "<script>alert('Hello, đây là id: " . $sn . "');</script>";
-        $data = $app->select("employee","*",["sn"=>$sn]);
-        if(count($data)>0){
+        try {
             $app->delete("employee", ["sn" => $sn]);
-            echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Cập nhật thành công")]);
-        }
-        else {
-            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra")]);
+            
+            $headers = [
+                'Authorization: Bearer your_token',
+                'Content-Type: application/x-www-form-urlencoded'
+            ];
+
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret'    => '123456',
+                'sn'        => $sn,
+            ];
+
+            $response = $app->apiPost(
+                'http://camera.ellm.io:8190/api/person/delete', 
+                $apiData, 
+                $headers
+            );
+
+            $apiResponse = json_decode($response, true);
+    
+            // Kiểm tra phản hồi từ API
+            if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+                echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            } else {
+                $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
+                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+            }
+
+        }catch (Exception $e) {
+            // Xử lý lỗi ngoại lệ
+            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
         }
     })->setPermissions(['employee.deleted']);
 ?>
