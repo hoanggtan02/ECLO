@@ -769,18 +769,18 @@ $app->router("/manager/checkinout-deleted", 'POST', function($vars) use ($app, $
             'Content-Type' => 'application/json',
         ]);
     
-        // Lấy mã Khung thời gian từ request
-        $acTzNumber = isset($_POST['acTzNumber']) ? $app->xss($_POST['acTzNumber']) : null;
+        // Lấy mã nhân viên từ request
+        $sn = isset($_POST['sn']) ? $app->xss($_POST['sn']) : null;
     
-        if (!$acTzNumber) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Mã Khung thời gian không hợp lệ")]);
+        if (!$sn) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Mã nhân viên không hợp lệ")]);
             return;
         }
     
-        // Lấy thông tin Khung thời gian từ DB
-        $data = $app->get("employee", "*", ["acTzNumber" => $acTzNumber]);
+        // Lấy thông tin nhân viên từ DB
+        $data = $app->get("employee", "*", ["sn" => $sn]);
         if (!$data) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy Khung thời gian")]);
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy nhân viên")]);
             return;
         }
     
@@ -799,7 +799,7 @@ $app->router("/manager/checkinout-deleted", 'POST', function($vars) use ($app, $
             "type" => $type,
         ];
     
-        $app->update("employee", $update, ["acTzNumber" => $acTzNumber]);
+        $app->update("employee", $update, ["sn" => $sn]);
     
         // Ghi log cập nhật
         $jatbi->logs('employee', 'employee-edit', $update);
@@ -813,7 +813,7 @@ $app->router("/manager/checkinout-deleted", 'POST', function($vars) use ($app, $
         $apiData = [
             'deviceKey' => '77ed8738f236e8df86',
             'secret'    => '123456',
-            'acTzNumber'        => $acTzNumber,
+            'sn'        => $sn,
             'name'      => $name,
             'type'      => $type,
         ];
@@ -836,7 +836,9 @@ $app->router("/manager/checkinout-deleted", 'POST', function($vars) use ($app, $
             ]);
         }
     })->setPermissions(['employee.edit']);
-$app->router("/manager/timeperiod", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    
+
+    $app->router("/manager/timeperiod", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Khung thời gian");
         $vars['add'] = '/manager/timeperiod-add';
         $vars['deleted'] = '/manager/timeperiod-deleted';
