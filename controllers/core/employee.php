@@ -73,13 +73,13 @@
                             'type' => 'button',
                             'name' => $jatbi->lang("Sửa"),
                             'permission' => ['employee.edit'],
-                            'action' => ['data-url' => '/manager/employee-edit/'.$data['sn'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/manager/employee-edit?id='.$data['sn'], 'data-action' => 'modal']
                         ],
                         [
                             'type' => 'button',
                             'name' => $jatbi->lang("Xóa"),
                             'permission' => ['employee.deleted'],
-                            'action' => ['data-url' => '/manager/employee-deleted?box='.$data['sn'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/manager/employee-deleted?id='.$data['sn'], 'data-action' => 'modal']
                         ],
                     ]
                 ]),            
@@ -180,14 +180,14 @@
     })->setPermissions(['employee.add']);
     
 
-    //xóa employee
-    $app->router("/employee/employee-deleted", 'GET', function($vars) use ($app, $jatbi) {
+    //Xóa employee
+    $app->router("/manager/employee-deleted", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Xóa Nhân Viên");
 
         echo $app->render('templates/common/deleted.html', $vars, 'global');
     })->setPermissions(['employee.deleted']);
     
-    $app->router("/employee/employee-deleted", 'POST', function($vars) use ($app,$jatbi) {
+    $app->router("/manager/employee-deleted", 'POST', function($vars) use ($app,$jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
         ]);
@@ -228,96 +228,98 @@
         }
     })->setPermissions(['employee.deleted']);
 
-    $app->router("/manager/employee-edit", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header(['Content-Type' => 'application/json']);
-        
-        $error = [];
-        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $sn = $app->xss($input['sn'] ?? '');
-        $name = $app->xss($input['name'] ?? '');
-        $type = $app->xss($input['type'] ?? '');
-        
-        if (empty($sn)) $error['sn'] = $jatbi->lang("Vui lòng nhập mã nhân viên");
-        if (empty($name)) $error['name'] = $jatbi->lang("Vui lòng nhập tên nhân viên");
-        if (empty($type)) $error['type'] = $jatbi->lang("Vui lòng chọn loại nhân viên");
-        elseif (!in_array($type, ['1', '2', '3'])) $error['type'] = $jatbi->lang("Loại nhân viên không hợp lệ");
-        if (!empty($error)) {
-            echo json_encode([
-                "status" => "error",
-                "content" => $jatbi->lang("Dữ liệu không hợp lệ"),
-                "errors" => $error
-            ]);
+    //Cập nhật employee
+    $app->router("/manager/employee-edit", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Sửa Nhân Viên");
+    
+        $sn = isset($_GET['id']) ? $app->xss($_GET['id']) : null;
+        if (!$sn) {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
             return;
         }
+    
+        $vars['data'] = $app->get("employee", "*", ["sn" => $sn]);
+        if ($vars['data']) {
+            echo $app->render('templates/employee/employee-post.html', $vars, 'global');
+        } else {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+        }
+    })->setPermissions(['employee.edit']);
         
-        try {
-            $existing = $app->select("employee", "*", ["sn" => $sn]);
-            if (empty($existing)) {
-                echo json_encode([
-                    "status" => "error",
-                    "content" => $jatbi->lang("Nhân viên không tồn tại")
-                ]);
-                return;
-            }
-            
-            $update = ["name" => $name, "type" => $type];
-            $affected = $app->update("employee", $update, ["sn" => $sn]);
-            
-            if ($affected) {
-                $apiData = [
-                    "deviceKey" => "77ed8738f236e8df86",
-                    "secret" => "123456",
-                    "type" => $type,
-                    "sn" => $sn,    
-                    "name" => $name 
-                ];
-            
-                error_log("API Data Sent: " . json_encode($apiData)); // Log dữ liệu gửi đi
-            
-                // Gửi yêu cầu POST đến API
-                $response = $app->apiPost('http://camera.ellm.io:8190/api/person/update', $apiData, [
-                    'Authorization: Bearer your_token',
-                    'Content-Type: application/x-www-form-urlencoded'
-                ]);
-            
-                // Kiểm tra lỗi từ $app->apiPost (giả định hàm trả về mảng hoặc JSON)
-                if ($response === false || is_null($response)) {
-                    error_log("API Error: " . $error);
-                    echo json_encode([
-                        "status" => "warning",
-                        "content" => $jatbi->lang("Cập nhật nhân viên thành công nhưng không thể kết nối API camera"),
-                        "error" => $error
-                    ]);
-                } else {
-                    $responseData = json_decode($response, true);
-            
-                    if (isset($responseData['success']) && $responseData['success'] === true) {
-                        echo json_encode([
-                            "status" => "success",
-                            "content" => $jatbi->lang("Cập nhật nhân viên và API camera thành công"),
-                            "data" => array_merge(["sn" => $sn], $update),
-                            "api_response" => $response
-                        ]);
-                    } else {
-                        echo json_encode([
-                            "status" => "warning",
-                            "content" => $jatbi->lang("Cập nhật nhân viên thành công nhưng API camera không cập nhật"),
-                            "api_response" => $response,
-                            "data_sent" => $apiData
-                        ]);
-                    }
-                }
-            } else {
-                echo json_encode([
-                    "status" => "error",
-                    "content" => $jatbi->lang("Không có thay đổi nào được thực hiện")
-                ]);
-            }
-        } catch (Exception $e) {
+    $app->router("/manager/employee-edit", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+    
+        // Lấy mã nhân viên từ request
+        $sn = isset($_POST['sn']) ? $app->xss($_POST['sn']) : null;
+    
+        if (!$sn) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Mã nhân viên không hợp lệ")]);
+            return;
+        }
+    
+        // Lấy thông tin nhân viên từ DB
+        $data = $app->get("employee", "*", ["sn" => $sn]);
+        if (!$data) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy nhân viên")]);
+            return;
+        }
+    
+        // Kiểm tra dữ liệu đầu vào
+        $name = isset($_POST['name']) ? $app->xss($_POST['name']) : '';
+        $type = isset($_POST['type']) ? $app->xss($_POST['type']) : '';
+    
+        if ($name === '' || $type === '') {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
+            return;
+        }
+    
+        // Cập nhật dữ liệu trong database
+        $update = [
+            "name" => $name,
+            "type" => $type,
+        ];
+    
+        $app->update("employee", $update, ["sn" => $sn]);
+    
+        // Ghi log cập nhật
+        $jatbi->logs('employee', 'employee-edit', $update);
+    
+        // Gọi API cập nhật thông tin trên hệ thống camera
+        $headers = [
+            'Authorization: Bearer your_token',
+            'Content-Type: application/x-www-form-urlencoded'
+        ];
+    
+        $apiData = [
+            'deviceKey' => '77ed8738f236e8df86',
+            'secret'    => '123456',
+            'sn'        => $sn,
+            'name'      => $name,
+            'type'      => $type,
+        ];
+    
+        $response = $app->apiPost(
+            'http://camera.ellm.io:8190/api/person/update', 
+            $apiData, 
+            $headers
+        );
+    
+        $apiResponse = json_decode($response, true);
+    
+        if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+        } else {
+            $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi từ API";
             echo json_encode([
-                "status" => "error",
-                "content" => $jatbi->lang("Lỗi hệ thống: ") . $e->getMessage()
+                "status" => "warning",
+                "content" => "Cập nhật trong database thành công, nhưng API gặp lỗi: " . $errorMessage
             ]);
         }
     })->setPermissions(['employee.edit']);
+    
+    
+    
+    
 ?>
