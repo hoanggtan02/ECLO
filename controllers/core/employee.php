@@ -63,7 +63,8 @@
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
             return [
-                "checkbox" => "<input type='checkbox' value='{$data['sn']}'>",
+           
+                "checkbox" => $app->component("box",["data"=>$data['id']]),
                 "sn" => $data['sn'],
                 "name" => $data['name'],
                 "type" => $data['type'],
@@ -365,9 +366,7 @@
     })->setPermissions(['checkinout']);
 
     $app->router("/manager/checkinout", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header([
-            'Content-Type' => 'application/json',
-        ]);
+        $app->header(['Content-Type' => 'application/json']);
         
         $draw = isset($_POST['draw']) ? intval($_POST['draw']) : 0;
         $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
@@ -392,18 +391,18 @@
             $where["AND"]["checkinout.sn"] = $sn;
         }
     
-        $count = $app->count("checkinout", [
-            "AND" => $where['AND'],
-        ]);
-        
+        $count = $app->count("checkinout", ["AND" => $where['AND']]);
         $datas = [];
-        $app->select("checkinout", [], [
+        
+        // Lấy dữ liệu từ database trước
+        $rawData = $app->select("checkinout", [
             'checkinout.id',
             'checkinout.sn',
             'checkinout.checkinout_list',
             'checkinout.updated_at',
-        ], $where, function ($data) use (&$datas, $app) {
-            // Gọi API để lấy dữ liệu thời gian cho sn
+        ], $where);
+    
+        foreach ($rawData as $data) {
             $headers = [
                 'Authorization: Bearer your_token',
                 'Content-Type: application/x-www-form-urlencoded'
@@ -430,8 +429,9 @@
                 "api_time_list" => $apiTimeList,
                 "updated_at" => $data['updated_at'],
             ];
-        });
-        
+        }
+    
+        error_log("Datas returned: " . print_r($datas, true)); // Debug
         echo json_encode([
             "draw" => $draw,
             "recordsTotal" => $count,
