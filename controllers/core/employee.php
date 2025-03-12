@@ -139,11 +139,9 @@
         }
     })->setPermissions(['employee.add']);
     
-
     //xóa employee
     $app->router("/employee/employee-deleted", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Xóa Nhân Viên");
-
         echo $app->render('templates/common/deleted.html', $vars, 'global');
     })->setPermissions(['employee.deleted']);
     
@@ -151,40 +149,38 @@
         $app->header([
             'Content-Type' => 'application/json',
         ]);
-        $sn = $app->xss($_GET['id']);
-        try {
-            $app->delete("employee", ["sn" => $sn]);
-            
-            $headers = [
-                'Authorization: Bearer your_token',
-                'Content-Type: application/x-www-form-urlencoded'
-            ];
+        $sn = explode(',', $app->xss($_GET['id']));
+        $datas = $app->select("employee","*",["sn"=>$sn]);
+        if(count($datas)>0){
+            try {
+                foreach($datas as $data){
+                    $app->delete("employee", ["sn" => $data['sn']]);
+                    $name[] = $data['name'];
 
-            $apiData = [
-                'deviceKey' => '77ed8738f236e8df86',
-                'secret'    => '123456',
-                'sn'        => $sn,
-            ];
-
-            $response = $app->apiPost(
-                'http://camera.ellm.io:8190/api/person/delete', 
-                $apiData, 
-                $headers
-            );
-
-            $apiResponse = json_decode($response, true);
-    
-            // Kiểm tra phản hồi từ API
-            if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
-                echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
-            } else {
-                $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+                    $headers = [
+                        'Authorization: Bearer your_token',
+                        'Content-Type: application/x-www-form-urlencoded'
+                    ];    
+                    $apiData = [
+                        'deviceKey' => '77ed8738f236e8df86',
+                        'secret'    => '123456',
+                        'sn'        => $data['sn'],
+                    ];
+                    $app->apiPost(
+                        'http://camera.ellm.io:8190/api/person/delete', 
+                        $apiData, 
+                        $headers
+                    );
+                }
+                // $jatbi->logs('employee','employee-deleted',$datas);
+                // $jatbi->trash('/users/accounts-restore',"Tài khoản: ".implode(', ',$name),["database"=>'accounts',"data"=>$boxid]);
+                echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Cập nhật thành công")]);
+            }catch (Exception $e) {
+                echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
             }
-
-        }catch (Exception $e) {
-            // Xử lý lỗi ngoại lệ
-            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        }
+        else {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra")]);
         }
     })->setPermissions(['employee.deleted']);
 ?>
