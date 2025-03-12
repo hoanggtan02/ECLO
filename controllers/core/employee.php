@@ -178,7 +178,7 @@
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+                echo json_encode(["status" => "error", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
             }
     
         } catch (Exception $e) {
@@ -227,7 +227,7 @@
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+                echo json_encode(["status" => "error", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
             }
 
         }catch (Exception $e) {
@@ -321,7 +321,7 @@
         } else {
             $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi từ API";
             echo json_encode([
-                "status" => "warning",
+                "status" => "error",
                 "content" => "Cập nhật trong database thành công, nhưng API gặp lỗi: " . $errorMessage
             ]);
         }
