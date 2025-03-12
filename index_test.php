@@ -1,6 +1,6 @@
 <?php 
 // Đường dẫn tới file ảnh
-$imagePath = 'z6395205486543_0f09e217b5c8ee5e3afaddf325f3931b.jpg';
+$imagePath = 'z6398751549502_a7cc5486ec456b8d84ccd21422de21a6.jpg';
 
 // Đọc nội dung file ảnh
 $imageData = file_get_contents($imagePath);

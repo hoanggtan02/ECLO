@@ -319,7 +319,6 @@
         }
     })->setPermissions(['employee.edit']);
     
-    
 
 
 //checkinout
@@ -327,8 +326,7 @@
     $app->router("/manager/checkinout", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Thời gian ra vào");
         $vars['add'] = '/manager/checkinout-add';
-        $vars['deleted'] = '/manager/checkinout-deleted';
-    
+        $vars['deleted'] = '/manager/checkinout-deleted';    
         // Lấy danh sách từ bảng checkinout
         $data = $app->select("checkinout", ["id", "sn", "checkinout_list", "updated_at"]);
         
@@ -572,36 +570,397 @@ $app->router("/manager/checkinout-edit/:id", 'POST', function($vars) use ($app, 
     } catch (Exception $e) {
         echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
     }
-})->setPermissions(['checkinout.edit']);
+    })->setPermissions(['checkinout.edit']);
 
-// Xóa thời gian ra vào (GET)
-$app->router("/manager/checkinout-deleted", 'GET', function($vars) use ($app, $jatbi) {
-    $vars['title'] = $jatbi->lang("Xóa thời gian ra vào");
-    echo $app->render('templates/common/deleted.html', $vars, 'global');
-})->setPermissions(['checkinout.deleted']);
+    // Xóa thời gian ra vào (GET)
+    $app->router("/manager/checkinout-deleted", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xóa thời gian ra vào");
+        echo $app->render('templates/common/deleted.html', $vars, 'global');
+    })->setPermissions(['checkinout.deleted']);
 
-// Xóa thời gian ra vào (POST)
-$app->router("/manager/checkinout-deleted", 'POST', function($vars) use ($app, $jatbi) {
-    $app->header([
-        'Content-Type' => 'application/json',
-    ]);
-    $id = $app->xss($_GET['id']);
-    try {
-        $checkinout = $app->select("checkinout", ["sn"], ["id" => $id]);
-        if (empty($checkinout)) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy dữ liệu")]);
+    // Xóa thời gian ra vào (POST)
+    $app->router("/manager/checkinout-deleted", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+        $id = $app->xss($_GET['id']);
+        try {
+            $checkinout = $app->select("checkinout", ["sn"], ["id" => $id]);
+            if (empty($checkinout)) {
+                echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy dữ liệu")]);
+                return;
+            }
+
+            $sn = $checkinout[0]['sn'];
+
+            $app->delete("checkinout", ["id" => $id]);
+            $jatbi->logs('checkinout', 'checkinout-deleted', ["id" => $id, "sn" => $sn]);
+
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Xóa thành công")]);
+        } catch (Exception $e) {
+            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        }
+    })->setPermissions(['checkinout.deleted']);
+    
+
+    $app->router("/manager/face_employee", 'GET', function($vars) use ($app, $jatbi, $setting) {
+        $vars['title'] = $jatbi->lang("Khuôn mặt"); // Đồng bộ với $requests
+        $vars['add'] = '/manager/face_employee-add';
+        $vars['deleted'] = '/manager/face_employee-deleted';
+
+        // Lấy dữ liệu từ bảng face_employee, có thể join với employee để lấy name và type
+        $data = $app->select("face_employee", ["employee_sn", "img_base64", "easy"], [
+            "ORDER" => ["employee_sn" => "ASC"]
+        ]);
+        // Nếu cần join với employee
+        if (!empty($data)) {
+            $snList = array_column($data, 'employee_sn');
+            $employeeData = $app->select("employee", ["sn", "name", "type"], [
+                "sn" => $snList
+            ]);
+            $employeeMap = [];
+            foreach ($employeeData as $emp) {
+                $employeeMap[$emp['sn']] = $emp;
+            }
+            foreach ($data as &$row) {
+                $row['name'] = $employeeMap[$row['employee_sn']]['name'] ?? 'N/A';
+                $row['type'] = $employeeMap[$row['employee_sn']]['type'] ?? 'N/A';
+            }
+        }
+        $vars['data'] = $data;
+
+        echo $app->render('templates/employee/face-employee.html', $vars);
+    })->setPermissions(['face_employee']);
+
+    $app->router("/manager/face_employee", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+
+        // Kiểm tra dữ liệu nhận từ DataTables
+        error_log("Received POST Data: " . print_r($_POST, true));
+
+        // Nhận dữ liệu từ DataTable
+        $draw = $_POST['draw'] ?? 0;
+        $start = $_POST['start'] ?? 0;
+        $length = $_POST['length'] ?? 10;
+        $searchValue = $_POST['search']['value'] ?? '';
+        $type = $_POST['type'] ?? '';
+
+        // Fix lỗi ORDER cột
+        $orderColumnIndex = $_POST['order'][0]['column'] ?? 0; // Mặc định cột employee_sn
+        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
+
+        // Danh sách cột hợp lệ
+        $validColumns = ["employee_sn", "name", "type", "img_base64", "easy"];
+        $orderColumn = $validColumns[$orderColumnIndex] ?? "employee_sn";
+
+        // Điều kiện lọc dữ liệu
+        $where = [
+            "AND" => [
+                "OR" => [
+                    "face_employee.employee_sn[~]" => $searchValue,
+                    "employee.name[~]" => $searchValue, // Join với employee
+                ]
+            ],
+            "LIMIT" => [$start, $length],
+            "ORDER" => [$orderColumn => $orderDir]
+        ];
+
+        if (!empty($type)) {
+            $where["AND"]["employee.type"] = $type;
+        }
+
+        // Join với employee để lấy name và type
+        $datas = $app->select("face_employee", [
+            "[>]employee" => ["employee_sn" => "sn"]
+        ], [
+            "face_employee.employee_sn",
+            "employee.name",
+            "employee.type",
+            "face_employee.img_base64",
+            "face_employee.easy"
+        ], $where) ?? [];
+
+        // Đếm số bản ghi
+        $count = $app->count("face_employee", ["AND" => $where["AND"]]);
+
+        // Log dữ liệu truy vấn để kiểm tra
+        error_log("Fetched Face Employees Data: " . print_r($datas, true));
+
+        // Xử lý dữ liệu đầu ra
+        $formattedData = array_map(function($data) use ($app, $jatbi) {
+            return [
+                "checkbox" => "<input type='checkbox' value='{$data['employee_sn']}'>",
+                "employee_sn" => $data['employee_sn'],
+                "name" => $data['name'] ?? 'N/A',
+                "type" => $data['type'] ?? 'N/A',
+                "img_base64" => "<img src='data:image/jpeg;base64,{$data['img_base64']}' style='max-width: 100px;'>", // Hiển thị ảnh
+                "easy" => $data['easy'] == '1' ? $jatbi->lang("Chất lượng cao") : $jatbi->lang("Chất lượng thấp"),
+                "action" => $app->component("action", [
+                    "button" => [
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Sửa"),
+                            'permission' => ['employee.edit'],
+                            'action' => ['data-url' => '/manager/face_employee-edit?id='.$data['employee_sn'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Xóa"),
+                            'permission' => ['employee.deleted'],
+                            'action' => ['data-url' => '/manager/face_employee-deleted?id='.$data['employee_sn'], 'data-action' => 'modal']
+                        ],
+                    ]
+                ]),        
+            ];
+        }, $datas);
+
+        // Log dữ liệu đã format trước khi JSON encode
+        error_log("Formatted Data: " . print_r($formattedData, true));
+
+        // Kiểm tra lỗi JSON
+        $response = json_encode([
+            "draw" => $draw,
+            "recordsTotal" => $count,
+            "recordsFiltered" => $count,
+            "data" => $formattedData
+        ]);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("JSON Encode Error: " . json_last_error_msg());
+        }
+
+        echo $response;
+    })->setPermissions(['face_employee']);
+
+
+
+    $app->router("/manager/face_employee-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
+        $vars['title'] = $jatbi->lang("Thêm khuôn mặt nhân viên");
+        $vars['data'] = [
+            "employee_sn" => '',
+            "img_base64" => '',
+            "easy" => '1', // Mặc định là chất lượng cao
+        ];
+        echo $app->render('templates/employee/face_employee-post.html', $vars, 'global');
+    })->setPermissions(['face_employee.add']);
+
+
+    $app->router("/manager/face_employee-add", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header(['Content-Type' => 'application/json']);
+
+        // Lấy dữ liệu từ form
+        $employee_sn = $app->xss($_POST['employee_sn'] ?? '');
+        $easy = $app->xss($_POST['easy'] ?? '0');
+        $img_file = $_FILES['img_file'] ?? null;
+
+        // Kiểm tra dữ liệu đầu vào
+        if (empty($employee_sn) || empty($easy) || empty($img_file)) {
+            echo json_encode(["status" => "error", "content" => "Vui lòng không để trống"]);
             return;
         }
 
-        $sn = $checkinout[0]['sn'];
+        // Kiểm tra lỗi upload file
+        if ($img_file['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(["status" => "error", "content" => "Lỗi khi upload file"]);
+            return;
+        }
 
-        $app->delete("checkinout", ["id" => $id]);
-        $jatbi->logs('checkinout', 'checkinout-deleted', ["id" => $id, "sn" => $sn]);
+        // Chuyển file thành chuỗi Base64
+        $img_content = file_get_contents($img_file['tmp_name']);
+        $img_base64 = base64_encode($img_content);
 
-        echo json_encode(["status" => "success", "content" => $jatbi->lang("Xóa thành công")]);
-    } catch (Exception $e) {
-        echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
-    }
-})->setPermissions(['checkinout.deleted']);
+        try {
+            $app->select("face_employee", ["employee_sn"], ["employee_sn" => $employee_sn]);
+            if ($app->count()) {
+                $update = [
+                    "img_base64" => $img_base64,
+                    "easy" => $easy,
+                ];
+                $app->update("face_employee", $update, ["employee_sn" => $employee_sn]);
+            }else{
+                // Dữ liệu để lưu vào database
+                $insert = [
+                    "employee_sn" => $employee_sn,
+                    "img_base64"  => $img_base64,
+                    "easy"        => $easy,
+                ];
+                $app->insert("face_employee", $insert);
+            }
+
+            // Ghi log (tùy chọn)
+            $jatbi->logs('face_employee', 'face_employee-add', $insert);
+
+            // Dữ liệu gửi qua API
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret'    => '123456',
+                'personSn'        => $employee_sn,
+                'imgBase64' => $img_base64, // Chuỗi Base64
+                'easy'      => $easy,
+            ];
+
+            $headers = [
+                'Authorization: Bearer your_token',
+                'Content-Type: application/x-www-form-urlencoded'
+            ];
+
+            // Gửi yêu cầu đến API
+            $response = $app->apiPost(
+                'http://camera.ellm.io:8190/api/face/merge',
+                $apiData,
+                $headers
+            );
+
+            // Kiểm tra phản hồi từ API
+            $apiResponse = json_decode($response, true);
+            if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+                echo json_encode(["status" => "success", "content" => "Thêm thành công"]);
+            } else {
+                $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
+                echo json_encode(["status" => "error", "content" => "Lưu database thành công, nhưng API lỗi: " . $errorMessage]);
+            }
+
+        } catch (Exception $e) {
+            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        }
+    })->setPermissions(['face_employee.add']);
+
+    $app->router("/manager/face_employee-edit", 'GET', function($vars) use ($app, $jatbi, $setting) {
+        $vars['title'] = $jatbi->lang("Sửa Khuôn Mặt Nhân Viên");
     
+        $sn = isset($_GET['id']) ? $app->xss($_GET['id']) : null;
+        if (!$sn) {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+            return;
+        }
+    
+        $vars['data'] = $app->get("face_employee", "*", ["employee_sn" => $sn]);
+        $vars ['data']['edit'] = true;
+        if ($vars['data']) {
+            echo $app->render('templates/employee/face_employee-post.html', $vars, 'global');
+        } else {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+        }
+    })->setPermissions(['face_employee.edit']);
+
+
+    $app->router("/manager/face_employee-edit", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header(['Content-Type' => 'application/json']);
+
+        // Lấy dữ liệu từ form
+        $employee_sn = $app->xss($_POST['employee_sn'] ?? '');
+        $easy = $app->xss($_POST['easy'] ?? '0');
+        $img_file = $_FILES['img_file'] ?? null;
+
+        // Kiểm tra dữ liệu đầu vào
+        if (empty($employee_sn) || empty($easy) || empty($img_file)) {
+            echo json_encode(["status" => "error", "content" => "Vui lòng không để trống"]);
+            return;
+        }
+
+        // Kiểm tra lỗi upload file
+        if ($img_file['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(["status" => "error", "content" => "Lỗi khi upload file"]);
+            return;
+        }
+
+        // Chuyển file thành chuỗi Base64
+        $img_content = file_get_contents($img_file['tmp_name']);
+        $img_base64 = base64_encode($img_content);
+
+        try {
+            
+            $update = [
+                "img_base64" => $img_base64,
+                "easy" => $easy,
+            ];
+            $app->update("face_employee", $update, ["employee_sn" => $employee_sn]);
+            
+
+            // Ghi log (tùy chọn)
+            $jatbi->logs('face_employee', 'face_employee-edit', $update);
+
+            // Dữ liệu gửi qua API
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret'    => '123456',
+                'personSn'        => $employee_sn,
+                'imgBase64' => $img_base64, // Chuỗi Base64
+                'easy'      => $easy,
+            ];
+
+            $headers = [
+                'Authorization: Bearer your_token',
+                'Content-Type: application/x-www-form-urlencoded'
+            ];
+
+            // Gửi yêu cầu đến API
+            $response = $app->apiPost(
+                'http://camera.ellm.io:8190/api/face/merge',
+                $apiData,
+                $headers
+            );
+
+            // Kiểm tra phản hồi từ API
+            $apiResponse = json_decode($response, true);
+            if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+                echo json_encode(["status" => "success", "content" => "Thêm thành công"]);
+            } else {
+                $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
+                echo json_encode(["status" => "error", "content" => "Lưu database thành công, nhưng API lỗi: " . $errorMessage]);
+            }
+
+        } catch (Exception $e) {
+            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        }
+    })->setPermissions(['face_employee.edit']);
+
+    $app->router("/manager/face_employee-deleted", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xóa Khuôn Mặt Nhân Viên");
+
+        echo $app->render('templates/common/deleted.html', $vars, 'global');
+    })->setPermissions(['face_employee.deleted']);
+    
+    $app->router("/manager/face_employee-deleted", 'POST', function($vars) use ($app,$jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+        $sn = $app->xss($_GET['id']);
+        try {
+            $app->delete("face_employee", ["employee_sn" => $sn]);
+            
+            $headers = [
+                'Authorization: Bearer your_token',
+                'Content-Type: application/x-www-form-urlencoded'
+            ];
+
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret'    => '123456',
+                'personSn'        => $sn,
+            ];
+
+            $response = $app->apiPost(
+                'http://camera.ellm.io:8190/api/face/delete', 
+                $apiData, 
+                $headers
+            );
+
+            $apiResponse = json_decode($response, true);
+    
+            // Kiểm tra phản hồi từ API
+            if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+                echo json_encode(["status" => "success", "content" => $jatbi->lang("Xoá thành công")]);
+            } else {
+                $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
+                echo json_encode(["status" => "error", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+            }
+
+        }catch (Exception $e) {
+            // Xử lý lỗi ngoại lệ
+            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        }
+    })->setPermissions(['face_employee.deleted']);
 ?>

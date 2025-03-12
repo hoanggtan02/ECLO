@@ -125,6 +125,11 @@
                         'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
                         'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
                         'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
+                        'face_employee' =>$jatbi->lang("Khuôn mặt"),
+                        'face_employee.add'=>$jatbi->lang("Thêm Khuôn mặt"),
+                        'face_employee.edit'=>$jatbi->lang("Sửa Khuôn mặt"),
+                        'face_employee.deleted'=>$jatbi->lang("Xóa Khuôn mặt"),
+
                     ]
                 ],
             ],
