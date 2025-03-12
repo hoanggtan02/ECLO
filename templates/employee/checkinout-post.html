@@ -1,0 +1,65 @@
+<!-- templates/employee/checkinout-post.html -->
+<div class="modal fade modal-load" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg pt-standalone">
+    <div class="modal-content rounded-5">
+      <div
+        class="d-flex w-100 justify-content-end align-items-center position-relative"
+      >
+        <button
+          type="button"
+          class="btn btn-primary position-absolute z-1 rounded-circle d-flex align-items-center justify-content-center width height top right"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+          style="--width: 50px; --height: 50px; --top: -5px; --right: -5px"
+        >
+          <i class="ti ti-x fs-4"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h5 class="fw-bold text-body mb-3"><?=$title?></h5>
+        <form method="POST" action="<?=$_SERVER['REQUEST_URI']?>">
+          <div class="row g-3">
+            <div class="col-lg-12">
+              <div class="mb-3">
+                <label class="fw-bold text-body mb-2"
+                  ><?=$jatbi->lang("Số định danh (sn)")?>
+                  <span class="text-danger">*</span></label
+                >
+                <input type="text" name="sn" class="form-control py-3 rounded-4
+                bg-body-tertiary" placeholder="<?=$jatbi->lang("Số định danh
+                (sn)")?>" value="<?php echo htmlspecialchars($data['sn'] ?? ''); ?>"
+                required>
+              </div>
+              <div class="mb-3">
+                <label class="fw-bold text-body mb-2"
+                  ><?=$jatbi->lang("Danh sách thời gian (JSON)")?>
+                  <span class="text-danger">*</span></label
+                >
+                <textarea
+                  class="form-control py-3 rounded-4 bg-body-tertiary"
+                  name="checkinout_list"
+                  rows="4"
+                  placeholder='Ví dụ: [{"mon":"08:00-17:00"},{"tue":"09:00-18:00"}]'
+                  required
+                >
+<?php echo htmlspecialchars($data['checkinout_list'] ?? '[]'); ?></textarea
+                >
+              </div>
+            </div>
+            <div class="col-lg-12">
+              <button
+                type="submit"
+                class="btn btn-primary w-100 py-3 rounded-pill fw-bold"
+                data-action="submit"
+                data-alert="true"
+                data-load="this"
+              >
+                <?=$jatbi->lang("Hoàn thành")?>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

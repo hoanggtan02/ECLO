@@ -1,0 +1,129 @@
+<!-- templates/employee/checkinout.html -->
+<div class="container">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 fw-bold text-body">Danh sách thời gian ra vào</h4>
+            <ul class="breadcrumb small mb-0">
+                <li class="breadcrumb-item small">
+                    <a href="/" class="pjax-load link-secondary">Trang chủ</a>
+                </li>
+                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title?></li>
+            </ul>
+        </div>
+        <div class="filter-search">
+            <div class="d-flex align-items-center justify-content-end">
+                <div class="dropdown">
+                    <button class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="ti ti-filter fs-5 me-2"></i> Điều kiện lọc
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width" style="--min-width:300px;">
+                        <div class="fw-semibold py-2 px-3">Điều kiện lọc</div>
+                        <hr class="border-secondary border-opacity-50 my-2">
+                        <div class="px-3">
+                            <input type="text" name="sn" class="form-control filter-name mt-2" placeholder="Số định danh (sn)">
+                        </div>
+                        <hr class="border-secondary border-opacity-50 my-2">
+                        <div class="px-3 py-2 text-end">
+                            <button type="button" class="btn btn-light px-3 py-2 rounded-pill reset-filter">Làm mới</button>
+                            <button type="button" class="btn btn-primary px-3 py-2 rounded-pill button-filter">Tìm</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="position-fixed bottom right z-3 dropup" style="--bottom:20px;--right:20px">
+        <button class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center" style="--width:60px;--height:60px;" data-bs-toggle="dropdown">
+            <i class="ti ti-menu-2 fs-2"></i>
+        </button>
+        <ul class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2" style="--min-width:100%">
+            <li class="my-2">
+                <a class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-checkbox="input.checker" data-url="/manager/checkinout-deleted" style="--width:50px;--height:50px;">
+                    <i class="ti ti-trash fs-3"></i>
+                </a>
+            </li>
+            <li class="my-2">
+                <a class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-url="/manager/checkinout-add" style="--width:50px;--height:50px;">
+                    <i class="ti ti-plus fs-3"></i>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-end mb-3">
+                <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/manager/checkinout-add">
+                    <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?>
+                </button>
+                <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/manager/checkinout-deleted">
+                    <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> Xóa
+                </button>
+            </div>
+            <table id="datatable" 
+                   class="table align-middle"
+                   data-page-length="10"
+                   data-searching="true"
+                   data-paging="true"
+                   data-state-save="true"
+                   data-ajax="/manager/checkinout"
+                   style="width:100%">
+                <thead>
+                    <tr>
+                        <th class="text-center">
+                            <div class="form-check">
+                                <input class="form-check-input checkall" type="checkbox">
+                            </div>
+                        </th>
+                        <th class="text-nowrap">ID</th>
+                        <th class="text-nowrap">Số định danh (sn)</th>
+                        <th class="text-nowrap">Danh sách thời gian</th>
+                        <th class="text-nowrap">Cập nhật lúc</th>
+                        <th data-visible="true" class="text-nowrap text-end">Tùy chọn</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($data)): ?>
+                        <?php foreach ($data as $checkinout): ?>
+                            <tr>
+                                <td class="text-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input checker" type="checkbox" value="<?= $checkinout["id"] ?>">
+                                    </div>
+                                </td>
+                                <td><?= htmlspecialchars($checkinout["id"]) ?></td>
+                                <td><?= htmlspecialchars($checkinout["sn"]) ?></td>
+                                <td><?= htmlspecialchars($checkinout["checkinout_list"]) ?></td>
+                                <td><?= htmlspecialchars($checkinout["updated_at"]) ?></td>
+                                <td class="text-end">
+                                    <div class="dropdown">
+                                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="ti ti-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item text-warning" href="/manager/checkinout-edit/<?= $checkinout["id"] ?>">
+                                                    <i class="ti ti-edit me-1"></i> Sửa
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="#" data-url="/manager/checkinout-deleted?id=<?= $checkinout["id"] ?>" data-action="modal">
+                                                    <i class="ti ti-trash me-1"></i> Xóa
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="6" class="text-center">Không có dữ liệu</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
