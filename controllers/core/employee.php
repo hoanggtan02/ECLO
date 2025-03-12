@@ -62,11 +62,18 @@
     
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
+            // Chuyển đổi giá trị type thành văn bản
+            $typeLabels = [
+                "1" => $jatbi->lang("Nhân viên nội bộ"),
+                "2" => $jatbi->lang("Khách"),
+                "3" => $jatbi->lang("Danh sách đen"),
+            ];
+            
             return [
                 "checkbox" => "<input type='checkbox' value='{$data['sn']}'>",
                 "sn" => $data['sn'],
                 "name" => $data['name'],
-                "type" => $data['type'],
+                "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"), // Hiển thị nhãn văn bản
                 "action" => $app->component("action", [
                     "button" => [
                         [
@@ -85,6 +92,7 @@
                 ]),            
             ];
         }, $datas);
+
     
         // Log dữ liệu đã format trước khi JSON encode
         error_log("Formatted Data: " . print_r($formattedData, true));
