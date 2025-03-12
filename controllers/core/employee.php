@@ -611,5 +611,6 @@ $app->router("/manager/checkinout-deleted", 'POST', function($vars) use ($app, $
         echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
     }
 })->setPermissions(['checkinout.deleted']);
-    
+
+
 ?>
