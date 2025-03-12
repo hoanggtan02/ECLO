@@ -21,7 +21,7 @@
                     "menu"=>$jatbi->lang("Người dùng"),
                     "url"=>'/users',
                     "icon"=>'<i class="ti ti-user "></i>',
-                    "sub"=>[
+                    "sub"=>[ 
                         'accounts'      =>[
                             "name"  => $jatbi->lang("Tài khoản"),
                             "router"=> '/users/accounts',
@@ -121,7 +121,7 @@
                         'department'    =>$jatbi->lang("Phòng ban"),
                         'department.add'=>$jatbi->lang("Thêm Phòng ban"),
                         'department.edit'=>$jatbi->lang("Sửa Phòng ban"),
-                        'department.deleted'=>$jatbi->lang("Xóa Phòng ban"),
+                        'department.deleted'=>$jatbi->lang("Xóa Phòng   ban"),
                         'position'      =>$jatbi->lang("Chức vụ"),
                         'position.add'  =>$jatbi->lang("Thêm Chức vụ"),
                         'position.edit' =>$jatbi->lang("Sửa Chức vụ"),
@@ -134,6 +134,26 @@
                         'timepriod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
                         'timepriod.edit' =>$jatbi->lang("Sửa Khung thời gian"),
                         'timepriod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
+                    ]
+                ],
+                'record'=>[
+                    "menu"=>$jatbi->lang("Quản lý 2"),
+                    "url"=>'/record',
+                    "icon"=>'<i class="ti ti-user "></i>',
+                    "sub"=>[
+                        'record'      =>[
+                            "name"  => $jatbi->lang("Hồ sơ"),
+                            "router"=> '/record',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
+                    ],
+                    "controllers"=>"controllers/core/record.php",
+                    "main"=>'false',
+                    "permission"=>[
+                        'record'      =>$jatbi->lang("Hồ sơ"),
+                        'record.add'  =>$jatbi->lang("Thêm hồ sơ"),
+                        'record.edit' =>$jatbi->lang("Sửa hồ so"),
+                        'record.deleted'=>$jatbi->lang("Xóa hồ sơ"),
                     ]
                 ],
             ],

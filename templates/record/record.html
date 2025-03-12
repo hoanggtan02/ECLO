@@ -75,7 +75,8 @@
 		<div class="card-body">
             <div class="custom-buttons d-none">
                 <div class="d-flex align-items-center justify-content-end">
-                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/users/accounts-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
+                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/record/record-find"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Tìm kiếm khoảng thời gian")?></button>
+                    <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center me-1" data-action="modal" data-url="/record/record-delete"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa khoảng thời gian")?></button>
                     <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/users/accounts-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
                 </div>
             </div>
@@ -93,10 +94,14 @@
                 <thead>
                     <tr>
                         <th data-name="checkbox" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><div class="form-check"><input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"></div></th>
-                        <th data-name="name" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Tên")?></th>
-                        <th data-name="email" data-orderable="true" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("Email")?></th>
-                        <th data-name="permission" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Nhóm Quyền")?></th>
-                        <th data-name="status" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><?=$jatbi->lang("Trạng thái")?></th>
+                        <th data-name="id" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("ID")?></th>
+                        <th data-name="personName" data-orderable="true" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("Tên")?></th>
+                        <th data-name="personSn" data-orderable="true" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("ID nhân viên")?></th>
+                        <!-- <th data-name="createTime" data-orderable="true" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("Thời gian tạo")?></th>
+                        <th data-name="strangerFlag" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Người lạ?")?></th>
+                        <th data-name="resultFlag" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><?=$jatbi->lang("Kết quả?")?></th>
+                        <th data-name="personType" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><?=$jatbi->lang("Kiểu người?")?></th>
+                        <th data-name="openDoorFlag" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><?=$jatbi->lang("Mở cửa?")?></th> -->
                         <th data-name="action" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-end"><?=$jatbi->lang("Tùy chọn")?></th>
                     </tr>
                 </thead>

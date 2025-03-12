@@ -8,7 +8,7 @@
         $vars['add'] = '/manager/employee-add';
         $vars['deleted'] = '/manager/employee-deleted';
         $data = $app->select("employee", ["sn","name","type"]);
-        $vars['data'] = $data;
+        $vars['data'] = $data; 
         echo $app->render('templates/employee/employee.html', $vars);
     })->setPermissions(['employee']);
 
