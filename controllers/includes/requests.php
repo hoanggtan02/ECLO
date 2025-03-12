@@ -105,6 +105,11 @@
                             "router"=> '/manager/checkinout',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
                         ],
+                        'timeperiod'      =>[
+                            "name"  => $jatbi->lang("Khung thời gian"),
+                            "router"=> '/manager/timeperiod',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
                     ],
                     "controllers"=>"controllers/core/employee.php",
                     "main"=>'false',
@@ -125,6 +130,10 @@
                         'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
                         'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
                         'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
+                        'timepriod'      =>$jatbi->lang("Khung thời gian"),
+                        'timepriod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
+                        'timepriod.edit' =>$jatbi->lang("Sửa Khung thời gian"),
+                        'timepriod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
                     ]
                 ],
             ],
