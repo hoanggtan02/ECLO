@@ -85,6 +85,26 @@
                         'trash'          =>$jatbi->lang("Thùng rác"),
                     ]
                 ],
+                'group-access'=>[
+                    "menu"=>$jatbi->lang("Nhóm kiểm soát"),
+                    "url"=>'/group-access',
+                    "icon"=>'<i class="ti ti-user"></i>',
+                    "sub"=>[
+                        'group-access'    =>[
+                            "name"  => $jatbi->lang("Danh sách nhóm"),
+                            "router"=> '/control/group-access',
+                            "icon"  => '<i class="fas fa-key"></i>',
+                        ],
+                    ],
+                    "controllers"=>"controllers/core/group-access.php",
+                    "main"=>'false',
+                    "permission"=>[
+                        'group-access'          => $jatbi->lang("Nhóm kiểm soát"),
+                        'group-access.add'      => $jatbi->lang("Thêm Nhóm kiểm soát"),
+                        'group-access.edit'     => $jatbi->lang("Sửa Nhóm kiểm soát"),
+                        'group-access.deleted'  => $jatbi->lang("Xóa Nhóm kiểm soát"),
+                    ]
+                ],
                 'employee'=>[
                     "menu"=>$jatbi->lang("Quản lý"),
                     "url"=>'/employee',

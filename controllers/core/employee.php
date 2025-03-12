@@ -62,11 +62,18 @@
     
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
+            // Chuyển đổi giá trị type thành văn bản
+            $typeLabels = [
+                "1" => $jatbi->lang("Nhân viên nội bộ"),
+                "2" => $jatbi->lang("Khách"),
+                "3" => $jatbi->lang("Danh sách đen"),
+            ];
+            
             return [
                 "checkbox" => "<input type='checkbox' value='{$data['sn']}'>",
                 "sn" => $data['sn'],
                 "name" => $data['name'],
-                "type" => $data['type'],
+                "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"), // Hiển thị nhãn văn bản
                 "action" => $app->component("action", [
                     "button" => [
                         [
@@ -85,6 +92,7 @@
                 ]),            
             ];
         }, $datas);
+
     
         // Log dữ liệu đã format trước khi JSON encode
         error_log("Formatted Data: " . print_r($formattedData, true));
@@ -170,7 +178,7 @@
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+                echo json_encode(["status" => "error", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
             }
     
         } catch (Exception $e) {
@@ -219,7 +227,7 @@
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+                echo json_encode(["status" => "error", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
             }
 
         }catch (Exception $e) {
@@ -313,7 +321,7 @@
         } else {
             $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi từ API";
             echo json_encode([
-                "status" => "warning",
+                "status" => "error",
                 "content" => "Cập nhật trong database thành công, nhưng API gặp lỗi: " . $errorMessage
             ]);
         }
@@ -958,4 +966,6 @@ $app->router("/manager/timeperiod", 'GET', function($vars) use ($app, $jatbi, $s
 
         echo $response;
     })->setPermissions(['timeperiod']);
+
+
 ?>
