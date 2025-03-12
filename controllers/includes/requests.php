@@ -105,6 +105,11 @@
                             "router"=> '/manager/checkinout',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
                         ],
+                        'timeperiod'      =>[
+                            "name"  => $jatbi->lang("Khung thời gian"),
+                            "router"=> '/manager/timeperiod',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
                     ],
                     "controllers"=>"controllers/core/employee.php",
                     "main"=>'false',
@@ -121,6 +126,10 @@
                         'position.add'  =>$jatbi->lang("Thêm Chức vụ"),
                         'position.edit' =>$jatbi->lang("Sửa Chức vụ"),
                         'position.deleted'=>$jatbi->lang("Xóa Chức vụ"),
+                        'timepriod'      =>$jatbi->lang("Khung thời gian"),
+                        'timepriod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
+                        'timepriod.edit' =>$jatbi->lang("Sửa Khung thời gian"),
+                        'timepriod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
                     ]
                 ],
             ],
