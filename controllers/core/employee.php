@@ -16,55 +16,95 @@
         $app->header([
             'Content-Type' => 'application/json',
         ]);
-        
-        $draw = isset($_POST['draw']) ? intval($_POST['draw']) : 0;
-        $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-        $length = isset($_POST['length']) ? intval($_POST['length']) : 10;
-        $searchValue = isset($_POST['search']['value']) ? $_POST['search']['value'] : '';
-        $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'sn';
-        $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
-        $type = isset($_POST['type']) ? $_POST['type'] : '';
     
+        // Kiểm tra dữ liệu nhận từ DataTables
+        error_log("Received POST Data: " . print_r($_POST, true));
+    
+        // Nhận dữ liệu từ DataTable
+        $draw = $_POST['draw'] ?? 0;
+        $start = $_POST['start'] ?? 0;
+        $length = $_POST['length'] ?? 10;
+        $searchValue = $_POST['search']['value'] ?? '';
+        $type = $_POST['type'] ?? '';
+    
+        // Fix lỗi ORDER cột
+        $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột SN
+        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
+    
+        // Danh sách cột hợp lệ
+        $validColumns = ["sn", "name", "type"];
+        $orderColumn = $validColumns[$orderColumnIndex] ?? "sn";
+    
+        // Điều kiện lọc dữ liệu
         $where = [
             "AND" => [
                 "OR" => [
                     "employee.sn[~]" => $searchValue,
                     "employee.name[~]" => $searchValue,
-                ],
+                ]
             ],
             "LIMIT" => [$start, $length],
-            "ORDER" => [$orderName => strtoupper($orderDir)]
+            "ORDER" => [$orderColumn => $orderDir]
         ];
     
         if (!empty($type)) {
             $where["AND"]["employee.type"] = $type;
         }
     
-        $count = $app->count("employee", [
-            "AND" => $where['AND'],
-        ]);
-        
-        $datas = [];
-        $app->select("employee", [], [
-            'employee.sn',
-            'employee.name',
-            'employee.type',
-        ], $where, function ($data) use (&$datas, $app) {
-            $datas[] = [
+        // Đếm số bản ghi
+        $count = $app->count("employee", ["AND" => $where["AND"]]);
+    
+        // Truy vấn danh sách nhân viên
+        $datas = $app->select("employee", ['sn', 'name', 'type'], $where) ?? [];
+    
+        // Log dữ liệu truy vấn để kiểm tra
+        error_log("Fetched Employees Data: " . print_r($datas, true));
+    
+        // Xử lý dữ liệu đầu ra
+        $formattedData = array_map(function($data) use ($app, $jatbi) {
+            return [
+                "checkbox" => "<input type='checkbox' value='{$data['sn']}'>",
                 "sn" => $data['sn'],
                 "name" => $data['name'],
                 "type" => $data['type'],
+                "action" => $app->component("action", [
+                    "button" => [
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Sửa"),
+                            'permission' => ['employee.edit'],
+                            'action' => ['data-url' => '/manager/employee-edit/'.$data['sn'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Xóa"),
+                            'permission' => ['employee.deleted'],
+                            'action' => ['data-url' => '/manager/employee-deleted?box='.$data['sn'], 'data-action' => 'modal']
+                        ],
+                    ]
+                ]),            
             ];
-        });
-        
-        echo json_encode([
+        }, $datas);
+    
+        // Log dữ liệu đã format trước khi JSON encode
+        error_log("Formatted Data: " . print_r($formattedData, true));
+    
+        // Kiểm tra lỗi JSON
+        $response = json_encode([
             "draw" => $draw,
             "recordsTotal" => $count,
             "recordsFiltered" => $count,
-            "data" => $datas
+            "data" => $formattedData
         ]);
+    
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("JSON Encode Error: " . json_last_error_msg());
+        }
+    
+        echo $response;
     })->setPermissions(['employee']);
-
+    
+    
     $app->router("/manager/employee-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Nhân viên");
         $vars['data'] = [
@@ -188,4 +228,3 @@
         }
     })->setPermissions(['employee.deleted']);
 ?>
-

@@ -6,7 +6,7 @@
                 <li class="breadcrumb-item small">
                     <a href="/" class="pjax-load link-secondary">Trang chủ</a>
                 </li>
-                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title?></li>
+                <li class="breadcrumb-item small text-body" aria-current="page">Danh sách nhân viên</li>
             </ul>
         </div>
         <div class="filter-search">
@@ -54,77 +54,36 @@
             </li>
         </ul>
     </div>
-
     <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
-        <div class="card-body">
-            <div class="d-flex align-items-center justify-content-end mb-3">
-                <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/manager/employee-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
-                <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/manager/employee-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> Xóa</button>
+		<div class="card-body">
+            <div class="custom-buttons d-none">
+                <div class="d-flex align-items-center justify-content-end">
+                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/manager/employee-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
+                    <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/manager/employee-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
+                </div>
             </div>
             <table id="datatable" 
-                   class="table align-middle"
-                   data-page-length="10"
-                   data-searching="true"
-                   data-paging="true"
-                   data-state-save="true"
-                   style="width:100%">
+            data-table 
+            class="table align-middle" 
+            data-type="POST" 
+            data-server="true" 
+            data-processing="true" 
+            data-page-length="10"
+            data-searching="true"
+            data-paging="true"
+            data-state-save='true'
+            style="width:100%">
                 <thead>
                     <tr>
-                        <th class="text-center">
-                            <div class="form-check">
-                                <input class="form-check-input checkall" type="checkbox">
-                            </div>
-                        </th>
-                        <th class="text-nowrap">ID</th>
-                        <th class="text-nowrap">Tên</th>
-                        <th class="text-nowrap">Loại</th>
-                        <th data-visible="true" class="text-nowrap text-end">Tùy chọn</th>
+                        <th data-name="checkbox" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><div class="form-check"><input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"></div></th>
+                        <th data-name="sn" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Mã nhân viên")?></th>
+                        <th data-name="name" data-orderable="true" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("Họ và Tên")?></th>
+                        <th data-name="type" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Loại")?></th>
+                        <th data-name="action" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-end"><?=$jatbi->lang("Tùy chọn")?></th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if (!empty($data)): ?>
-                        <?php foreach ($data as $person): ?>
-                            <tr>
-                                <td class="text-center">
-                                    <div class="form-check">
-                                        <input class="form-check-input checker" type="checkbox" value="<?= $person["sn"] ?>">
-                                    </div>
-                                </td>
-                                <td><?= htmlspecialchars($person["sn"]) ?></td>
-                                <td><?= htmlspecialchars($person["name"]) ?></td>
-                                <td><?= htmlspecialchars($person["type"]) ?></td>
-                                <td class="text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="ti ti-dots-vertical"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <a class="dropdown-item text-warning" href="/manager/employee-edit?id=<?= $person["sn"] ?>">
-                                                    <i class="ti ti-edit me-1"></i> Sửa
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item text-warning" href="#" data-url="/employee/employee-deleted?id=<?= $person["sn"] ?></a>" data-action="modal">
-                                                    <i class="ti ti-trash me-1"></i> Xóa
-                                                </a>
-                                                
-                                                <!-- <a class="dropdown-item text-danger" href="/employee/employee-deleted" data-bs-toggle="modal">
-                                                    <i class="ti ti-trash me-1"></i> Xóa
-                                                </a> -->
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="6" class="text-center">Không có dữ liệu</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
             </table>
-        </div>
-    </div>
+		</div>
+	</div>
+    
 </div>
