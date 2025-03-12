@@ -87,17 +87,12 @@
                 ],
                 'group-access'=>[
                     "menu"=>$jatbi->lang("Nhóm kiểm soát"),
-                    "url"=>'/control-group',
+                    "url"=>'/group-access',
                     "icon"=>'<i class="ti ti-user"></i>',
                     "sub"=>[
-                        'group-list'      =>[
-                            "name"  => $jatbi->lang("Danh sách nhóm"),
-                            "router"=> '/manager/control-group',
-                            "icon"  => '<i class="ti ti-list"></i>',
-                        ],
                         'group-access'    =>[
-                            "name"  => $jatbi->lang("Quyền truy cập"),
-                            "router"=> '/manager/group-access',
+                            "name"  => $jatbi->lang("Danh sách nhóm"),
+                            "router"=> '/control/group-access',
                             "icon"  => '<i class="fas fa-key"></i>',
                         ],
                     ],
