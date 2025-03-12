@@ -121,6 +121,10 @@
                         'position.add'  =>$jatbi->lang("Thêm Chức vụ"),
                         'position.edit' =>$jatbi->lang("Sửa Chức vụ"),
                         'position.deleted'=>$jatbi->lang("Xóa Chức vụ"),
+                        'checkinout' => $jatbi->lang("Hồ sơ ra vào"),
+                        'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
+                        'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
+                        'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
                     ]
                 ],
             ],
