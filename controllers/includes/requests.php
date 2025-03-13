@@ -130,6 +130,7 @@
                             "name"  => $jatbi->lang("Khung thời gian"),
                             "router"=> '/manager/timeperiod',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/timeperiod.php',
                         ],
                     ],
                     "controllers"=>"controllers/core/employee.php",
