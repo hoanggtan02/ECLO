@@ -119,6 +119,7 @@
                             "name"  => $jatbi->lang("Khuôn mặt"),
                             "router"=> '/manager/face_employee',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/face_employee.php',
                         ],
                         'checkinout'      =>[
                             "name"  => $jatbi->lang("Hồ sơ ra vào"),
@@ -154,6 +155,11 @@
                         'timepriod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
                         'timepriod.edit' =>$jatbi->lang("Sửa Khung thời gian"),
                         'timepriod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
+                        'face_employee' => $jatbi->lang("Khuôn mặt"),
+                        'face_employee.add' => $jatbi->lang("Thêm Khuôn mặt"),
+                        'face_employee.edit' => $jatbi->lang("Sửa Khuôn mặt"),
+                        'face_employee.deleted' => $jatbi->lang("Xóa Khuôn mặt"),
+                        'face_employee.deleted.multiple' => $jatbi->lang("Xóa nhiều Khuôn mặt"),
                     ]
                 ],
                 'record'=>[
@@ -185,6 +191,17 @@
                 "key" => $key_item,
                 "controllers" =>  $items['controllers'],
             ];
+            // Thêm controllers từ sub
+            if (isset($items['sub']) && is_array($items['sub'])) {
+                foreach ($items['sub'] as $sub_key => $sub_item) {
+                    if (isset($sub_item['controllers'])) {
+                        $setRequest[] = [
+                            "key" => $sub_key,
+                            "controllers" => $sub_item['controllers'],
+                        ];
+                    }
+                }
+            }
             if($items['main']!='true'){
                 $SelectPermission[$items['menu']] = $items['permission'];
             }

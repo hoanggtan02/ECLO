@@ -1,0 +1,403 @@
+<div class="container">
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0 fw-bold text-body">Danh sách khuôn mặt nhân viên</h4>
+      <ul class="breadcrumb small mb-0">
+        <li class="breadcrumb-item small">
+          <a href="/" class="pjax-load link-secondary">Trang chủ</a>
+        </li>
+        <li class="breadcrumb-item small text-body" aria-current="page">
+          <?=$title?>
+        </li>
+      </ul>
+    </div>
+    <div class="filter-search">
+      <div class="d-flex align-items-center justify-content-end">
+        <div class="dropdown">
+          <button
+            class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <i class="ti ti-filter fs-5 me-2"></i> Điều kiện lọc
+          </button>
+          <div
+            class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width"
+            style="--min-width: 300px"
+          >
+            <div class="fw-semibold py-2 px-3">Điều kiện lọc</div>
+            <hr class="border-secondary border-opacity-50 my-2" />
+            <div class="px-3">
+              <select name="type" class="form-select filter-name mt-2">
+                <option value="">Loại nhân viên</option>
+                <option value="1">Nhân viên nội bộ</option>
+                <option value="2">Khách</option>
+                <option value="3">Danh sách đen</option>
+              </select>
+            </div>
+            <hr class="border-secondary border-opacity-50 my-2" />
+            <div class="px-3 py-2 text-end">
+              <button
+                type="button"
+                class="btn btn-light px-3 py-2 rounded-pill reset-filter"
+              >
+                Làm mới
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary px-3 py-2 rounded-pill button-filter"
+              >
+                Tìm
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="position-fixed bottom right z-3 dropup"
+    style="--bottom: 20px; --right: 20px"
+  >
+    <button
+      class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center"
+      style="--width: 60px; --height: 60px"
+      data-bs-toggle="dropdown"
+    >
+      <i class="ti ti-menu-2 fs-2"></i>
+    </button>
+    <ul
+      class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2"
+      style="--min-width: 100%"
+    >
+      <li class="my-2">
+        <a
+          class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1"
+          data-action="modal"
+          data-checkbox="input.checker"
+          data-url="/manager/face_employee-deleted"
+          style="--width: 50px; --height: 50px"
+        >
+          <i class="ti ti-trash fs-3"></i>
+        </a>
+      </li>
+      <li class="my-2">
+        <a
+          class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1"
+          data-action="modal"
+          data-url="/manager/face_employee-add"
+          style="--width: 50px; --height: 50px"
+        >
+          <i class="ti ti-plus fs-3"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+    <div class="card-body">
+      <div class="custom-buttons d-none">
+        <div class="d-flex align-items-center justify-content-end">
+          <button
+            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+            data-action="modal"
+            data-url="/manager/face_employee-add"
+          >
+            <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Thêm")?>
+          </button>
+          <button
+            class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
+            data-action="modal"
+            data-checkbox="input.checker"
+            data-url="/manager/face_employee-deleted"
+          >
+            <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Xóa")?>
+          </button>
+        </div>
+      </div>
+      <table
+        id="datatable"
+        data-table
+        class="table align-middle"
+        data-type="POST"
+        data-server="true"
+        data-processing="true"
+        data-page-length="10"
+        data-searching="true"
+        data-paging="true"
+        data-state-save="true"
+        style="width: 100%"
+      >
+        <thead>
+          <tr>
+            <th
+              data-name="checkbox"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-center"
+            >
+              <div class="form-check">
+                <input
+                  class="form-check-input checkall"
+                  type="checkbox"
+                  value=""
+                  data-checkbox="input.checker"
+                />
+              </div>
+            </th>
+            <th
+              data-name="employee_sn"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-nowrap"
+            >
+              <?=$jatbi->lang("Mã nhân viên")?>
+            </th>
+            <th
+              data-name="name"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class=""
+            >
+              <?=$jatbi->lang("Họ và Tên")?>
+            </th>
+            <th
+              data-name="type"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-nowrap"
+            >
+              <?=$jatbi->lang("Loại")?>
+            </th>
+            <th
+              data-name="img_base64"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-nowrap"
+            >
+              <?=$jatbi->lang("Hình ảnh")?>
+            </th>
+            <th
+              data-name="easy"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-nowrap"
+            >
+              <?=$jatbi->lang("Chất lượng")?>
+            </th>
+            <th
+              data-name="action"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-end"
+            >
+              <?=$jatbi->lang("Tùy chọn")?>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal chỉnh sửa -->
+  <div
+    class="modal fade"
+    id="editModal"
+    tabindex="-1"
+    aria-labelledby="editModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="editForm" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel">
+              Chỉnh sửa dữ liệu khuôn mặt
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="employee_sn" id="edit_employee_sn" />
+            <div class="mb-3">
+              <label for="edit_img_base64" class="form-label"
+                >Hình ảnh (Base64)</label
+              >
+              <textarea
+                class="form-control"
+                id="edit_img_base64"
+                name="img_base64"
+                required
+              ></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="edit_easy" class="form-label">Chất lượng</label>
+              <select class="form-control" id="edit_easy" name="easy" required>
+                <option value="0"><?=$jatbi->lang("Chất lượng thấp")?></option>
+                <option value="1"><?=$jatbi->lang("Chất lượng cao")?></option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Đóng
+            </button>
+            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // Xử lý bộ lọc
+  document
+    .querySelector(".button-filter")
+    .addEventListener("click", function () {
+      const type = document.querySelector('select[name="type"]').value;
+      let url = "/manager/face_employee";
+      if (type) {
+        url += "?type=" + encodeURIComponent(type);
+      }
+      window.location.href = url; // Reload trang với tham số lọc
+    });
+
+  // Xử lý nút làm mới
+  document
+    .querySelector(".reset-filter")
+    .addEventListener("click", function () {
+      window.location.href = "/manager/face_employee";
+    });
+
+  // Điền dữ liệu vào form chỉnh sửa
+  function fillEditForm(face) {
+    try {
+      document.getElementById("edit_employee_sn").value =
+        face.employee_sn || "";
+      document.getElementById("edit_img_base64").value = face.img_base64 || "";
+      document.getElementById("edit_easy").value = face.easy || "0";
+    } catch (e) {
+      console.error("Error filling edit form:", e);
+      alert("Có lỗi khi tải dữ liệu khuôn mặt");
+    }
+  }
+
+  // Xử lý submit form chỉnh sửa
+  document.getElementById("editForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    let data = Object.fromEntries(formData);
+    console.log("Edit form data:", data);
+
+    fetch("/manager/face_employee-edit", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.text().then((text) => {
+          console.log("Raw Response:", text);
+          try {
+            return JSON.parse(text);
+          } catch (err) {
+            throw new Error(`Invalid JSON: ${text}`);
+          }
+        });
+      })
+      .then((result) => {
+        if (result.status === "success") {
+          alert(result.content);
+          $("#editModal").modal("hide");
+          location.reload();
+        } else {
+          const errorMessage =
+            result.content || result.api_response || "Không xác định lỗi";
+          alert(`Lỗi: ${errorMessage}`);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert(`Có lỗi xảy ra khi gửi yêu cầu: ${error.message}`);
+      });
+  });
+  document.addEventListener("DOMContentLoaded", function () {
+    // Sử dụng event delegation để lắng nghe sự kiện click cho các nút xóa
+    document.addEventListener("click", function (e) {
+      const button = e.target.closest(
+        '[data-checkbox="input.checker"][data-url="/manager/face_employee-deleted"][data-action="modal"]'
+      );
+      if (!button) return; // Nếu không phải nút xóa, bỏ qua
+
+      e.preventDefault();
+
+      // Lấy danh sách checkbox được chọn
+      const checkboxes = document.querySelectorAll(
+        "input.form-check-input.checker:checked"
+      );
+
+      // Kiểm tra nếu không có checkbox nào được chọn
+      if (checkboxes.length === 0) {
+        return;
+      }
+
+      // Tạo chuỗi ID từ các checkbox được chọn
+      const employeeSnList = Array.from(checkboxes).map((cb) => cb.value);
+      const idString = employeeSnList.join(",");
+      const deleteUrl = `/manager/face_employee-deleted?id=${idString}`;
+      console.log("Delete URL:", deleteUrl);
+
+      // Xóa tất cả modal hiện có trước khi tạo mới
+      const existingModals = document.querySelectorAll(".modal, .modal-load");
+      existingModals.forEach((modal) => {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) modalInstance.hide();
+        modal.remove();
+      });
+
+      // Gọi modal bằng fetch
+      fetch(deleteUrl)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then((html) => {
+          const modalContainer = document.createElement("div");
+          modalContainer.innerHTML = html;
+          document.body.appendChild(modalContainer);
+          const modalElement = modalContainer.querySelector(".modal");
+          if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+          } else {
+            console.error("No modal element found in response");
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching modal:", error);
+        });
+    });
+  });
+</script>
