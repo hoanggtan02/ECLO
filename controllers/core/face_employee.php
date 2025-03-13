@@ -52,7 +52,13 @@
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
 
         // Danh sách cột hợp lệ
-        $validColumns = ["employee_sn", "name", "type", "img_base64", "easy"];
+        $validColumns = [
+            1 => "employee_sn", // Chỉ số 1 trong <thead>
+            2 => "name",        // Chỉ số 2 trong <thead>
+            3 => "type",        // Chỉ số 3 trong <thead>
+            4 => "img_base64",  // Chỉ số 4 trong <thead>
+            5 => "easy"         // Chỉ số 5 trong <thead>
+        ];
         $orderColumn = $validColumns[$orderColumnIndex] ?? "employee_sn";
 
         // Điều kiện lọc dữ liệu
@@ -152,11 +158,11 @@
 
         // Lấy dữ liệu từ form
         $employee_sn = $app->xss($_POST['employee_sn'] ?? '');
-        $easy = $app->xss($_POST['easy'] ?? '0');
+        $easy = $app->xss($_POST['easy'] ?? '');
         $img_file = $_FILES['img_file'] ?? null;
 
         // Kiểm tra dữ liệu đầu vào
-        if (empty($employee_sn) || empty($easy) || empty($img_file)) {
+        if (empty($employee_sn) || !isset($_POST['easy']) || !in_array($easy, ['0', '1']) || empty($img_file)) {
             echo json_encode(["status" => "error", "content" => "Vui lòng không để trống"]);
             return;
         }
