@@ -104,6 +104,8 @@
                             "name"  => $jatbi->lang("Hồ sơ ra vào"),
                             "router"=> '/manager/checkinout',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/checkinout.php',
+
                         ],
                         'timeperiod'      =>[
                             "name"  => $jatbi->lang("Khung thời gian"),
@@ -165,6 +167,17 @@
                 "key" => $key_item,
                 "controllers" =>  $items['controllers'],
             ];
+            // Thêm controllers từ sub
+            if (isset($items['sub']) && is_array($items['sub'])) {
+                foreach ($items['sub'] as $sub_key => $sub_item) {
+                    if (isset($sub_item['controllers'])) {
+                        $setRequest[] = [
+                            "key" => $sub_key,
+                            "controllers" => $sub_item['controllers'],
+                        ];
+                    }
+                }
+            }
             if($items['main']!='true'){
                 $SelectPermission[$items['menu']] = $items['permission'];
             }
