@@ -75,7 +75,7 @@
       <li class="my-2">
         <a
           class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1"
-          data-action="modal"
+          data-custom-action="modal"
           data-checkbox="input.checker"
           data-url="/manager/face_employee-deleted"
           style="--width: 50px; --height: 50px"
@@ -100,6 +100,14 @@
       <div class="custom-buttons d-none">
         <div class="d-flex align-items-center justify-content-end">
           <button
+            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-2"
+            data-action="modal"
+            data-url="/manager/reload-api"
+          >
+            <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Cập nhật lên API")?>
+          </button>
+          <button
             class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
             data-action="modal"
             data-url="/manager/face_employee-add"
@@ -107,9 +115,10 @@
             <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
             <?=$jatbi->lang("Thêm")?>
           </button>
+
           <button
             class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
-            data-action="modal"
+            data-custom-action="modal"
             data-checkbox="input.checker"
             data-url="/manager/face_employee-deleted"
           >
@@ -345,7 +354,7 @@
     // Sử dụng event delegation để lắng nghe sự kiện click cho các nút xóa
     document.addEventListener("click", function (e) {
       const button = e.target.closest(
-        '[data-checkbox="input.checker"][data-url="/manager/face_employee-deleted"][data-action="modal"]'
+        '[data-checkbox="input.checker"][data-url="/manager/face_employee-deleted"][data-custom-action="modal"]'
       );
       if (!button) return; // Nếu không phải nút xóa, bỏ qua
 
@@ -366,14 +375,6 @@
       const idString = employeeSnList.join(",");
       const deleteUrl = `/manager/face_employee-deleted?id=${idString}`;
       console.log("Delete URL:", deleteUrl);
-
-      // Xóa tất cả modal hiện có trước khi tạo mới
-      const existingModals = document.querySelectorAll(".modal, .modal-load");
-      existingModals.forEach((modal) => {
-        const modalInstance = bootstrap.Modal.getInstance(modal);
-        if (modalInstance) modalInstance.hide();
-        modal.remove();
-      });
 
       // Gọi modal bằng fetch
       fetch(deleteUrl)

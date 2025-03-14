@@ -66,7 +66,7 @@
             "AND" => [
                 "OR" => [
                     "face_employee.employee_sn[~]" => $searchValue,
-                    "employee.name[~]" => $searchValue, // Join với employee
+                    "employee.name[~]" => $searchValue, 
                 ]
             ],
             "LIMIT" => [$start, $length],
@@ -89,18 +89,25 @@
         ], $where) ?? [];
 
         // Đếm số bản ghi
-        $count = $app->count("face_employee", ["AND" => $where["AND"]]);
+        // $count = $app->count("face_employee", ["AND" => $where["AND"]]);
+        $count = $app->count("face_employee");
 
         // Log dữ liệu truy vấn để kiểm tra
         error_log("Fetched Face Employees Data: " . print_r($datas, true));
 
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
+            // Chuyển đổi giá trị type thành văn bản
+            $typeLabels = [
+                "1" => $jatbi->lang("Nhân viên nội bộ"),
+                "2" => $jatbi->lang("Khách"),
+                "3" => $jatbi->lang("Danh sách đen"),
+            ];
             return [
                 "checkbox" => "<input class= 'form-check-input checker' type='checkbox' value='{$data['employee_sn']}'>",
                 "employee_sn" => $data['employee_sn'],
                 "name" => $data['name'] ?? 'N/A',
-                "type" => $data['type'] ?? 'N/A',
+                "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"), // Hiển thị nhãn văn bản
                 "img_base64" => "<img src='data:image/jpeg;base64,{$data['img_base64']}' style='max-width: 100px;'>", // Hiển thị ảnh
                 "easy" => $data['easy'] == '1' ? $jatbi->lang("Chất lượng cao") : $jatbi->lang("Chất lượng thấp"),
                 "action" => $app->component("action", [
@@ -262,20 +269,23 @@
         $img_file = $_FILES['img_file'] ?? null;
 
         // Kiểm tra dữ liệu đầu vào
-        if (empty($employee_sn) || empty($easy) || empty($img_file)) {
+        if (empty($employee_sn) || !isset($_POST['easy']) || !in_array($easy, ['0', '1']) ) {
             echo json_encode(["status" => "error", "content" => "Vui lòng không để trống"]);
             return;
         }
 
-        // Kiểm tra lỗi upload file
-        if ($img_file['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(["status" => "error", "content" => "Lỗi khi upload file"]);
-            return;
+        // Lấy dữ liệu hiện tại (chỉ cần trong chế độ chỉnh sửa)
+        $currentData = [];
+        if (!empty($employee_sn)) {
+            $currentData = $app->select("face_employee", ["img_base64"], ["employee_sn" => $employee_sn])[0] ?? [];
         }
-
-        // Chuyển file thành chuỗi Base64
-        $img_content = file_get_contents($img_file['tmp_name']);
-        $img_base64 = base64_encode($img_content);
+        $img_base64 = $currentData['img_base64'] ?? '';
+        
+        // Nếu có file mới, chuyển thành Base64
+        if ($img_file && $img_file['error'] === UPLOAD_ERR_OK) {
+            $img_content = file_get_contents($img_file['tmp_name']);
+            $img_base64 = base64_encode($img_content);
+        }
 
         try {
 
