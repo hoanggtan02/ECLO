@@ -70,7 +70,7 @@
             ];
             
             return [
-                "checkbox" => "<input type='checkbox' value='{$data['sn']}'>",
+                "checkbox" => $app->component("box",["data"=>$data['sn']]),
                 "sn" => $data['sn'],
                 "name" => $data['name'],
                 "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"), // Hiển thị nhãn văn bản
