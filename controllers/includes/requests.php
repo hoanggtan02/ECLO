@@ -125,6 +125,8 @@
                             "name"  => $jatbi->lang("Hồ sơ ra vào"),
                             "router"=> '/manager/checkinout',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/checkinout.php',
+
                         ],
                         'timeperiod'      =>[
                             "name"  => $jatbi->lang("Khung thời gian"),
