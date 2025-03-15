@@ -8,6 +8,7 @@
         $vars['title'] = $jatbi->lang("Khung thời gian");
         $vars['add'] = '/manager/timeperiod-add';
         $vars['deleted'] = '/manager/timeperiod-deleted';
+        $vars['sync'] = '/manager/timeperiod-sync';
         $data = $app->select("timeperiod", ["acTzNumber","name","monStart","monEnd","tueStart","tueEnd","wedStart","wedEnd","thursStart","thursEnd","friStart","friEnd","satStart","satEnd","sunStart","sunEnd"]);
         $vars['data'] = $data;
         echo $app->render('templates/employee/timeperiod.html', $vars);
@@ -24,7 +25,7 @@
         // Nhận dữ liệu từ DataTable
         $draw = $_POST['draw'] ?? 0;
         $start = $_POST['start'] ?? 0;
-        $length = $_POST['length'] ?? 4;
+        $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
         $type = $_POST['type'] ?? '';
     
@@ -33,7 +34,7 @@
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
     
         // Danh sách cột hợp lệ
-        $validColumns = ["acTzNumber","name","monStart","monEnd","tueStart","tueEnd","wedStart","wedEnd","thursStart","thursEnd","friStart","friEnd","satStart","satEnd","sunStart","sunEnd"];
+        $validColumns = ["checkbox","acTzNumber","name","monStart","monEnd","tueStart","tueEnd","wedStart","wedEnd","thursStart","thursEnd","friStart","friEnd","satStart","satEnd","sunStart","sunEnd"];
         $orderColumn = $validColumns[$orderColumnIndex] ?? "acTzNumber";
     
         // Điều kiện lọc dữ liệu
@@ -81,7 +82,7 @@
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
             return [
-                "checkbox" => "<input type='checkbox' class='checker' value='{$data['acTzNumber']}'>",
+                "checkbox" => "<input type='checkbox' class='checker' id=box value='{$data['acTzNumber']}'>",
                 "acTzNumber" => $data['acTzNumber'],
                 "name" => $data['name'],
                 "mon" => "{$data['monStart']} : {$data['monEnd']}",
@@ -112,7 +113,7 @@
         echo $response;
     })->setPermissions(['timeperiod']);
 
-    //Thêm timeperiod
+    //Thêm hoặc Sửa timeperiod
     $app->router("/manager/timeperiod-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Khung thời gian");
         echo $app->render('templates/employee/timeperiod-post.html', $vars, 'global');
@@ -148,8 +149,8 @@
         try {
             // Dữ liệu để lưu vào database
             $insert = [
-                "acTzNumber"   => $acTzNumber,
-                "acTzname" => $acTzname,
+                "acTzNumber" => $acTzNumber,
+                "name" => $acTzname,
                 "monStart" => $app->xss($_POST['monStart'] ?? ''),
                 "monEnd" => $app->xss($_POST['monEnd'] ?? ''),
                 "tueStart" => $app->xss($_POST['tueStart'] ?? ''),
@@ -165,10 +166,7 @@
                 "sunStart" => $app->xss($_POST['sunStart'] ?? ''),
                 "sunEnd" => $app->xss($_POST['sunEnd'] ?? '')
             ];
-            
-            // Thêm dữ liệu vào database
-            //$app->insert("timeperiod", $insert);
-    
+              
             // Ghi log
             $jatbi->logs('timeperiod', 'timeperiod-add', $insert);
     
@@ -204,16 +202,17 @@
                 $apiData, 
                 $headers
             );
-    
+   
             // Giải mã phản hồi từ API
-            $apiResponse = json_decode($response, true);
-    
+            $apiResponse = json_decode($response, true);   
             // Kiểm tra phản hồi từ API
             if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+            // Thêm dữ liệu vào database
+            $app->insert("timeperiod", $insert);
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+                echo json_encode(["status" => "error", "content" => $errorMessage]);
             }
     
         } catch (Exception $e) {
@@ -221,7 +220,6 @@
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
         }
     })->setPermissions(['timeperiod.add']);
-    
 
     //Xóa timeperiod
     $app->router("/manager/timeperiod-deleted", 'GET', function($vars) use ($app, $jatbi) {
@@ -229,51 +227,116 @@
         echo $app->render('templates/common/deleted.html', $vars, 'global');
     })->setPermissions(['timeperiod.deleted']);
     
-    $app->router("/manager/timeperiod-deleted", 'POST', function($vars) use ($app,$jatbi) {
+    $app->router("/manager/timeperiod-deleted", 'POST', function($vars) use ($app, $jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
         ]);
         
-        $acTzNumber = $app->xss($_GET['acTzNumber']);
-
-        if (empty($acTzNumber)) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống: $acTzNumber")]);
-            return;
-        }
-
-        try {
-            //$app->delete("timeperiod", ["acTzNumber" => $acTzNumber]);
-            
+        $acTzNumber = $app->xss($_GET['box']);
+        try {            
             $headers = [
                 'Authorization: Bearer your_token',
                 'Content-Type: application/x-www-form-urlencoded'
             ];
-
             $apiData = [
                 'deviceKey' => '77ed8738f236e8df86',
                 'secret'    => '123456',
-                'acTzNumber'        => $acTzNumber,
+                'acTzNumber' => $acTzNumber,
             ];
-
             $response = $app->apiPost(
                 'http://camera.ellm.io:8190/api/ac_timezone/delete', 
                 $apiData, 
                 $headers
             );
-
             $apiResponse = json_decode($response, true);
     
             // Kiểm tra phản hồi từ API
             if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+                // Xóa dữ liệu trong database
+                if (is_string($acTzNumber)) {
+                    $acTzNumbers = explode(',', $acTzNumber); // Split by comma
+                    foreach ($acTzNumbers as $number) {
+                        $app->delete("timeperiod", ["acTzNumber" => trim($number)]); // Trim to remove extra spaces
+                    }
+                } else {
+                    $app->delete("timeperiod", ["acTzNumber" => $acTzNumber]);
+                }
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-                echo json_encode(["status" => "warning", "content" => "Lưu vào database thành công, nhưng API gặp lỗi: " . $errorMessage]);
+                echo json_encode(["status" => "error", "content" => $errorMessage]);
             }
 
-        }catch (Exception $e) {
+        } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
         }
     })->setPermissions(['timeperiod.deleted']);
+
+
+    //Đồng bộ dữ liệu từ server
+    $app->router("/manager/timeperiod-sync", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xóa Khung thời gian");
+        echo $app->render('templates/common/deleted.html', $vars, 'global');
+    })->setPermissions(['timeperiod.sync']);
+
+    $app->router("/manager/timeperiod-sync", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header(['Content-Type' => 'application/json']);
+
+        try {
+            $headers = [
+                'Authorization: Bearer your_token',
+                'Content-Type: application/x-www-form-urlencoded'
+            ];
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret'    => '123456'
+            ];
+            
+            // Gửi yêu cầu đến API để lấy dữ liệu
+            $response = $app->apiPost(
+                'http://camera.ellm.io:8190/api/ac_timezone/findList', 
+                $apiData, 
+                $headers
+            );
+            
+            $apiResponse = json_decode($response, true);
+            
+            // Kiểm tra phản hồi từ API
+            if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+                $data = $apiResponse['data'] ?? [];
+                $app->delete("timeperiod", []);
+                //Đồng bộ dữ liệu vào database
+                foreach ($data as $item) {
+                    $app->insert("timeperiod", [
+                        "acTzNumber" => $item['acTzNumber'] ?? null,
+                        "name" => $item['name'] ?? '', // Nếu có trường 'name' trong dữ liệu trả về
+                        "monStart" => $item['monStart'] ?? '',
+                        "monEnd" => $item['monEnd'] ?? '',
+                        "tueStart" => $item['tueStart'] ?? '',
+                        "tueEnd" => $item['tueEnd'] ?? '',
+                        "wedStart" => $item['wedStart'] ?? '',
+                        "wedEnd" => $item['wedEnd'] ?? '',
+                        "thursStart" => $item['thursStart'] ?? '',
+                        "thursEnd" => $item['thursEnd'] ?? '',
+                        "friStart" => $item['friStart'] ?? '',
+                        "friEnd" => $item['friEnd'] ?? '',
+                        "satStart" => $item['satStart'] ?? '',
+                        "satEnd" => $item['satEnd'] ?? '',
+                        "sunStart" => $item['sunStart'] ?? '',
+                        "sunEnd" => $item['sunEnd'] ?? ''
+                    ]);
+                }
+                
+                echo json_encode(["status" => "success", "content" => $jatbi->lang("Đồng bộ thành công công")]);
+            } else {
+                $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
+                echo json_encode(["status" => "error", "content" => $errorMessage]);
+            }
+        } catch (Exception $e) {
+            // Xử lý lỗi ngoại lệ
+            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        }
+    })->setPermissions(['timeperiod.sync']);
+
 ?>
