@@ -36,8 +36,24 @@
 		<div class="card-body">
             <div class="custom-buttons d-none">
                 <div class="d-flex align-items-center justify-content-end">
-                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/manager/timeperiod-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm Hoặc Sửa")?></button>
-                    <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/manager/timeperiod-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
+                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" 
+                            data-action="modal" 
+                            data-url="/manager/timeperiod-sync" 
+                            data-callback="reloadTable">
+                        <i class="ti ti-refresh fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Đồng Bộ")?>
+                    </button>
+                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" 
+                            data-action="modal" 
+                            data-checkbox="input.checker" 
+                            data-url="/manager/timeperiod-add">
+                        <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm Hoặc Sửa")?>
+                    </button>
+                    <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" 
+                            data-action="modal" 
+                            data-checkbox="input.checker" 
+                            data-url="/manager/timeperiod-deleted">
+                        <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?>
+                    </button>
                 </div>
             </div>
             <table id="datatable" 
@@ -53,19 +69,16 @@
             style="width:100%">
                 <thead>
                     <tr>
-                        <th data-name="checkbox" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center">
-                            <div class="form-check">
-                                <input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker">
-                            </div></th>                     
+                        <th data-name="checkbox" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><div class="form-check"><input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"></div></th>                     
                         <th data-name="acTzNumber" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("ID")?></th>
                         <th data-name="name" data-orderable="true" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("Name")?></th>
-                        <th data-name="mon" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 2")?></th>                        
-                        <th data-name="tue" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 3")?></th>
-                        <th data-name="wed" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 4")?></th>
-                        <th data-name="thurs" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 5")?></th>
-                        <th data-name="fri" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 6")?></th>
-                        <th data-name="sat" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 7")?></th>
-                        <th data-name="sun" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Chủ nhật")?></th>                        
+                        <th data-name="mon" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 2")?></th>                        
+                        <th data-name="tue" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 3")?></th>
+                        <th data-name="wed" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 4")?></th>
+                        <th data-name="thurs" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 5")?></th>
+                        <th data-name="fri" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 6")?></th>
+                        <th data-name="sat" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Thứ 7")?></th>
+                        <th data-name="sun" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Chủ nhật")?></th>                        
                     </tr>
                 </thead>
         </table>
