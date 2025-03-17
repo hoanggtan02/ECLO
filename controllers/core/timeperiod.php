@@ -207,8 +207,9 @@
             $apiResponse = json_decode($response, true);   
             // Kiểm tra phản hồi từ API
             if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
-            // Thêm dữ liệu vào database
-            $app->insert("timeperiod", $insert);
+                // Thêm dữ liệu vào database
+                $app->insert("timeperiod", $insert);
+                $app->update("timeperiod", $insert, ["acTzNumber" => $acTzNumber]);
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
@@ -305,12 +306,27 @@
             // Kiểm tra phản hồi từ API
             if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
                 $data = $apiResponse['data'] ?? [];
-                $app->delete("timeperiod", []);
+
+                 // Lấy danh sách tất cả acTzNumber từ cơ sở dữ liệu
+                $existingRecords = $app->select("timeperiod", ["acTzNumber"]);
+                $existingAcTzNumbers = array_column($existingRecords, 'acTzNumber'); // Chuyển thành mảng đơn giản
+
+                // Lấy danh sách acTzNumber từ $data
+                $newAcTzNumbers = array_column($data, 'acTzNumber');
+
+                // Tìm các acTzNumber cần xóa (có trong database nhưng không có trong $data)
+                $acTzNumbersToDelete = array_diff($existingAcTzNumbers, $newAcTzNumbers);
+
+                // Xóa các acTzNumber không có trong $data
+                foreach ($acTzNumbersToDelete as $acTzNumber) {
+                    $app->delete("timeperiod", ["acTzNumber" => $acTzNumber]);
+                }
+
                 //Đồng bộ dữ liệu vào database
                 foreach ($data as $item) {
-                    $app->insert("timeperiod", [
+                    $acTzNumber = $item['acTzNumber'];
+                    $insert2 = [
                         "acTzNumber" => $item['acTzNumber'] ?? null,
-                        "name" => $item['name'] ?? '', // Nếu có trường 'name' trong dữ liệu trả về
                         "monStart" => $item['monStart'] ?? '',
                         "monEnd" => $item['monEnd'] ?? '',
                         "tueStart" => $item['tueStart'] ?? '',
@@ -325,7 +341,9 @@
                         "satEnd" => $item['satEnd'] ?? '',
                         "sunStart" => $item['sunStart'] ?? '',
                         "sunEnd" => $item['sunEnd'] ?? ''
-                    ]);
+                    ];
+                    $app->insert("timeperiod", $insert2);
+                    $app->update("timeperiod", $insert2, ["acTzNumber" => $acTzNumber]);
                 }
                 
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Đồng bộ thành công công")]);
