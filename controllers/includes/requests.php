@@ -71,6 +71,7 @@
                             "router"    => '/admin/config',
                             "icon"  => '<i class="fa fa-cog"></i>',
                             "req"   => 'modal-url',
+                            "controllers" => 'controllers/core/system.php',
                         ],
                     ],
                     "controllers"=>"controllers/core/admin.php",

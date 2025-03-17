@@ -1,0 +1,185 @@
+<div class="page-container page-users pb-5">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-3 order-2 order-lg-1">
+        <div class="mb-3 pt-0">
+          <strong class="p-3 d-block"
+            ><?=$jatbi->lang("Thông tin thiết bị")?></strong
+          >
+          <div
+            class="list-group bg-body bg-opacity-50 border-0 list-group-flush shadow rounded-4"
+          >
+            <a
+              href="/admin/config"
+              data-pjax
+              class="p-3 d-block bg-transparent list-group-item-action list-group-item w-100 text-start"
+            >
+              <i class="ti ti-user me-2 btn btn-sm btn-light"></i
+              ><?=$jatbi->lang("Thông tin hệ thống")?>
+            </a>
+            <a
+              href="/admin/config"
+              data-pjax
+              class="p-3 d-block bg-transparent list-group-item-action list-group-item w-100 text-start"
+            >
+              <i class="ti ti-bell me-2 btn btn-sm btn-light"></i
+              ><?=$jatbi->lang("Thông tin cấu hình")?>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-9 order-1 order-lg-2">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+            <ul class="breadcrumb small mb-0">
+              <li class="breadcrumb-item small">
+                <a href="/" class="pjax-load link-secondary"
+                  ><?=$jatbi->lang("Trang chủ")?></a
+                >
+              </li>
+              <li class="breadcrumb-item small text-body" aria-current="page">
+                <?=$title?>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <?php if($router=='system'){ ?>
+        <div class="row justify-content-center">
+          <div class="col-lg-4 col-6 text-center text-body">
+            <!-- Bỏ hình ảnh vì không liên quan đến API -->
+            <h3 class="mt-4 fw-bold">
+              <?php echo htmlspecialchars($data['data']['manufacturer'] ?? 'Unknown Device'); ?>
+            </h3>
+            <p>
+              <?php echo htmlspecialchars($data['data']['deviceKey'] ?? ''); ?>
+            </p>
+          </div>
+        </div>
+        <div class="row g-3 mt-4 justify-content-center">
+          <div class="col-lg-12 col-xl-8">
+            <div
+              class="card bg-body rounded-4 p-4 border-0 shadow bg-opacity-50"
+            >
+              <div class="row g-3">
+                <?php if (isset($data['code']) && $data['code'] === '000'): ?>
+                <div class="col-lg-6">
+                  <span class="fw-bold"
+                    ><?=$jatbi->lang("Hệ điều hành")?>:</span
+                  >
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['os'] . ' ' . $data['data']['osVersion']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"
+                    ><?=$jatbi->lang("Nhà sản xuất")?>:</span
+                  >
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['manufacturer']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("CPU")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['cpu']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("RAM")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['ram']); ?>
+                    MB</span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("ROM")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['rom']); ?>
+                    MB</span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("WiFi MAC")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['wifiMac']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("WAN MAC")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['wanMac']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"
+                    ><?=$jatbi->lang("Phiên bản Firmware")?>:</span
+                  >
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['firmwareVersion']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"
+                    ><?=$jatbi->lang("Phiên bản Face Algorithm")?>:</span
+                  >
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['faceAlgorithmVersion']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"
+                    ><?=$jatbi->lang("Mã phiên bản")?>:</span
+                  >
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['versionCode']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("Kênh")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['channel']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("Số người")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['personCount']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("Số ảnh")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['photoCount']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"><?=$jatbi->lang("Số vân tay")?>:</span>
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['fingerCount']); ?></span
+                  >
+                </div>
+                <div class="col-lg-6">
+                  <span class="fw-bold"
+                    ><?=$jatbi->lang("Số lòng bàn tay")?>:</span
+                  >
+                  <span class="text-semibold"
+                    ><?php echo htmlspecialchars($data['data']['palmCount']); ?></span
+                  >
+                </div>
+                <?php else: ?>
+                <div class="col-12">
+                  <span class="text-danger"
+                    ><?php echo htmlspecialchars($data['msg'] ?? 'Không thể lấy thông tin từ API'); ?></span
+                  >
+                </div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+        </div>
+        <?php } ?>
+      </div>
+    </div>
+  </div>
+</div>
