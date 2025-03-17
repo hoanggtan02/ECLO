@@ -433,3 +433,16 @@ CREATE TABLE timeperiod (
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 
+/** TABLE CHECKINOUT*/;
+
+CREATE TABLE `checkinout` (
+  `id` int(11) NOT NULL,
+  `sn` varchar(255) NOT NULL,
+  `checkinout_list` text NOT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+
+
