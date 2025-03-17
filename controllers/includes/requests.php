@@ -122,7 +122,7 @@
                             "controllers" => 'controllers/core/face_employee.php',
                         ],
                         'checkinout'      =>[
-                            "name"  => $jatbi->lang("Hồ sơ ra vào"),
+                            "name"  => $jatbi->lang("Thời gian ra vào"),
                             "router"=> '/manager/checkinout',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
                             "controllers" => 'controllers/core/checkinout.php',
@@ -153,6 +153,7 @@
                         'checkinout' => $jatbi->lang("Hồ sơ ra vào"),
                         'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
                         'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
+                        'checkinout.sync' => $jatbi->lang("Đồng Bộ"),
                         'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
                         'timeperiod'      =>$jatbi->lang("Khung thời gian"),
                         'timeperiod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
