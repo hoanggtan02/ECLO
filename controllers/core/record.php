@@ -28,6 +28,21 @@
         $personSn = $app->xss($_POST['personSn'] ?? "");
         $personType = $app->xss($_POST['personType'] ?? "");
 
+        // Kiểm tra xem dữ liệu hôm nay đã updata chưa
+        // updateData($app, $jatbi);
+        // $logs = $app->select("logs","*",["dispatch"=>"record","date"=>date('Y-m-d')]);
+        // $log = $app->get("logs", "*", [
+        //     "ORDER" => ["date" => "DESC"], "dispatch"=>"record"
+        // ]);
+        // $d = $log['date'];
+        // $d = date("Y-m-d", strtotime($d)); 
+        // if($d === date('Y-m-d') && $log['action'] === 'record-updateData')
+        // {
+
+        // } else {
+        //     updateData($app, $jatbi);
+        // }
+
         $where = [
             "AND" => [
                 "OR" => [
@@ -42,19 +57,20 @@
             "LIMIT" => [$start, $length],
             "ORDER" => [$orderName => strtoupper($orderDir)]
         ];
+
         if(!empty($startTime)) {
             $where["AND"]["record.createTime[>=]"] = $startTime;
         }
         if(!empty($endTime)) {
             $where["AND"]["record.createTime[<=]"] = $endTime;
         }
-        if(!empty($personSn)) {
-            $where["AND"]["record.personSn"] = $personSn;
-        }
-        if(!empty($personType > -1)) {
-            $where["AND"]["record.personType"] = $personSn;
-        }
-
+        // if(!empty($personSn)) {
+        //     $where["AND"]["record.personSn"] = $personSn;
+        // }
+        // if($personType > -1) {
+        //     $where["AND"]["record.personType"] = $personType;
+        // }
+        
         $count = $app->count("record",[
             "AND" => $where['AND'],
         ]);
@@ -75,7 +91,9 @@
                 "id" => $data['id'],
                 "personName" => $data['personName'],
                 "personSn" => $data['personSn'],
-                "personType" => $data['personType'],
+                "personType" => $data['personType'] == 1 ? "Nhân viên" : 
+                                ($data['personType'] == 2 ? "Khách" : 
+                                ($data['personType'] == 3 ? "Danh sách đen" : "Không xác định")),
                 "createTime" => $data['createTime'],
                 "action" => $app->component("action",[
                     "button" => [
@@ -96,6 +114,7 @@
             "recordsFiltered" => $count,
             "data" => $datas ?? [],
         ]);
+
     })->setPermissions(['record']);
 
     $app->router("/record-delete", 'GET', function($vars) use ($app, $jatbi) {
@@ -123,3 +142,120 @@
         }
       
     })->setPermissions(['record.deleted']);
+
+
+    //Đồng bộ dữ liệu
+    $app->router("/record-find", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Đồng bộ hồ sơ");
+        echo $app->render('templates/record/record-find.html', $vars, 'global');
+    })->setPermissions(['record']);
+    
+    $app->router("/record-find", 'POST', function($vars) use ($app,$jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+
+        $startTime = $app->xss($_POST['startTime'] ?? "");
+        $endTime = $app->xss($_POST['endTime'] ?? "");
+        
+        if(empty($startTime)) {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Vui lòng nhập ngày bắt đầu.")]);
+            exit;
+        }
+        if(empty($endTime)) {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Vui lòng nhập ngày kết thúc.")]);
+            exit;
+        }
+        if($startTime>$endTime) {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Ngày kết thúc không được bé hơn ngày bắt đầu.")]);
+            exit;
+        }
+
+        $app->delete("record", []);
+
+        $startTime = strtotime($startTime) * 1000;
+        $endTime = (strtotime($endTime . " +1 day")) * 1000;
+        $apiResponse = postToAPI($app, $startTime, $endTime);
+
+        // Kiểm tra dữ liệu API có hợp lệ không
+        if (!$apiResponse || !isset($apiResponse['success']) || !$apiResponse['success'] || !isset($apiResponse['data'])) {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
+        } else {
+            foreach ($apiResponse['data'] as $data) {
+                $check = $app->select("record","*",["id"=>$data['id']]);
+                if(count($check) == 0){
+                    $insert = [
+                        "id" => $data['id'],
+                        "personName" => $data['personName'] ?? "Không rõ",
+                        "personSn" => $data['personSn'] ?? "",
+                        "personType" => $data['personType'],
+                        "createTime" => date("Y-m-d H:i:s", $data['createTime'] / 1000), // Chuyển timestamp thành thời gian đọc được
+                        "createDate" => date("Y-m-d H:i:s"),
+                    ];
+                    $app->insert("record",$insert);
+                } 
+            }
+            $jatbi->logs('record','record-find',$apiResponse);
+            echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Dữ liệu được cập nhật.")]);
+            exit;
+        } 
+      
+    })->setPermissions(['record']);
+
+
+    // $app->router("/record-update", 'POST', function($vars) use ($app,$jatbi) {
+    //     $app->header([
+    //         'Content-Type' => 'application/json',
+    //     ]);
+    //     updateData($app, $jatbi);
+    //     echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Dữ liệu được cập nhật.")]);
+      
+    // })->setPermissions(['record']);
+
+    function postToAPI($app, $startTime, $endTime) {
+        $headers = [
+            'Authorization: Bearer your_token',
+            'Content-Type: application/x-www-form-urlencoded'
+        ];
+        
+        $apiData = [
+            'deviceKey' => '77ed8738f236e8df86',
+            'secret'    => '123456',
+            'startTime' => $startTime,
+            "endTime"   => $endTime,
+            // "length"    => $length, 
+        ];
+        
+        $response = $app->apiPost('http://camera.ellm.io:8190/api/record/findList', $apiData, $headers);
+        return json_decode($response, true);
+    }
+
+    function updateData($app, $jatbi) {
+
+        $startTime = strtotime('-2 days') * 1000;
+        $endTime = strtotime("tomorrow") * 1000;
+
+        $app->delete("record", []);
+
+        $apiResponse = postToAPI($app, $startTime, $endTime);
+        
+        if (!$apiResponse || !isset($apiResponse['success']) || !$apiResponse['success'] || !isset($apiResponse['data'])) {// Kiểm tra dữ liệu API có hợp lệ không
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra")]);
+        } else {
+            foreach ($apiResponse['data'] as $data) {
+                $check = $app->select("record","*",["id"=>$data['id']]);
+                if(count($check) == 0){
+                    $insert = [
+                        "id" => $data['id'],
+                        "personName" => $data['personName'] ?? "Không rõ",
+                        "personSn" => $data['personSn'] ?? "",
+                        "personType" => $data['personType'],
+                        "createTime" => date("Y-m-d H:i:s", $data['createTime'] / 1000), // Chuyển timestamp thành thời gian đọc được
+                        "createDate" => date("Y-m-d H:i:s"),
+                    ];
+                    $app->insert("record",$insert);
+                } 
+            }
+            $jatbi->logs('record','record-updateData',$apiResponse);
+        } 
+    }
