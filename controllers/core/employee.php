@@ -32,7 +32,7 @@
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
     
         // Danh sách cột hợp lệ
-        $validColumns = ["sn", "name", "type"];
+        $validColumns = ["checkbox","sn", "name", "type"];
         $orderColumn = $validColumns[$orderColumnIndex] ?? "sn";
     
         // Điều kiện lọc dữ liệu
