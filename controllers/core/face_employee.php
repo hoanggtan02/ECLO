@@ -387,4 +387,114 @@
             echo json_encode(["status" => "error", "content" => "Lỗi hệ thống: " . $e->getMessage()]);
         }
     })->setPermissions(['face_employee.deleted']);
+
+
+    $app->router("/manager/reload-api", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Đồng bộ nhân viên");
+
+        echo $app->render('templates/common/reload-api.html', $vars, 'global');
+    })->setPermissions(['face_employee']);
+
+    $app->router("/manager/reload-api", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+        try {
+            // Bước 1: Xóa toàn bộ dữ liệu trong bảng face_employee
+            $app->delete("face_employee", []); // Không truyền điều kiện để xóa toàn bộ
+    
+            // Bước 2: Chuẩn bị dữ liệu gửi đi cho API findList
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret' => '123456',
+                'index' => 1,
+                'length' => 1000
+            ];
+    
+            $headers = [
+                'Content-Type: application/x-www-form-urlencoded'
+                // Nếu API yêu cầu token, thêm header Authorization
+                // 'Authorization: Bearer your_token'
+            ];
+    
+            // Gửi yêu cầu POST đến API findList để lấy danh sách nhân viên
+            $response = $app->apiPost(
+                'http://camera.ellm.io:8190/api/person/findList',
+                $apiData,
+                $headers
+            );
+    
+            // Kiểm tra phản hồi từ API findList
+            $apiResponse = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                echo json_encode(["status" => "error", "content" => "Đồng bộ thất bại! Lỗi: Dữ liệu JSON không hợp lệ từ API findList."]);
+                return;
+            }
+    
+            if (empty($apiResponse)) {
+                echo json_encode(["status" => "error", "content" => "Đồng bộ thất bại! Lỗi: Không có dữ liệu từ API findList."]);
+                return;
+            }
+    
+            // Đếm số bản ghi thành công và lỗi (chỉ dùng nội bộ, không hiển thị)
+            $successCount = 0;
+            $errorCount = 0;
+    
+            // Kiểm tra nếu API trả về dữ liệu dạng {"data": [...]} thì lấy mảng "data"
+            $data = isset($apiResponse['data']) ? $apiResponse['data'] : $apiResponse;
+    
+            // Bước 3: Duyệt dữ liệu từ API và chỉ thêm mới vào bảng face_employee
+            foreach ($data as $item) {
+                try {
+    
+                    // Chuẩn bị dữ liệu gửi đi cho API face/find để lấy img_base64 và easy
+                    $faceApiData = [
+                        'deviceKey' => '77ed8738f236e8df86',
+                        'secret' => '123456',
+                        'personSn' => $item['sn']
+                    ];
+    
+                    // Gửi yêu cầu POST đến API face/find
+                    $faceResponse = $app->apiPost(
+                        'http://camera.ellm.io:8190/api/face/find',
+                        $faceApiData,
+                        $headers
+                    );
+                    
+                    //check api
+                    $apifaceResponse = json_decode($faceResponse, true);
+                    // Kiểm tra img_base64 và easy trong phản hồi
+                    if (!empty($apifaceResponse['success']) && $apifaceResponse['success'] === true) {
+                        // Kiểm tra nếu API trả về dữ liệu dạng {"data": {...}} thì lấy mảng "data"
+                        $faceData = isset($apifaceResponse['data']) ? $apifaceResponse['data'] : $apifaceResponse;
+
+                        // Thêm mới vào bảng face_employee
+                        $app->insert("face_employee", [
+                            "employee_sn" => $item['sn'],
+                            "img_base64" => $faceData['imgBase64']
+                        ]);
+
+                        $successCount++;
+                    }
+
+                    
+                    
+                } catch (Exception $e) {
+                    $errorCount++;
+                    // Tiếp tục xử lý các bản ghi khác, không trả về ngay
+                }
+            }
+    
+            // Bước 4: Xác định thành công hoặc thất bại
+            if ($errorCount === 0) {
+                echo json_encode(["status" => "success", "content" => "Đồng bộ thành công"]);
+            } else {
+                echo json_encode(["status" => "error", "content" => "Đồng bộ thất bại! Lỗi: Có $errorCount bản ghi không xử lý được."]);
+            
+            }
+    
+        } catch (Exception $e) {
+            echo json_encode(["status" => "error", "content" => "Đồng bộ thất bại! Lỗi: " . $e->getMessage()]);
+        }
+    })->setPermissions(['face_employee']);
 ?>
