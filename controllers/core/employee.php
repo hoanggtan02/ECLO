@@ -13,12 +13,14 @@
     })->setPermissions(['employee']);
 
     $app->router("/manager/employee", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header([
-            'Content-Type' => 'application/json',
-        ]);
+        $app->header(['Content-Type' => 'application/json']);
     
-        // Kiểm tra dữ liệu nhận từ DataTables
-        error_log("Received POST Data: " . print_r($_POST, true));
+        // Lấy danh sách nhóm từ bảng group-access
+        $groups = $app->select("group-access", ['acGroupNumber', 'name']);
+        $groupMap = [];
+        foreach ($groups as $group) {
+            $groupMap[$group['acGroupNumber']] = $group['name']; // Lưu tên nhóm theo mã
+        }
     
         // Nhận dữ liệu từ DataTable
         $draw = $_POST['draw'] ?? 0;
@@ -32,7 +34,7 @@
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
     
         // Danh sách cột hợp lệ
-        $validColumns = ["checkbox","sn", "name", "type"];
+        $validColumns = ["checkbox", "sn", "name", "type", "acGroupNumber"];
         $orderColumn = $validColumns[$orderColumnIndex] ?? "sn";
     
         // Điều kiện lọc dữ liệu
@@ -55,71 +57,57 @@
         $count = $app->count("employee", ["AND" => $where["AND"]]);
     
         // Truy vấn danh sách nhân viên
-        $datas = $app->select("employee", ['sn', 'name', 'type'], $where) ?? [];
-    
-        // Log dữ liệu truy vấn để kiểm tra
-        error_log("Fetched Employees Data: " . print_r($datas, true));
+        $datas = $app->select("employee", ['sn', 'name', 'type', 'acGroupNumber'], $where) ?? [];
     
         // Xử lý dữ liệu đầu ra
-        $formattedData = array_map(function($data) use ($app, $jatbi) {
+        $formattedData = array_map(function($data) use ($app, $jatbi, $groupMap) {
             // Chuyển đổi giá trị type thành văn bản
             $typeLabels = [
                 "1" => $jatbi->lang("Nhân viên nội bộ"),
                 "2" => $jatbi->lang("Khách"),
                 "3" => $jatbi->lang("Danh sách đen"),
             ];
-            
+    
+            // Lấy tên nhóm từ bảng group-access (nếu có)
+            $groupName = $groupMap[$data['acGroupNumber']] ?? $jatbi->lang("Không xác định");
+    
             return [
-                "checkbox" => $app->component("box",["data"=>$data['sn']]),
+                "checkbox" => $app->component("box", ["data" => $data['sn']]),
                 "sn" => $data['sn'],
                 "name" => $data['name'],
-                "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"), // Hiển thị nhãn văn bản
+                "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
+                "acGroupNumber" => $groupName,
                 "action" => $app->component("action", [
                     "button" => [
                         [
                             'type' => 'button',
                             'name' => $jatbi->lang("Sửa"),
                             'permission' => ['employee.edit'],
-                            'action' => ['data-url' => '/manager/employee-edit?id='.$data['sn'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/manager/employee-edit?id=' . $data['sn'], 'data-action' => 'modal']
                         ],
                         [
                             'type' => 'button',
                             'name' => $jatbi->lang("Xóa"),
                             'permission' => ['employee.deleted'],
-                            'action' => ['data-url' => '/manager/employee-deleted?id='.$data['sn'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/manager/employee-deleted?id=' . $data['sn'], 'data-action' => 'modal']
                         ],
                     ]
-                ]),            
+                ]),
             ];
         }, $datas);
-
     
-        // Log dữ liệu đã format trước khi JSON encode
-        error_log("Formatted Data: " . print_r($formattedData, true));
-    
-        // Kiểm tra lỗi JSON
-        $response = json_encode([
+        // Trả về dữ liệu JSON
+        echo json_encode([
             "draw" => $draw,
             "recordsTotal" => $count,
             "recordsFiltered" => $count,
             "data" => $formattedData
         ]);
-    
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("JSON Encode Error: " . json_last_error_msg());
-        }
-    
-        echo $response;
     })->setPermissions(['employee']);
-
-
     
     
     $app->router("/manager/employee-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Nhân viên");
-        $vars['data'] = [
-            "type" => '1',
-        ];
         echo $app->render('templates/employee/employee-post.html', $vars,'global');
     })->setPermissions(['employee.add']);
     
@@ -128,9 +116,10 @@
         $app->header(['Content-Type' => 'application/json']);
     
         // Lấy dữ liệu từ form và kiểm tra XSS
-        $sn   = $app->xss($_POST['sn'] ?? '');
-        $name = $app->xss($_POST['name'] ?? '');
-        $type = (int) ($app->xss($_POST['type'] ?? ''));
+        $sn            = $app->xss($_POST['sn'] ?? '');
+        $name          = $app->xss($_POST['name'] ?? '');
+        $type          = (int) ($app->xss($_POST['type'] ?? ''));
+        $acGroupNumber = (int) $app->xss($_POST['acGroupNumber'] ?? '');    
     
         // Kiểm tra dữ liệu đầu vào
         if (empty($sn) || empty($name) || empty($type)) {
@@ -141,9 +130,10 @@
         try {
             // Dữ liệu để lưu vào database
             $insert = [
-                "sn"   => $sn,
-                "name" => $name,
-                "type" => $type,
+                "sn"            => $sn,
+                "name"          => $name,
+                "type"          => $type,
+                "acGroupNumber" => $acGroupNumber,
             ];
             
             // Thêm dữ liệu vào database
@@ -154,11 +144,12 @@
     
             // Dữ liệu gửi lên API
             $apiData = [
-                'deviceKey' => '77ed8738f236e8df86',
-                'secret'    => '123456',
-                'sn'        => $sn,
-                'name'      => $name,
-                'type'      => $type,
+                'deviceKey'     => '77ed8738f236e8df86',
+                'secret'        => '123456',
+                'sn'            => $sn,
+                'name'          => $name,
+                'type'          => $type,
+                'acGroupNumber' => $acGroupNumber,
             ];
             
             $headers = [
@@ -188,6 +179,7 @@
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
         }
     })->setPermissions(['employee.add']);
+    
     
 
     //Xóa employee
@@ -311,18 +303,20 @@
         }
     
         // Kiểm tra dữ liệu đầu vào
-        $name = isset($_POST['name']) ? $app->xss($_POST['name']) : '';
-        $type = isset($_POST['type']) ? $app->xss($_POST['type']) : '';
+        $name          = isset($_POST['name']) ? $app->xss($_POST['name']) : '';
+        $type          = isset($_POST['type']) ? $app->xss($_POST['type']) : '';
+        $acGroupNumber = isset($_POST['acGroupNumber']) ? $app->xss($_POST['acGroupNumber']) : '';
     
-        if ($name === '' || $type === '') {
+        if ($name === '' || $type === '' || $acGroupNumber === '') {
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
             return;
         }
     
         // Cập nhật dữ liệu trong database
         $update = [
-            "name" => $name,
-            "type" => $type,
+            "name"          => $name,
+            "type"          => $type,
+            "acGroupNumber" => $acGroupNumber,
         ];
     
         $app->update("employee", $update, ["sn" => $sn]);
@@ -337,11 +331,12 @@
         ];
     
         $apiData = [
-            'deviceKey' => '77ed8738f236e8df86',
-            'secret'    => '123456',
-            'sn'        => $sn,
-            'name'      => $name,
-            'type'      => $type,
+            'deviceKey'     => '77ed8738f236e8df86',
+            'secret'        => '123456',
+            'sn'            => $sn,
+            'name'          => $name,
+            'type'          => $type,
+            'acGroupNumber' => $acGroupNumber,
         ];
     
         $response = $app->apiPost(
@@ -363,11 +358,10 @@
         }
     })->setPermissions(['employee.edit']);
     
+    
      
     $app->router("/manager/employee-edit", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header([
-            'Content-Type' => 'application/json',
-        ]);
+        $app->header(['Content-Type' => 'application/json']);
     
         // Lấy mã nhân viên từ request
         $sn = isset($_POST['sn']) ? $app->xss($_POST['sn']) : null;
@@ -384,11 +378,12 @@
             return;
         }
     
-        // Kiểm tra dữ liệu đầu vào
+        // Nhận dữ liệu từ request
         $name = isset($_POST['name']) ? $app->xss($_POST['name']) : '';
         $type = isset($_POST['type']) ? $app->xss($_POST['type']) : '';
+        $acGroupNumber = isset($_POST['acGroupNumber']) ? $app->xss($_POST['acGroupNumber']) : '';
     
-        if ($name === '' || $type === '') {
+        if ($name === '' || $type === '' || $acGroupNumber === '') {
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
             return;
         }
@@ -397,6 +392,7 @@
         $update = [
             "name" => $name,
             "type" => $type,
+            "acGroupNumber" => $acGroupNumber
         ];
     
         $app->update("employee", $update, ["sn" => $sn]);
@@ -416,6 +412,7 @@
             'sn'        => $sn,
             'name'      => $name,
             'type'      => $type,
+            'acGroupNumber' => $acGroupNumber 
         ];
     
         $response = $app->apiPost(
@@ -436,7 +433,7 @@
             ]);
         }
     })->setPermissions(['employee.edit']);
-
+    
 
     //Động bộ hóa API
     $app->router("/manager/employee-reload", 'GET', function($vars) use ($app, $jatbi) {
@@ -447,7 +444,7 @@
 
     $app->router("/manager/employee-reload", 'POST', function($vars) use ($app, $jatbi) {
         $app->header(['Content-Type' => 'application/json']);
- 
+    
         // Tham số truyền vào API
         $params = [
             "deviceKey" => "77ed8738f236e8df86",
@@ -473,8 +470,8 @@
     
         $employeesFromAPI = $employeesFromAPI['data'];
     
-        // Lấy danh sách nhân viên hiện có trong database
-        $employeesFromDB = $app->select("employee", ["sn", "name", "type"]);
+        // Lấy danh sách nhân viên hiện có trong database (thêm cột acGroupNumber)
+        $employeesFromDB = $app->select("employee", ["sn", "name", "type", "acGroupNumber"]);
         $dbEmployeeMap = [];
         foreach ($employeesFromDB as $employee) {
             $dbEmployeeMap[$employee['sn']] = $employee;
@@ -491,14 +488,18 @@
             $sn = $employee['sn'];
             $name = $employee['name'];
             $type = $employee['type'];
-    
+            $acGroupNumber = $employee['acGroupNumber'] ?? 0;
             if (isset($dbEmployeeMap[$sn])) {
                 // Nếu đã tồn tại, kiểm tra xem có thay đổi không
-                if ($dbEmployeeMap[$sn]['name'] !== $name || $dbEmployeeMap[$sn]['type'] != $type) {
+                if ($dbEmployeeMap[$sn]['name'] !== $name || 
+                    $dbEmployeeMap[$sn]['type'] != $type || 
+                    $dbEmployeeMap[$sn]['acGroupNumber'] != $acGroupNumber) {
+                    
                     $updateData[] = [
                         "sn" => $sn,
                         "name" => $name,
-                        "type" => $type
+                        "type" => $type,
+                        "acGroupNumber" => $acGroupNumber
                     ];
                     $updated++;
                 } else {
@@ -509,7 +510,8 @@
                 $insertData[] = [
                     "sn" => $sn,
                     "name" => $name,
-                    "type" => $type
+                    "type" => $type,
+                    "acGroupNumber" => $acGroupNumber
                 ];
                 $added++;
             }
@@ -519,7 +521,8 @@
         foreach ($updateData as $update) {
             $app->update("employee", [
                 "name" => $update['name'],
-                "type" => $update['type']
+                "type" => $update['type'],
+                "acGroupNumber" => $update['acGroupNumber']
             ], ["sn" => $update['sn']]);
         }
     
@@ -527,15 +530,14 @@
         if (!empty($insertData)) {
             $app->insert("employee", $insertData);
         }
-
     
-        echo json_encode(["status" => "success","content" => "Đồng bộ thành công",
+        echo json_encode(["status" => "success", "content" => "Đồng bộ thành công",
             "added" => $added,
             "updated" => $updated,
             "skipped" => $skipped
         ]);
-        
     })->setPermissions(['employee']);
+    
     
     
 
