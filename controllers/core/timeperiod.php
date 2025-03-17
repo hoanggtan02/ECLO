@@ -277,7 +277,7 @@
     //Đồng bộ dữ liệu từ server
     $app->router("/manager/timeperiod-sync", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Xóa Khung thời gian");
-        echo $app->render('templates/common/deleted.html', $vars, 'global');
+        echo $app->render('templates/common/restore.html', $vars, 'global');
     })->setPermissions(['timeperiod.sync']);
 
     $app->router("/manager/timeperiod-sync", 'POST', function($vars) use ($app, $jatbi) {
