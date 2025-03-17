@@ -29,7 +29,7 @@ $timeperiods = $app->select("timeperiod", ["acTzNumber"]);
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("acTzNumber1")?></label>
                                 <select data-select class="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%" name="acTzNumber1">
-                                    <option value=""><?=$jatbi->lang("Chọn acTzNumber1")?></option>
+                                    <option value="0"><?=$jatbi->lang("Chọn acTzNumber1")?></option>
                                     <?php
                                     foreach ($timeperiods as $tp) {
                                         $selected = ($data['acTzNumber1'] ?? '') == $tp['acTzNumber'] ? 'selected' : '';
@@ -43,7 +43,7 @@ $timeperiods = $app->select("timeperiod", ["acTzNumber"]);
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("acTzNumber2")?></label>
                                 <select data-select class="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%" name="acTzNumber2">
-                                    <option value=""><?=$jatbi->lang("Chọn acTzNumber2")?></option>
+                                    <option value="0"><?=$jatbi->lang("Chọn acTzNumber2")?></option>
                                     <?php
                                     foreach ($timeperiods as $tp) {
                                         $selected = ($data['acTzNumber2'] ?? '') == $tp['acTzNumber'] ? 'selected' : '';
@@ -57,7 +57,7 @@ $timeperiods = $app->select("timeperiod", ["acTzNumber"]);
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("acTzNumber3")?></label>
                                 <select data-select class="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%" name="acTzNumber3">
-                                    <option value=""><?=$jatbi->lang("Chọn acTzNumber3")?></option>
+                                    <option value="0"><?=$jatbi->lang("Chọn acTzNumber3")?></option>
                                     <?php
                                     foreach ($timeperiods as $tp) {
                                         $selected = ($data['acTzNumber3'] ?? '') == $tp['acTzNumber'] ? 'selected' : '';
