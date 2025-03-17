@@ -223,6 +223,12 @@ $app->router("/manager/checkinout-add", 'POST', function($vars) use ($app, $jatb
     }
 
     try {
+        // Kiểm tra xem sn đã tồn tại trong bảng checkinout 
+        $existingRecord = $app->select("checkinout", ["id"], ["sn" => $sn]);
+        if (!empty($existingRecord)) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Nhân viên đã được thêm vào danh sách")]);
+            return;
+        }
         $apiData = [
             'deviceKey' => '77ed8738f236e8df86',
             'secret' => '123456',
@@ -264,8 +270,8 @@ $app->router("/manager/checkinout-add", 'POST', function($vars) use ($app, $jatb
     }
 })->setPermissions(['checkinout.add']);
 
-//sửa thời gian ra vào GET
 
+// Sửa thời gian ra vào (GET)
 $app->router("/manager/checkinout-edit", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $id = $app->xss($_GET['id'] ?? '');
     $vars['title'] = $jatbi->lang("Sửa thời gian ra vào");
@@ -275,16 +281,24 @@ $app->router("/manager/checkinout-edit", 'GET', function($vars) use ($app, $jatb
         return;
     }
 
+    // Lấy dữ liệu từ bảng checkinout
     $data = $app->select("checkinout", ["id", "sn", "checkinout_list", "updated_at"], ["id" => $id]);
     if (empty($data)) {
         $app->error(404, $jatbi->lang("Không tìm thấy dữ liệu"));
         return;
     }
 
-    // Truy vấn danh sách nhân viên từ bảng employee
+    // Lấy danh sách nhân viên từ bảng employee
     $employees = $app->select("employee", ["sn", "name"]);
-    $vars['employees'] = $employees;
+    $employeeMap = [];
+    foreach ($employees as $employee) {
+        $employeeMap[$employee['sn']] = $employee['name'];
+    }
 
+    // Thêm tên nhân viên vào dữ liệu, với giá trị mặc định nếu không tìm thấy
+    $data[0]['employee_name'] = isset($employeeMap[$data[0]['sn']]) ? $employeeMap[$data[0]['sn']] : "Không xác định (" . ($data[0]['sn'] ?? 'N/A') . ")";
+
+    $vars['employees'] = $employees;
     $vars['data'] = $data[0];
     echo $app->render('templates/employee/checkinout-post.html', $vars, 'global');
 })->setPermissions(['checkinout.edit']);

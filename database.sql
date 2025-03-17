@@ -191,7 +191,7 @@ CREATE TABLE `permissions` (
 --
 
 INSERT INTO `permissions` (`id`, `name`, `permissions`, `status`, `active`, `deleted`) VALUES
-(1, 'Quản trị viên', '{\"accounts\":\"accounts\",\"accounts.add\":\"accounts.add\",\"accounts.edit\":\"accounts.edit\",\"accounts.deleted\":\"accounts.deleted\",\"permission\":\"permission\",\"permission.add\":\"permission.add\",\"permission.edit\":\"permission.edit\",\"permission.deleted\":\"permission.deleted\",\"blockip\":\"blockip\",\"blockip.add\":\"blockip.add\",\"blockip.edit\":\"blockip.edit\",\"blockip.deleted\":\"blockip.deleted\",\"config\":\"config\",\"logs\":\"logs\",\"trash\":\"trash\"}', 'A', '48a81d0b-c0e8-4166-8cb3-e6fb007118f6', 0),
+(1, 'Quản trị viên', '{\"accounts\":\"accounts\",\"accounts.add\":\"accounts.add\",\"accounts.edit\":\"accounts.edit\",\"accounts.deleted\":\"accounts.deleted\",\"permission\":\"permission\",\"permission.add\":\"permission.add\",\"permission.edit\":\"permission.edit\",\"permission.deleted\":\"permission.deleted\",\"blockip\":\"blockip\",\"blockip.add\":\"blockip.add\",\"blockip.edit\":\"blockip.edit\",\"blockip.deleted\":\"blockip.deleted\",\"checkinout":"checkinout\",\"checkinout.add\":\"checkinout.add\",\"checkinout.edit\":\"checkinout.edit\",\"checkinout.deleted\":\"checkinout.deleted\"\"config\":\"config\",\"logs\":\"logs\",\"trash\":\"trash\"}', 'A', '48a81d0b-c0e8-4166-8cb3-e6fb007118f6', 0),
 (2, 'ok', '{\"accounts\":\"accounts\",\"accounts.add\":\"accounts.add\",\"accounts.edit\":\"accounts.edit\",\"accounts.deleted\":\"accounts.deleted\",\"permission\":\"permission\",\"permission.add\":\"permission.add\",\"permission.edit\":\"permission.edit\",\"permission.deleted\":\"permission.deleted\",\"blockip\":\"blockip\",\"blockip.add\":\"blockip.add\",\"blockip.edit\":\"blockip.edit\",\"blockip.deleted\":\"blockip.deleted\",\"config\":\"config\",\"logs\":\"logs\",\"trash\":\"trash\"}', 'A', '7b850871-8496-422e-aff6-ed26cb5c245a', 0),
 (3, 'asdasd', '{\"accounts\":\"accounts\",\"accounts.add\":\"accounts.add\",\"accounts.edit\":\"accounts.edit\",\"accounts.deleted\":\"accounts.deleted\",\"permission\":\"permission\",\"permission.add\":\"permission.add\",\"permission.edit\":\"permission.edit\",\"permission.deleted\":\"permission.deleted\",\"blockip\":\"blockip\",\"blockip.add\":\"blockip.add\",\"blockip.edit\":\"blockip.edit\",\"blockip.deleted\":\"blockip.deleted\",\"config\":\"config\",\"logs\":\"logs\",\"trash\":\"trash\"}', 'A', '3e722113-e438-4291-a991-0dca63117c31', 1);
 
@@ -410,3 +410,39 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+/** Creat table timeperiod */;
+
+CREATE TABLE timeperiod (
+    acTzNumber VARCHAR(300) NOT NULL PRIMARY KEY,
+    name VARCHAR(300) NOT NULL,
+    monStart VARCHAR(300) NOT NULL,
+    monEnd VARCHAR(300) NOT NULL,
+    tueStart VARCHAR(300) NOT NULL,
+    tueEnd VARCHAR(300) NOT NULL,
+    wedStart VARCHAR(300) NOT NULL,
+    wedEnd VARCHAR(300) NOT NULL,
+    thursStart VARCHAR(300) NOT NULL,
+    thursEnd VARCHAR(300) NOT NULL,
+    friStart VARCHAR(300) NOT NULL,
+    friEnd VARCHAR(300) NOT NULL,
+    satStart VARCHAR(300) NOT NULL,
+    satEnd VARCHAR(300) NOT NULL,
+    sunStart VARCHAR(300) NOT NULL,
+    sunEnd VARCHAR(300) NOT NULL
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+
+/** TABLE CHECKINOUT*/;
+
+CREATE TABLE `checkinout` (
+  `id` int(11) NOT NULL,
+  `sn` varchar(255) NOT NULL,
+  `checkinout_list` text NOT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+
+
