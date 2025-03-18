@@ -68,7 +68,7 @@
                         ],
                         'config'    => [
                             "name"  => $jatbi->lang("Cấu hình"),
-                            "router"    => '/admin/config',
+                            "router"    => '/admin/device-information',
                             "icon"  => '<i class="fa fa-cog"></i>',
                             "req"   => 'modal-url',
                             "controllers" => 'controllers/core/system.php',
