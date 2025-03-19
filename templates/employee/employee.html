@@ -1,95 +1,237 @@
 <div class="container">
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
-            <ul class="breadcrumb small mb-0">
-                <li class="breadcrumb-item small">
-                    <a href="/" class="pjax-load link-secondary">Trang chủ</a>
-                </li>
-                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title?></li>
-            </ul>
-        </div>
-        <div class="filter-search">
-            <div class="d-flex align-items-center justify-content-end">
-                <div class="dropdown"> 
-                    <button class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" >
-                        <i class="ti ti-filter fs-5 me-2"></i> Điều kiện lọc
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width bg-blur" style="--min-width:300px;">
-                        <div class="fw-semibold py-2 px-3">Điều kiện lọc</div>
-                        <hr class="border-secondary border-opacity-50 my-2">
-                        <div class="px-3">
-                            <select name="type" class="form-select filter-name mt-2">
-                                <option value="">Loại nhân viên</option>
-                                <option value="1">Nhân viên nội bộ</option>
-                                <option value="2">Khách</option>
-                                <option value="3">Danh sách đen</option>
-                            </select>
-                        </div>
-                        <hr class="border-secondary border-opacity-50 my-2">
-                        <div class="px-3 py-2 text-end w-100">
-                            <button type="button" class="btn btn-light px-3 py-2 rounded-pill reset-filter">Làm mới</button>
-                            <button type="button" class="btn btn-primary px-3 py-2 rounded-pill button-filter">Tìm</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+      <ul class="breadcrumb small mb-0">
+        <li class="breadcrumb-item small">
+          <a href="/" class="pjax-load link-secondary">Trang chủ</a>
+        </li>
+        <li class="breadcrumb-item small text-body" aria-current="page">
+          <?=$title?>
+        </li>
+      </ul>
     </div>
-    <?php if($jatbi->permission(['employee.deleted']) == 'true' || $jatbi->permission(['employee.add']) == 'true'){ ?>
-        <div class="position-fixed bottom right z-3 dropup-center dropup" style="--bottom:20px;--right:20px">
-            <button class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center " style="--width:60px;--height:60px;" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="ti ti-menu-2 fs-2" aria-hidden="true"></i>
-            </button>
-            <ul class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2" style="--min-width:100%">
-                <?php if($jatbi->permission(['employee.deleted']) == 'true'){ ?>
-                <li class="my-2">
-                    <a class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-checkbox="input.checker" data-url="/manager/employee-deleted" style="--width:50px;--height:50px;">
-                        <i class="ti ti-trash fs-3" aria-hidden="true"></i>
-                    </a>
-                </li>
-                <?php } ?>
-                <?php if($jatbi->permission(['employee.add']) == 'true'){ ?>
-                <li class="my-2">
-                    <a class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-url="/manager/employee-add" style="--width:50px;--height:50px;">
-                        <i class="ti ti-plus fs-3" aria-hidden="true"></i>
-                    </a>
-                </li>
-                <?php } ?>
-            </ul>
-        </div>
-        <?php } ?>
-    <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
-        <div class="card-body">
-            <div class="custom-buttons d-none">  
-                <div class="d-flex align-items-center justify-content-end">
-                    <button class="btn rounded-pill btn-sm btn-success  d-flex align-items-center me-1" data-action="modal" data-url="/manager/employee-reload"><i class="ti ti-reload fs-6 me-1"></i> Đồng bộ API</button>
-                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/manager/employee-add"><i class="ti ti-plus fs-6 me-1"></i> Thêm</button>
-                    <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/manager/employee-deleted"><i class="ti ti-trash fs-6 me-1"></i> Xóa</button>
-                </div>
+    <div class="filter-search">
+      <div class="d-flex align-items-center justify-content-end">
+        <div class="dropdown">
+          <button
+            class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            data-bs-auto-close="outside"
+          >
+            <i class="ti ti-filter fs-5 me-2"></i> Điều kiện lọc
+          </button>
+          <div
+            class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width bg-blur"
+            style="--min-width: 300px"
+          >
+            <div class="fw-semibold py-2 px-3">Điều kiện lọc</div>
+            <hr class="border-secondary border-opacity-50 my-2" />
+            <div class="px-3">
+              <select name="type" class="form-select filter-name mt-2">
+                <option value="">Loại nhân viên</option>
+                <option value="1">Nhân viên nội bộ</option>
+                <option value="2">Khách</option>
+                <option value="3">Danh sách đen</option>
+              </select>
             </div>
-            <table id="datatable" 
-                    data-table 
-                    class="table align-middle" 
-                    data-type="POST" 
-                    data-server="true" 
-                    data-processing="true" 
-                    data-page-length="10"
-                    data-searching="true"
-                    data-paging="true"
-                    data-state-save='true'
-                    style="width:100%">
-                <thead>
-                    <tr>
-                        <th data-name="checkbox" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><div class="form-check"><input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"></div></th>
-                        <th data-name="sn" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("ID")?></th>
-                        <th data-name="name" data-orderable="true" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("Tên")?></th>
-                        <th data-name="type" data-orderable="true" class="text-nowrap">Loại</th>
-                        <th data-name="acGroupNumber" data-orderable="true" class="text-nowrap">Nhóm</th>
-                        <th data-name="action" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-end"><?=$jatbi->lang("Tùy chọn")?></th>
-                    </tr>
-                </thead>
-            </table>
+            <hr class="border-secondary border-opacity-50 my-2" />
+            <div class="px-3 py-2 text-end w-100">
+              <button
+                type="button"
+                class="btn btn-light px-3 py-2 rounded-pill reset-filter"
+              >
+                Làm mới
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary px-3 py-2 rounded-pill button-filter"
+              >
+                Tìm
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
+  <?php if($jatbi->permission(['employee.deleted']) == 'true' ||
+  $jatbi->permission(['employee.add']) == 'true'){ ?>
+  <div
+    class="position-fixed bottom right z-3 dropup-center dropup"
+    style="--bottom: 20px; --right: 20px"
+  >
+    <button
+      class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center"
+      style="--width: 60px; --height: 60px"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+    >
+      <i class="ti ti-menu-2 fs-2" aria-hidden="true"></i>
+    </button>
+    <ul
+      class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2"
+      style="--min-width: 100%"
+    >
+      <?php if($jatbi->permission(['employee.deleted']) == 'true'){ ?>
+      <li class="my-2">
+        <a
+          class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1"
+          data-action="modal"
+          data-checkbox="input.checker"
+          data-url="/manager/employee-deleted"
+          style="--width: 50px; --height: 50px"
+        >
+          <i class="ti ti-trash fs-3" aria-hidden="true"></i>
+        </a>
+      </li>
+      <?php } ?>
+      <?php if($jatbi->permission(['employee.add']) == 'true'){ ?>
+      <li class="my-2">
+        <a
+          class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1"
+          data-action="modal"
+          data-url="/manager/employee-add"
+          style="--width: 50px; --height: 50px"
+        >
+          <i class="ti ti-plus fs-3" aria-hidden="true"></i>
+        </a>
+      </li>
+      <?php } ?>
+    </ul>
+  </div>
+  <?php } ?>
+  <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+    <div class="card-body">
+      <div class="custom-buttons d-none">
+        <div class="d-flex align-items-center justify-content-end">
+          <button
+            class="btn rounded-pill btn-sm btn-success d-flex align-items-center me-1"
+            data-action="modal"
+            data-url="/manager/employee-reload"
+          >
+            <i class="ti ti-reload fs-6 me-1"></i> Đồng bộ API
+          </button>
+          <button
+            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+            data-action="modal"
+            data-url="/manager/employee-add"
+          >
+            <i class="ti ti-plus fs-6 me-1"></i> Thêm
+          </button>
+          <button
+            class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
+            data-action="modal"
+            data-checkbox="input.checker"
+            data-url="/manager/employee-deleted"
+          >
+            <i class="ti ti-trash fs-6 me-1"></i> Xóa
+          </button>
+        </div>
+      </div>
+      <table
+        id="datatable"
+        data-table
+        class="table align-middle"
+        data-type="POST"
+        data-server="true"
+        data-processing="true"
+        data-page-length="10"
+        data-searching="true"
+        data-paging="true"
+        data-state-save="true"
+        style="width: 100%"
+      >
+        <thead>
+          <tr>
+            <th
+              data-name="checkbox"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-center"
+            >
+              <div class="form-check">
+                <input
+                  class="form-check-input checkall"
+                  type="checkbox"
+                  value=""
+                  data-checkbox="input.checker"
+                />
+              </div>
+            </th>
+            <th
+              data-name="sn"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-nowrap"
+            >
+              <?=$jatbi->lang("ID")?>
+            </th>
+            <th
+              data-name="name"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class=""
+            >
+              <?=$jatbi->lang("Tên")?>
+            </th>
+            <th data-name="type" data-orderable="true" class="text-nowrap">
+              Loại
+            </th>
+            <th
+              data-name="acGroupNumber"
+              data-orderable="true"
+              class="text-nowrap"
+            >
+              Nhóm
+            </th>
+            <th
+              data-name="action"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-end"
+            >
+              <?=$jatbi->lang("Tùy chọn")?>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
 </div>
+<script>
+  $(document).on("click", "[data-action='modal']", function (e) {
+    e.preventDefault();
+    const url = $(this).data("url");
+
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error("Network error: " + response.status);
+        return response.text();
+      })
+      .then((html) => {
+        const modalContainer = document.createElement("div");
+        modalContainer.innerHTML = html;
+        document.body.appendChild(modalContainer);
+        const modalElement = modalContainer.querySelector(".modal");
+        if (modalElement) {
+          const modal = new bootstrap.Modal(modalElement);
+          modal.show();
+          // Đảm bảo modal được xóa khi đóng
+          modalElement.addEventListener("hidden.bs.modal", () => {
+            modalContainer.remove();
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading modal:", error);
+        alert("Không thể tải dữ liệu!");
+      });
+  });
+</script>

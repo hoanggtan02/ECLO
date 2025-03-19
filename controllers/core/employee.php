@@ -81,6 +81,18 @@
                     "button" => [
                         [
                             'type' => 'button',
+                            'name' => $jatbi->lang("Xem ảnh"),
+                            'permission' => ['face_employee'],
+                            'action' => ['data-url' => '/manager/face-viewimage?box='.$data['sn'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Xem chấm công"), // Nút mới
+                            'permission' => [''], // Quyền mới, cần định nghĩa trong hệ thống
+                            'action' => ['data-url' => '/manager/timekeeping-view?box='.$data['sn'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
                             'name' => $jatbi->lang("Sửa"),
                             'permission' => ['employee.edit'],
                             'action' => ['data-url' => '/manager/employee-edit?id=' . $data['sn'], 'data-action' => 'modal']
@@ -538,7 +550,72 @@
         ]);
     })->setPermissions(['employee']);
     
+    $app->router("/manager/timekeeping-view", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xem chấm công");
+
+        // Lấy personSn từ query string
+        $personSn = $app->xss($_GET['box'] ?? '');
+        if (empty($personSn)) {
+            $vars['error'] = $jatbi->lang("Không tìm thấy mã nhân viên");
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+            return;
+        }
+
+        // Lấy thông tin nhân viên từ bảng face_employee (để hiển thị tên)
+        $faceEmployee = $app->get("face_employee", ["employee_sn", "img_base64"], ["employee_sn" => $personSn]);
+        if (!$faceEmployee) {
+            $vars['error'] = $jatbi->lang("Nhân viên không tồn tại");
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+            return;
+        }
+
+        // Lấy thông tin từ bảng employee để lấy tên (nếu cần)
+        $employee = $app->get("employee", ["sn", "name"], ["sn" => $personSn]);
+        $vars['employee_name'] = $employee['name'] ?? 'Không rõ';
+        $vars['employee_sn'] = $personSn;
+
+        // Lấy danh sách chấm công từ bảng record
+        $timekeepingRecords = $app->select("record", [
+            "id",
+            "createTime"
+        ], [
+            "personSn" => $personSn,
+            "ORDER" => ["createTime" => "DESC"]
+        ]);
+
+        if (empty($timekeepingRecords)) {
+            $vars['error'] = $jatbi->lang("Không có dữ liệu chấm công");
+        } else {
+            // Nhóm dữ liệu theo ngày
+            $timekeepingByDate = [];
+            $datesWithRecords = [];
+
+            foreach ($timekeepingRecords as $record) {
+                // Tách createTime thành ngày và giờ
+                $dateTime = explode(" ", $record['createTime']);
+                $date = $dateTime[0]; // Ngày: 2025-03-19
+                $time = $dateTime[1]; // Giờ: 14:43:31
+
+                // Lưu danh sách ngày có chấm công
+                $datesWithRecords[$date] = true;
+
+                // Nhóm dữ liệu theo ngày để hiển thị chi tiết
+                if (!isset($timekeepingByDate[$date])) {
+                    $timekeepingByDate[$date] = [];
+                }
+                $timekeepingByDate[$date][] = [
+                    'id' => $record['id'],
+                    'time' => $time
+                ];
+            }
+
+            $vars['dates_with_records'] = array_keys($datesWithRecords); // Danh sách ngày có chấm công
+            $vars['timekeeping_by_date'] = $timekeepingByDate; // Dữ liệu chi tiết theo ngày
+        }
     
+        // Render template HTML
+        echo $app->render('templates/common/view-record.html', $vars, 'global');
+    })->setPermissions([]);
     
 
 ?>
