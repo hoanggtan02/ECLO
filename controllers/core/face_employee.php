@@ -114,14 +114,20 @@
                     "button" => [
                         [
                             'type' => 'button',
+                            'name' => $jatbi->lang("Xem ảnh"),
+                            'permission' => ['face_employee'],
+                            'action' => ['data-url' => '/manager/face-viewimage?box='.$data['employee_sn'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
                             'name' => $jatbi->lang("Sửa"),
-                            'permission' => ['employee.edit'],
+                            'permission' => ['face_employee.edit'],
                             'action' => ['data-url' => '/manager/face_employee-edit?id='.$data['employee_sn'], 'data-action' => 'modal']
                         ],
                         [
                             'type' => 'button',
                             'name' => $jatbi->lang("Xóa"),
-                            'permission' => ['employee.deleted'],
+                            'permission' => ['face_employee.deleted'],
                             'action' => ['data-url' => '/manager/face_employee-deleted?id='.$data['employee_sn'], 'data-action' => 'modal']
                         ],
                     ]
@@ -496,5 +502,24 @@
         } catch (Exception $e) {
             echo json_encode(["status" => "error", "content" => "Đồng bộ thất bại! Lỗi: " . $e->getMessage()]);
         }
+    })->setPermissions(['face_employee']);
+
+    $app->router("/manager/face-viewimage", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xem ảnh hồ sơ");
+    
+        // Lấy ID từ query string
+        $recordId = $app->xss($_GET['box'] ?? '');
+        if (empty($recordId)) {
+            echo json_encode(['status'=>'error',"content"=>$jatbi->lang("Không tìm thấy ID hồ sơ.")]);
+            return;
+        }
+    
+    
+        // Lấy thông tin record từ cơ sở dữ liệu
+        $face_employee = $app->select("face_employee", ["employee_sn", "img_base64", "easy"], ["employee_sn" => $recordId]);
+        $vars['image'] = $face_employee['img_base64'];
+
+        // Render template HTML (không cần header JSON)
+        echo $app->render('templates/common/view-image.html', $vars, 'global');
     })->setPermissions(['face_employee']);
 ?>

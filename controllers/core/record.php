@@ -99,10 +99,17 @@
                     "button" => [
                         [
                             'type' => 'button',
+                            'name' => $jatbi->lang("Xem ảnh"),
+                            'permission' => ['record'],
+                            'action' => ['data-url' => '/record-viewimage?box='.$data['id'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
                             'name' => $jatbi->lang("Xóa"),
                             'permission' => ['record.deleted'],
                             'action' => ['data-url' => '/record-delete?box='.$data['id'], 'data-action' => 'modal']
                         ],
+                        
                     ]
                 ]),
             ];
@@ -157,7 +164,11 @@
 
         $startTime = $app->xss($_POST['startTime'] ?? "");
         $endTime = $app->xss($_POST['endTime'] ?? "");
-        
+        $personSn = $app->xss($_POST['personSn'] ?? "");
+        $personType = $app->xss($_POST['personType'] ?? -1);
+        $recordType = $app->xss($_POST['recordType'] ?? -1);
+        $recordCount = $app->xss($_POST['recordCount'] ?? 20);
+
         if(empty($startTime)) {
             echo json_encode(['status'=>'error','content'=>$jatbi->lang("Vui lòng nhập ngày bắt đầu.")]);
             exit;
@@ -175,8 +186,7 @@
 
         $startTime = strtotime($startTime) * 1000;
         $endTime = (strtotime($endTime . " +1 day")) * 1000;
-        $apiResponse = postToAPI($app, $startTime, $endTime);
-
+        $apiResponse = postToAPI($app, $startTime, $endTime, $personSn, $personType, $recordType, $recordCount);
         // Kiểm tra dữ liệu API có hợp lệ không
         if (!$apiResponse || !isset($apiResponse['success']) || !$apiResponse['success'] || !isset($apiResponse['data'])) {
             echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
@@ -188,7 +198,7 @@
                         "id" => $data['id'],
                         "personName" => $data['personName'] ?? "Không rõ",
                         "personSn" => $data['personSn'] ?? "",
-                        "personType" => $data['personType'],
+                        "personType" => $data['personType'] ?? "không xác định",
                         "createTime" => date("Y-m-d H:i:s", $data['createTime'] / 1000), // Chuyển timestamp thành thời gian đọc được
                         "createDate" => date("Y-m-d H:i:s"),
                     ];
@@ -212,9 +222,9 @@
       
     // })->setPermissions(['record']);
 
-    function postToAPI($app, $startTime, $endTime) {
+    function postToAPI($app, $startTime, $endTime, $personSn, $personType, $recordType, $recordCount ) {
         $headers = [
-            'Authorization: Bearer your_token',
+            'Authorization: Bearer your_token', // Thay your_token bằng token thực tế
             'Content-Type: application/x-www-form-urlencoded'
         ];
         
@@ -222,8 +232,12 @@
             'deviceKey' => '77ed8738f236e8df86',
             'secret'    => '123456',
             'startTime' => $startTime,
-            "endTime"   => $endTime,
-            // "length"    => $length, 
+            'endTime'   => $endTime,
+            'personSn'  => $personSn,
+            'personType'  => $personType,
+            'recordType'  => $recordType,
+            'length'  => $recordCount,
+
         ];
         
         $response = $app->apiPost('http://camera.ellm.io:8190/api/record/findList', $apiData, $headers);
@@ -259,3 +273,61 @@
             $jatbi->logs('record','record-updateData',$apiResponse);
         } 
     }
+
+    $app->router("/record-viewimage", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xem ảnh hồ sơ");
+    
+        // Lấy ID từ query string
+        $recordId = $app->xss($_GET['box'] ?? '');
+        if (empty($recordId)) {
+            echo json_encode(['status'=>'error',"content"=>$jatbi->lang("Không tìm thấy ID hồ sơ.")]);
+            return;
+        }
+    
+    
+        // Lấy thông tin record từ cơ sở dữ liệu
+        $record = $app->select("record", ["id", "personName", "personSn", "checkImgUrl"], ["id" => $recordId]);
+        if (!$record) {
+            $vars['error'] = $jatbi->lang("Hồ sơ không tồn tại");
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+            return;
+        }
+
+        // Nếu đã có checkImgUrl trong database, sử dụng nó
+        if (!empty($record['checkImgUrl'])) {
+            $vars['image'] = $record['checkImgUrl'];
+        } else {
+            // Gọi API để lấy ảnh nếu chưa có trong database
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret' => '123456',
+                'recordId' => $recordId,
+            ];
+
+            $headers = [
+                'Authorization: Bearer your_token',
+                'Content-Type: application/x-www-form-urlencoded'
+            ];
+
+            try {
+                // Giả định dùng /api/record/find để lấy ảnh của record
+                $response = $app->apiPost('http://camera.ellm.io:8190/api/record/find', $apiData, $headers);
+                $apiResponse = json_decode($response, true);
+
+                if (!empty($apiResponse['success']) && $apiResponse['success'] === true && isset($apiResponse['data']['checkImgBase64'])) {
+                    $checkImgBase64 = $apiResponse['data']['checkImgBase64'];
+                    $vars['image'] = $checkImgBase64;
+
+                    // Cập nhật ảnh vào database
+                    $app->update("record", ["checkImgUrl" => $checkImgBase64], ["id" => $recordId]);
+                } else {
+                    $vars['error'] = $jatbi->lang("Không thể tải ảnh từ API");
+                }
+            } catch (Exception $e) {
+                $vars['error'] = $jatbi->lang("Lỗi hệ thống: ") . $e->getMessage();
+            }
+        }
+
+        // Render template HTML (không cần header JSON)
+        echo $app->render('templates/common/view-image.html', $vars, 'global');
+    })->setPermissions(['record']);
