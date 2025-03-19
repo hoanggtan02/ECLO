@@ -50,6 +50,9 @@
             "ORDER" => [$orderName => strtoupper($orderDir)]
         ];
 
+        // $startTime = strtotime($startTime. " 00:00:00") * 1000;
+        // $endTime = strtotime($endTime. " 23:59:59") * 1000;
+        
         if(!empty($startTime)) {
             $where["AND"]["record.createTime[>=]"] = $startTime;
         }
@@ -101,7 +104,6 @@
                             'permission' => ['record.deleted'],
                             'action' => ['data-url' => '/record-delete?box='.$data['id'], 'data-action' => 'modal']
                         ],
-                        
                     ]
                 ]),
             ];
@@ -176,7 +178,6 @@
 
         $apiResponse = postToAPI($app, $startTime, $endTime);
 
-
         // Kiểm tra dữ liệu API có hợp lệ không
         if (!$apiResponse || !isset($apiResponse['success']) || !$apiResponse['success'] || !isset($apiResponse['data'])) {
             echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
@@ -184,13 +185,14 @@
             foreach ($apiResponse['data'] as $data) {
                 $check = $app->select("record","*",["id"=>$data['id']]);
                 if(count($check) == 0){
-                     // Điều chỉnh thời gian: trừ 6 tiếng từ timestamp của API
+
+                    // Điều chỉnh thời gian: trừ 6 tiếng từ timestamp của API
                     $adjustedCreateTime = $data['createTime'] + (7 * 3600 * 1000);
                     $insert = [
                         "id" => $data['id'],
                         "personName" => $data['personName'] ?? "Không rõ",
                         "personSn" => $data['personSn'] ?? "",
-                        "personType" => $data['personType'] ?? "không xác định",
+                        "personType" => $data['personType'],
                         "createTime" => date("Y-m-d H:i:s", $adjustedCreateTime / 1000), // Sử dụng thời gian đã điều chỉnh // Chuyển timestamp thành thời gian đọc được
                     ];
                     $app->insert("record",$insert);
@@ -205,7 +207,7 @@
 
     function postToAPI($app, $startTime, $endTime) {
         $headers = [
-            'Authorization: Bearer your_token', // Thay your_token bằng token thực tế
+            'Authorization: Bearer your_token',
             'Content-Type: application/x-www-form-urlencoded'
         ];
         
