@@ -182,8 +182,6 @@
                         "personSn" => $data['personSn'] ?? "",
                         "personType" => $data['personType'],
                         "createTime" => date("Y-m-d H:i:s", $data['createTime'] / 1000), // Chuyển timestamp thành thời gian đọc được
-                        "createDate" => date("Y-m-d H:i:s"),
-                        
                     ];
                     $app->insert("record",$insert);
                 } 
