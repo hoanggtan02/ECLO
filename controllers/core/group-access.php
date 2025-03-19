@@ -20,7 +20,7 @@ $app->router("/control/group-access", 'POST', function($vars) use ($app, $jatbi)
 
     $orderColumnIndex = $_POST['order'][0]['column'] ?? 1;
     $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
-
+    
     $validColumns = ["acGroupNumber", "name", "acTzNumber1", "acTzNumber2", "acTzNumber3"];
     $orderColumn = $validColumns[$orderColumnIndex] ?? "acGroupNumber";
 
@@ -36,16 +36,66 @@ $app->router("/control/group-access", 'POST', function($vars) use ($app, $jatbi)
     ];
 
     $count = $app->count("group-access", ["AND" => $where["AND"]]);
-
+    
     $datas = $app->select("group-access", ['acGroupNumber', 'name', 'acTzNumber1', 'acTzNumber2', 'acTzNumber3'], $where) ?? [];
+    
+    // Lấy danh sách acTzNumber cần tìm
+    $acTzNumbers = array_unique(array_filter(array_merge(
+        array_column($datas, 'acTzNumber1'),
+        array_column($datas, 'acTzNumber2'),
+        array_column($datas, 'acTzNumber3')
+    ), function($value) {
+        return $value !== "0" && !empty($value);
+    }));
 
-    $formattedData = array_map(function($data) use ($app, $jatbi) {
+    // Lấy danh sách timeperiods để map với acTzNumber
+    $timeperiods = [];
+    if (!empty($acTzNumbers)) {
+        $timeperiods = $app->select("timeperiod", [
+            "acTzNumber", 
+            "monStart", "monEnd",
+            "tueStart", "tueEnd",
+            "wedStart", "wedEnd",
+            "thursStart", "thursEnd",
+            "friStart", "friEnd",
+            "satStart", "satEnd",
+            "sunStart", "sunEnd"
+        ], ["acTzNumber" => $acTzNumbers]);
+    }
+
+    // Mapping thứ trong tuần
+    $days = [
+        "mon"   => "Thứ Hai",
+        "tue"   => "Thứ Ba",
+        "wed"   => "Thứ Tư",
+        "thurs" => "Thứ Năm",
+        "fri"   => "Thứ Sáu",
+        "sat"   => "Thứ Bảy",
+        "sun"   => "Chủ Nhật"
+    ];
+
+    // Chuyển danh sách timeperiod thành array dễ tìm kiếm
+    $tzMapping = [];
+    foreach ($timeperiods as $tp) {
+        $label = [];
+        foreach ($days as $key => $dayName) {
+            $start = $tp[$key . "Start"];
+            $end = $tp[$key . "End"];
+            if ($start !== "00:00" || $end !== "23:59") {
+                $label[] = "$dayName: $start-$end";
+            }
+        }
+        $tzMapping[$tp['acTzNumber']] = !empty($label) ? implode(" | ", $label) : "Cả tuần: 00:00-23:59";
+    }
+
+    // Format dữ liệu trả về
+    $formattedData = array_map(function($data) use ($app, $jatbi, $tzMapping) {
         return [
             "acGroupNumber" => $data['acGroupNumber'],
             "name" => $data['name'],
-            "acTzNumber1" => $data['acTzNumber1'],
-            "acTzNumber2" => $data['acTzNumber2'],
-            "acTzNumber3" => $data['acTzNumber3'],
+            "acTzNumber1" => $data['acTzNumber1'] == "0" ? "Không có" : ($tzMapping[$data['acTzNumber1']] ?? "Không có"),
+            "acTzNumber2" => $data['acTzNumber2'] == "0" ? "Không có" : ($tzMapping[$data['acTzNumber2']] ?? "Không có"),
+            "acTzNumber3" => $data['acTzNumber3'] == "0" ? "Không có" : ($tzMapping[$data['acTzNumber3']] ?? "Không có"),
             "action" => $app->component("action", [
                 "button" => [
                     [
