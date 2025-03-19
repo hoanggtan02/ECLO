@@ -184,12 +184,14 @@
             foreach ($apiResponse['data'] as $data) {
                 $check = $app->select("record","*",["id"=>$data['id']]);
                 if(count($check) == 0){
+                     // Điều chỉnh thời gian: trừ 6 tiếng từ timestamp của API
+                    $adjustedCreateTime = $data['createTime'] + (7 * 3600 * 1000);
                     $insert = [
                         "id" => $data['id'],
                         "personName" => $data['personName'] ?? "Không rõ",
                         "personSn" => $data['personSn'] ?? "",
                         "personType" => $data['personType'] ?? "không xác định",
-                        "createTime" => date("Y-m-d H:i:s", $data['createTime'] / 1000), // Chuyển timestamp thành thời gian đọc được
+                        "createTime" => date("Y-m-d H:i:s", $adjustedCreateTime / 1000), // Sử dụng thời gian đã điều chỉnh // Chuyển timestamp thành thời gian đọc được
                     ];
                     $app->insert("record",$insert);
                 } 
