@@ -517,7 +517,8 @@
     
         // Lấy thông tin record từ cơ sở dữ liệu
         $face_employee = $app->select("face_employee", ["employee_sn", "img_base64", "easy"], ["employee_sn" => $recordId]);
-        $vars['image'] = $face_employee['img_base64'];
+
+        $vars['image'] = $face_employee[0]['img_base64'];
 
         // Render template HTML (không cần header JSON)
         echo $app->render('templates/common/view-image.html', $vars, 'global');
