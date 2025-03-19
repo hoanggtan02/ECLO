@@ -296,4 +296,4 @@
 
         // Render template HTML (không cần header JSON)
         echo $app->render('templates/common/view-image.html', $vars, 'global');
-    })->setPermissions(['record']);yyyy
+    })->setPermissions(['record']);
