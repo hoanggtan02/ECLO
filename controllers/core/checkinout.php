@@ -9,7 +9,7 @@ $app->router("/manager/checkinout", 'GET', function ($vars) use ($app, $jatbi, $
     $vars['add'] = '/manager/checkinout-add';
     $vars['deleted'] = '/manager/checkinout-deleted';
     // Lấy danh sách từ bảng checkinout
-    $data = $app->select("checkinout", ["id", "sn", "checkinout_list", "updated_at"]);
+    $data = $app->select("checkinout", ["sn", "checkinout_list", "updated_at"]);
 
     // Truy vấn bảng employee để lấy tên tương ứng với sn
     $employeeData = $app->select("employee", ["sn", "name"]);
@@ -97,13 +97,11 @@ $app->router("/manager/checkinout", 'POST', function ($vars) use ($app, $jatbi) 
     // Truy vấn danh sách checkinout
     $datas = $app->select("checkinout", [
         "[>]employee" => ["sn" => "sn"]
-
     ], [
-        "checkinout.id",
         "checkinout.sn",
         "checkinout.checkinout_list",
         "checkinout.updated_at",
-        "employee.name"
+        // "employee.name"
     ], $where) ?? [];
 
     // Truy vấn bảng employee để lấy tên tương ứng với sn
@@ -117,36 +115,38 @@ $app->router("/manager/checkinout", 'POST', function ($vars) use ($app, $jatbi) 
     $formattedData = array_map(function ($data) use ($app, $jatbi, $employeeMap) {
         // Chuyển đổi chuỗi JSON thành mảng
         $passTimeListArray = json_decode($data['checkinout_list'], true);
-
+        
         // Kiểm tra nếu JSON decode không thành công hoặc không đúng định dạng
         if (!is_array($passTimeListArray) || empty($passTimeListArray[0])) {
             $passTimeList = [];
         } else {
+            // Lấy object đầu tiên trong mảng
             $passTimeList = $passTimeListArray[0];
         }
-
+    
         // Định dạng dữ liệu thời gian để hiển thị
         $formattedTimeList = [];
         $daysMapping = [
-            'mon' => 'Thứ Hai',
-            'tue' => 'Thứ Ba',
-            'wed' => 'Thứ Tư',
+            'mon'   => 'Thứ Hai',
+            'tue'   => 'Thứ Ba',
+            'wed'   => 'Thứ Tư',
             'thurs' => 'Thứ Năm',
-            'fri' => 'Thứ Sáu',
-            'sat' => 'Thứ Bảy',
-            'sun' => 'Chủ Nhật'
+            'fri'   => 'Thứ Sáu',
+            'sat'   => 'Thứ Bảy',
+            'sun'   => 'Chủ Nhật'
         ];
-
-        foreach ($passTimeList as $day => $time) {
-            if (isset($daysMapping[$day]) && !empty($time)) {
-                $formattedTimeList[] = "{$daysMapping[$day]}: {$time}";
+    
+        foreach ($daysMapping as $key => $day) {
+            if (isset($passTimeList[$key]) && !empty($passTimeList[$key])) {
+                $formattedTimeList[] = "{$day}: {$passTimeList[$key]}";
             }
         }
-
+    
+        // Gộp danh sách thời gian thành chuỗi HTML để hiển thị
         $timeListString = implode("<br>", $formattedTimeList);
-
+    
         return [
-            "checkbox" => $app->component("box", ["data" => $data['id']]),
+            "checkbox" => $app->component("box", ["data" => $data['sn']]),
             "sn" => $data['sn'],
             "name" => $employeeMap[$data['sn']] ?? $data['sn'],
             "checkinout_list" => $timeListString,
@@ -157,18 +157,21 @@ $app->router("/manager/checkinout", 'POST', function ($vars) use ($app, $jatbi) 
                         'type' => 'button',
                         'name' => $jatbi->lang("Sửa"),
                         'permission' => ['checkinout.edit'],
-                        'action' => ['data-url' => '/manager/checkinout-edit?id=' . $data['id'], 'data-action' => 'modal']
+                        'action' => ['data-url' => '/manager/checkinout-edit?box=' . $data['sn'], 'data-action' => 'modal']
                     ],
                     [
                         'type' => 'button',
                         'name' => $jatbi->lang("Xóa"),
                         'permission' => ['checkinout.deleted'],
-                        'action' => ['data-url' => '/manager/checkinout-deleted?box=' . $data['id'], 'data-action' => 'modal']
+                        'action' => ['data-url' => '/manager/checkinout-deleted?box=' . $data['sn'], 'data-action' => 'modal']
                     ],
                 ]
             ]),
         ];
     }, $datas);
+    
+    
+    
 
 
     // Trả về dữ liệu cho DataTable
@@ -213,24 +216,32 @@ $app->router("/manager/checkinout-add", 'POST', function ($vars) use ($app, $jat
     $app->header(['Content-Type' => 'application/json']);
 
     $sn = $app->xss($_POST['sn'] ?? '');
-    $checkinout_list = $app->xss($_POST['checkinout_list'] ?? '[]');
+    $checkinout_list = $_POST['checkinout'] ?? '{}';
 
-    if (empty($sn) || empty($checkinout_list)) {
-        echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
+    // Nếu là mảng, chuyển thành JSON
+    if (is_array($checkinout_list)) {
+        $checkinout_list = json_encode([$checkinout_list], JSON_UNESCAPED_UNICODE);
+    }
+
+    // Kiểm tra đầu vào hợp lệ
+    if (empty(trim($sn)) || empty($checkinout_list) || json_decode($checkinout_list, true) === null) {
+        echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng nhập đúng định dạng dữ liệu")]);
         return;
     }
 
     try {
-        // Kiểm tra xem sn đã tồn tại trong bảng checkinout 
-        $existingRecord = $app->select("checkinout", ["id"], ["sn" => $sn]);
+        // Kiểm tra SN đã tồn tại chưa
+        $existingRecord = $app->select("checkinout", ["sn"], ["sn" => $sn]);
         if (!empty($existingRecord)) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Nhân viên đã được thêm vào danh sách")]);
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Nhân viên đã có trong danh sách")]);
             return;
         }
+
+        // Gửi dữ liệu lên API
         $apiData = [
-            'deviceKey' => '77ed8738f236e8df86',
-            'secret' => '123456',
-            'sn' => $sn,
+            'deviceKey'    => '77ed8738f236e8df86',
+            'secret'       => '123456',
+            'sn'           => $sn,
             'passtimeList' => $checkinout_list,
         ];
 
@@ -245,33 +256,46 @@ $app->router("/manager/checkinout-add", 'POST', function ($vars) use ($app, $jat
             $headers
         );
 
+        // Ghi log response API để debug
+        error_log("API Response for SN: $sn: " . var_export($response, true));
+
         $apiResponse = json_decode($response, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception("Lỗi JSON từ API: " . json_last_error_msg());
+        }
 
         if (!empty($apiResponse['code']) && $apiResponse['code'] == "000") {
+            // Chuẩn bị dữ liệu để thêm vào database
             $insert = [
-                "sn" => $sn,
+                "sn"              => $sn,
                 "checkinout_list" => $checkinout_list,
-                "updated_at" => date('Y-m-d H:i:s'),
+                "updated_at"      => date('Y-m-d H:i:s'),
             ];
 
-            $app->insert("checkinout", $insert);
-            $jatbi->logs('checkinout', 'checkinout-add', $insert);
+            // Thêm vào database
+            $result = $app->insert("checkinout", $insert);
+            if (!$result) {
+                $error = $app->error() ? var_export($app->error(), true) : "Không rõ lỗi";
+                throw new Exception("Không thể thêm vào database: " . $error);
+            }
 
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            // Ghi log và phản hồi thành công
+            $jatbi->logs('checkinout', 'checkinout-add', $insert);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công")]);
         } else {
             $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-            echo json_encode(["status" => "error", "content" => "API gặp lỗi: " . $errorMessage]);
+            echo json_encode(["status" => "error", "content" => "API lỗi: " . $errorMessage]);
         }
 
     } catch (Exception $e) {
+        error_log("Lỗi thêm checkinout cho SN: $sn: " . $e->getMessage());
         echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
     }
 })->setPermissions(['checkinout.add']);
 
 
-// Sửa thời gian ra vào (GET)
 $app->router("/manager/checkinout-edit", 'GET', function ($vars) use ($app, $jatbi, $setting) {
-    $id = $app->xss($_GET['id'] ?? '');
+    $id = $app->xss($_GET['box'] ?? '');
     $vars['title'] = $jatbi->lang("Sửa thời gian ra vào");
 
     if (empty($id)) {
@@ -280,7 +304,7 @@ $app->router("/manager/checkinout-edit", 'GET', function ($vars) use ($app, $jat
     }
 
     // Lấy dữ liệu từ bảng checkinout
-    $data = $app->select("checkinout", ["id", "sn", "checkinout_list", "updated_at"], ["id" => $id]);
+    $data = $app->select("checkinout", ["sn", "checkinout_list", "updated_at"], ["sn" => $id]);
     if (empty($data)) {
         $app->error(404, $jatbi->lang("Không tìm thấy dữ liệu"));
         return;
@@ -293,34 +317,48 @@ $app->router("/manager/checkinout-edit", 'GET', function ($vars) use ($app, $jat
         $employeeMap[$employee['sn']] = $employee['name'];
     }
 
-    // Thêm tên nhân viên vào dữ liệu, với giá trị mặc định nếu không tìm thấy
-    $data[0]['employee_name'] = isset($employeeMap[$data[0]['sn']]) ? $employeeMap[$data[0]['sn']] : "Không xác định (" . ($data[0]['sn'] ?? 'N/A') . ")";
+    // Lấy tên nhân viên theo `sn`, nếu không có thì đặt giá trị mặc định
+    $data[0]['employee_name'] = $employeeMap[$data[0]['sn']] ?? "Không xác định ({$data[0]['sn']})";
 
-    $vars['employees'] = $employees;
+    // Gửi dữ liệu ra giao diện
     $vars['data'] = $data[0];
     echo $app->render('templates/employee/checkinout-post.html', $vars, 'global');
 })->setPermissions(['checkinout.edit']);
 
 
-//sửa thời gian ra vào POST
+
+//Sửa thời gian ra vào (POST)
 $app->router("/manager/checkinout-edit", 'POST', function ($vars) use ($app, $jatbi) {
     $app->header(['Content-Type' => 'application/json']);
 
-    // Lấy id từ query string hoặc form
-    $id = $app->xss($_POST['id'] ?? $_GET['id'] ?? '');
-    $sn = $app->xss($_POST['sn'] ?? '');
-    $checkinout_list = $app->xss($_POST['checkinout_list'] ?? '[]');
+    // Lấy dữ liệu từ request
+    $sn = $app->xss($_POST['sn'] ?? $_GET['sn'] ?? '');
+    $checkinout_list = $_POST['checkinout'] ?? '{}';
 
-    if (empty($id) || empty($sn) || empty($checkinout_list)) {
-        echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
+    // Nếu là mảng, chuyển thành JSON
+    if (is_array($checkinout_list)) {
+        $checkinout_list = json_encode([$checkinout_list], JSON_UNESCAPED_UNICODE);
+    }
+
+    // Kiểm tra dữ liệu có hợp lệ không
+    if (empty(trim($sn)) || empty($checkinout_list) || json_decode($checkinout_list, true) === null) {
+        echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng nhập đúng định dạng dữ liệu")]);
+        return;
+    }
+
+    // Kiểm tra xem SN có tồn tại không
+    $existingRecord = $app->select("checkinout", ["sn"], ["sn" => $sn]);
+    if (empty($existingRecord)) {
+        echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy bản ghi để cập nhật")]);
         return;
     }
 
     try {
+        // Gửi dữ liệu lên API để cập nhật
         $apiData = [
-            'deviceKey' => '77ed8738f236e8df86',
-            'secret' => '123456',
-            'sn' => $sn,
+            'deviceKey'   => '77ed8738f236e8df86',
+            'secret'      => '123456',
+            'sn'          => $sn,
             'passtimeList' => $checkinout_list,
         ];
 
@@ -335,28 +373,146 @@ $app->router("/manager/checkinout-edit", 'POST', function ($vars) use ($app, $ja
             $headers
         );
 
+        // Ghi log response API để kiểm tra
+        error_log("API Response for SN: $sn: " . var_export($response, true));
+
         $apiResponse = json_decode($response, true);
-
-        if (!empty($apiResponse['code']) && $apiResponse['code'] == "000") {
-            $update = [
-                "sn" => $sn,
-                "checkinout_list" => $checkinout_list,
-                "updated_at" => date('Y-m-d H:i:s'),
-            ];
-
-            $app->update("checkinout", $update, ["id" => $id]);
-            $jatbi->logs('checkinout', 'checkinout-edit', $update);
-
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
-        } else {
-            $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
-            echo json_encode(["status" => "error", "content" => "API gặp lỗi: " . $errorMessage]);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception("Lỗi JSON từ API: " . json_last_error_msg());
         }
 
+        if (!empty($apiResponse['code']) && $apiResponse['code'] == "000") {
+            // Cập nhật dữ liệu vào database
+            $update = [
+                "sn"              => $sn,
+                "checkinout_list" => $checkinout_list,
+                "updated_at"      => date('Y-m-d H:i:s'),
+            ];
+
+            $updateResult = $app->update("checkinout", $update, ["sn" => $sn]);
+
+            if ($updateResult) {
+                $jatbi->logs('checkinout', 'checkinout-edit', $update);
+                echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            } else {
+                $error = $app->error() ? var_export($app->error(), true) : "Không rõ lỗi";
+                echo json_encode(["status" => "error", "content" => "API thành công nhưng không thể cập nhật database: " . $error]);
+            }
+        } else {
+            $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
+            echo json_encode(["status" => "error", "content" => "API lỗi: " . $errorMessage]);
+        }
     } catch (Exception $e) {
+        error_log("Lỗi cập nhật checkinout cho SN: $sn: " . $e->getMessage());
         echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
     }
 })->setPermissions(['checkinout.edit']);
+
+
+
+
+
+
+
+// Sửa thời gian ra vào (POST)
+// $app->router("/manager/checkinout-edit", 'POST', function ($vars) use ($app, $jatbi) {
+//     $app->header(['Content-Type' => 'application/json']);
+
+//     // Lấy dữ liệu từ request
+//     $sn = $app->xss($_POST['sn'] ?? $_GET['sn'] ?? '');
+//     $checkinout_list = $app->xss($_POST['checkinout_list'] ?? '{}');
+
+//     // Kiểm tra dữ liệu đầu vào
+//     if (empty($sn)) {
+//         echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống SN")]);
+//         return;
+//     }
+
+//     // Giải mã checkinout_list
+//     $timeList = json_decode($checkinout_list, true);
+//     if (!is_array($timeList)) {
+//         echo json_encode(["status" => "error", "content" => $jatbi->lang("Danh sách thời gian không hợp lệ")]);
+//         return;
+//     }
+
+//     // Kiểm tra định dạng thời gian cho từng ngày
+//     $days = ['mon', 'tue', 'wed', 'thurs', 'fri', 'sat', 'sun'];
+//     foreach ($days as $day) {
+//         if (isset($timeList[$day]) && !empty($timeList[$day])) {
+//             if (!validateTimeFormat($timeList[$day])) {
+//                 echo json_encode([
+//                     "status" => "error",
+//                     "content" => $jatbi->lang("Định dạng thời gian không hợp lệ, vui lòng nhập lại theo định dạng HH:MM-HH:MM (ví dụ: 00:00-23:59)")
+//                 ]);
+//                 return;
+//             }
+//         }
+//     }
+
+//     // Kiểm tra xem SN có tồn tại trong database không
+//     $existingRecord = $app->select("checkinout", ["sn"], ["sn" => $sn]);
+//     if (empty($existingRecord)) {
+//         echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy bản ghi để cập nhật")]);
+//         return;
+//     }
+
+//     try {
+//         // Gửi dữ liệu lên API để cập nhật
+//         $apiData = [
+//             'deviceKey' => '77ed8738f236e8df86',
+//             'secret' => '123456',
+//             'sn' => $sn,
+//             'passtimeList' => $checkinout_list,
+//         ];
+
+//         $headers = [
+//             'Authorization: Bearer your_token',
+//             'Content-Type: application/x-www-form-urlencoded'
+//         ];
+
+//         $response = $app->apiPost(
+//             'http://camera.ellm.io:8190/api/person/passtime/merge',
+//             $apiData,
+//             $headers
+//         );
+
+//         // Debug: Ghi lại response từ API
+//         error_log("API Response for SN: $sn: " . var_export($response, true));
+
+//         $apiResponse = json_decode($response, true);
+//         if (json_last_error() !== JSON_ERROR_NONE) {
+//             throw new Exception("Dữ liệu trả về từ API không hợp lệ: " . json_last_error_msg());
+//         }
+
+//         if (!empty($apiResponse['code']) && $apiResponse['code'] == "000") {
+//             // Cập nhật dữ liệu trong database
+//             $update = [
+//                 "sn" => $sn,
+//                 "checkinout_list" => $checkinout_list,
+//                 "updated_at" => date('Y-m-d H:i:s'),
+//             ];
+
+//             $updateResult = $app->update("checkinout", $update, ["sn" => $sn]);
+
+//             if ($updateResult) {
+//                 $jatbi->logs('checkinout', 'checkinout-edit', $update);
+//                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+//             } else {
+//                 $error = $app->error() ? var_export($app->error(), true) : "Không rõ lỗi";
+//                 echo json_encode(["status" => "error", "content" => "Cập nhật API thành công nhưng không thể cập nhật database: " . $error]);
+//             }
+//         } else {
+//             $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
+//             echo json_encode(["status" => "error", "content" => "API gặp lỗi: " . $errorMessage]);
+//         }
+//     } catch (Exception $e) {
+//         error_log("Error updating checkinout for SN: $sn: " . $e->getMessage());
+//         echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+//     }
+// })->setPermissions(['checkinout.edit']);
+
+
+
 
 
 
@@ -387,7 +543,7 @@ $app->router("/manager/checkinout-deleted", 'POST', function ($vars) use ($app, 
         }
 
         // Lấy danh sách dữ liệu cần xóa từ database
-        $datas = $app->select("checkinout", ["id", "sn"], ["id" => $boxid]);
+        $datas = $app->select("checkinout", ["sn"], ["sn" => $boxid]);
 
         if (empty($datas)) {
             echo json_encode(['status' => 'error', 'content' => $jatbi->lang("Không tìm thấy dữ liệu để xóa")]);
@@ -423,7 +579,7 @@ $app->router("/manager/checkinout-deleted", 'POST', function ($vars) use ($app, 
         }
 
         // Nếu API xóa thành công, xóa dữ liệu trong database
-        $app->delete("checkinout", ["id" => $boxid]);
+        $app->delete("checkinout", ["sn" => $boxid]);
 
         // Ghi log quá trình xóa
         $jatbi->logs('checkinout', 'checkinout-deleted', $datas);
@@ -437,18 +593,18 @@ $app->router("/manager/checkinout-deleted", 'POST', function ($vars) use ($app, 
 
 
 
-
-//Đồng bộ nhân viên từ API
+//Đồng bộ thời gian ra vào từ API
 
 $app->router("/manager/checkinout-sync", 'GET', function($vars) use ($app, $jatbi) {
     $vars['title'] = $jatbi->lang("Đồng bộ nhân viên");
 
     echo $app->render('templates/common/restore.html', $vars, 'global');
 })->setPermissions(['checkinout.sync']);
+
 $app->router("/manager/checkinout-sync", 'POST', function($vars) use ($app, $jatbi) {
     $app->header(['Content-Type' => 'application/json']);
 
-    //Gọi API lấy danh sách nhân viên
+    // Gọi API lấy danh sách nhân viên
     $params = [
         "deviceKey" => "77ed8738f236e8df86",
         "secret" => "123456",
@@ -465,7 +621,7 @@ $app->router("/manager/checkinout-sync", 'POST', function($vars) use ($app, $jat
     $response = $app->apiPost($apiUrl, $params, $headers);
     $employeesFromAPI = json_decode($response, true);
 
-    //Kiểm tra dữ liệu trả về từ API
+    // Kiểm tra dữ liệu trả về từ API
     if (!$employeesFromAPI || empty($employeesFromAPI['data'])) {
         echo json_encode(["status" => "error", "content" => "Không lấy được dữ liệu từ API"]);
         return;
@@ -473,14 +629,14 @@ $app->router("/manager/checkinout-sync", 'POST', function($vars) use ($app, $jat
 
     $employeesFromAPI = $employeesFromAPI['data'];
 
-    //Lấy danh sách nhân viên hiện có trong database
-    $employeesFromDB = $app->select("employee", ["sn", "name", "type"]);
+    // Lấy danh sách nhân viên hiện có trong database
+    $employeesFromDB = $app->select("checkinout", ["sn", "checkinout_list"]);
     $dbEmployeeMap = [];
     foreach ($employeesFromDB as $employee) {
         $dbEmployeeMap[$employee['sn']] = $employee;
     }
 
-    //So sánh dữ liệu API với database
+    // So sánh dữ liệu API với database
     $added = 0;
     $updated = 0;
     $skipped = 0;
@@ -490,18 +646,20 @@ $app->router("/manager/checkinout-sync", 'POST', function($vars) use ($app, $jat
 
     foreach ($employeesFromAPI as $employee) {
         $sn = $employee['sn'];
-        $name = $employee['name'];
-        $type = $employee['type'];
+
+        // Xử lý checkinout_list đảm bảo đúng định dạng [{"mon": "...", "tue": "...", ...}]
+        $checkinoutRaw = $employee['acTz1'] ?? [];
+        if (!is_array($checkinoutRaw)) {
+            $checkinoutRaw = [];
+        }
+        $checkinout_list = json_encode([$checkinoutRaw], JSON_UNESCAPED_UNICODE);
 
         if (isset($dbEmployeeMap[$sn])) {
             // Nếu đã tồn tại, kiểm tra xem có thay đổi không
-            if ($dbEmployeeMap[$sn]['name'] !== $name || 
-                $dbEmployeeMap[$sn]['type'] != $type) {
-                
+            if ($dbEmployeeMap[$sn]['checkinout_list'] !== $checkinout_list) {
                 $updateData[] = [
                     "sn" => $sn,
-                    "name" => $name,
-                    "type" => $type
+                    "checkinout_list" => $checkinout_list
                 ];
                 $updated++;
             } else {
@@ -511,27 +669,25 @@ $app->router("/manager/checkinout-sync", 'POST', function($vars) use ($app, $jat
             // Nếu chưa có, thêm mới vào database
             $insertData[] = [
                 "sn" => $sn,
-                "name" => $name,
-                "type" => $type
+                "checkinout_list" => $checkinout_list
             ];
             $added++;
         }
     }
 
-    //Cập nhật dữ liệu nếu có thay đổi
+    // Cập nhật dữ liệu nếu có thay đổi
     foreach ($updateData as $update) {
-        $app->update("employee", [
-            "name" => $update['name'],
-            "type" => $update['type']
+        $app->update("checkinout", [
+            "checkinout_list" => $update['checkinout_list']
         ], ["sn" => $update['sn']]);
     }
 
-    //Chèn dữ liệu mới nếu có
+    // Chèn dữ liệu mới nếu có
     if (!empty($insertData)) {
-        $app->insert("employee", $insertData);
+        $app->insert("checkinout", $insertData);
     }
 
-    //Trả về kết quả
+    // Trả về kết quả
     echo json_encode([
         "status" => "success",
         "content" => "Đồng bộ nhân viên thành công",
@@ -540,3 +696,5 @@ $app->router("/manager/checkinout-sync", 'POST', function($vars) use ($app, $jat
         "skipped" => $skipped
     ]);
 })->setPermissions(['checkinout.sync']);
+
+
