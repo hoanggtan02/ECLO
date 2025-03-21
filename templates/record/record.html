@@ -141,27 +141,23 @@
   </div>
   <?php } ?>
   <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
-    <div class="ms-5 mt-4">
-      <h3><?=$day?></h3>
-    </div>
     <div class="card-body">
       <div class="custom-buttons d-none">
         <div class="d-flex align-items-center justify-content-end">
           <button
-            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
-            data-action="modal"
-            data-url="/record-find"
-          >
-            <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
-            <?=$jatbi->lang("Tải dữ liệu")?>
-          </button>
-          <!-- <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/record-update"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("TĐồng bộ")?></button> -->
+          class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+          data-action="modal"
+          data-url="/record-update"
+        >
+          <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
+          <?=$jatbi->lang("Cập nhật dữ liệu")?>
+        </button>
           <button
             class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
             data-action="modal"
             data-checkbox="input.checker"
             data-url="/record-delete"
-          >
+          > 
             <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i>
             <?=$jatbi->lang("Xóa")?>
           </button>
@@ -203,7 +199,7 @@
               data-orderable="true"
               class="text-nowrap"
               data-visible="true"
-              data-class="text-nowrap"
+              data-class="text-start"
             >
               <?=$jatbi->lang("ID")?>
             </th>
@@ -212,7 +208,7 @@
               data-orderable="true"
               class="text-nowrap"
               data-visible="true"
-              data-class=""
+              data-class="text-start"
             >
               <?=$jatbi->lang("ID nhân viên")?>
             </th>
@@ -232,14 +228,14 @@
               data-visible="true"
               data-class=""
             >
-              <?=$jatbi->lang("Kiểu người?")?>
+              <?=$jatbi->lang("Loại")?>
             </th>
             <th
               data-name="createTime"
               data-orderable="true"
               class="text-nowrap"
               data-visible="true"
-              data-class=""
+              data-class="text-start"
             >
               <?=$jatbi->lang("Thời gian tạo")?>
             </th>
