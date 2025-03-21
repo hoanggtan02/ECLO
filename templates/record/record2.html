@@ -148,14 +148,11 @@
       <div class="custom-buttons d-none">
         <div class="d-flex align-items-center justify-content-end">
           <button
-            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
-            data-action="modal"
-            data-url="/record-find"
-          >
+            class="button-filter btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1">
             <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
             <?=$jatbi->lang("Tải dữ liệu")?>
           </button>
-          <!-- <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/record-update"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("TĐồng bộ")?></button> -->
+          <input type="hidden" name="updateData" class="filter-name" value="update">
           <button
             class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
             data-action="modal"
@@ -199,7 +196,7 @@
               </div>
             </th>
             <th
-              data-name="id"
+              data-name="recordId"
               data-orderable="true"
               class="text-nowrap"
               data-visible="true"

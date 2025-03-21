@@ -177,14 +177,18 @@
                             "router"=> '/record',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
                         ],
+                        'record2'      =>[
+                            "name"  => $jatbi->lang("Hồ sơ 2"),
+                            "router"=> '/record2',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
                     ],
                     "controllers"=>"controllers/core/record.php",
                     "main"=>'false',
                     "permission"=>[
-                        'record'      =>$jatbi->lang("Hồ sơ"),
-                        'record.add'  =>$jatbi->lang("Thêm hồ sơ"),
-                        'record.edit' =>$jatbi->lang("Sửa hồ so"),
+                        'record'        =>$jatbi->lang("Hồ sơ"),
                         'record.deleted'=>$jatbi->lang("Xóa hồ sơ"),
+                        'record2'       =>$jatbi->lang("Hồ sơ 2"),
                     ]
                 ],
             ],
