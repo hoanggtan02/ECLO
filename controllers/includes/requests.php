@@ -107,7 +107,7 @@
                     ]
                 ],
                 'employee'=>[
-                    "menu"=>$jatbi->lang("Quản lý"),
+                    "menu"=>$jatbi->lang("Quản lý nhân viên"),
                     "url"=>'/employee',
                     "icon"=>'<i class="ti ti-user "></i>',
                     "sub"=>[
@@ -116,25 +116,25 @@
                             "router"=> '/manager/employee',
                             "icon"  => '<i class="ti ti-user"></i>',
                         ],
-                        'face_employee'    =>[
-                            "name"  => $jatbi->lang("Khuôn mặt"),
-                            "router"=> '/manager/face_employee',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/face_employee.php',
-                        ],
-                        'checkinout'      =>[
-                            "name"  => $jatbi->lang("Thời gian ra vào"),
-                            "router"=> '/manager/checkinout',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/checkinout.php',
+                        // 'face_employee'    =>[
+                        //     "name"  => $jatbi->lang("Khuôn mặt"),
+                        //     "router"=> '/manager/face_employee',
+                        //     "icon"  => '<i class="fas fa-universal-access"></i>',
+                        //     "controllers" => 'controllers/core/face_employee.php',
+                        // ],
+                        // 'checkinout'      =>[
+                        //     "name"  => $jatbi->lang("Thời gian ra vào"),
+                        //     "router"=> '/manager/checkinout',
+                        //     "icon"  => '<i class="fas fa-universal-access"></i>',
+                        //     "controllers" => 'controllers/core/checkinout.php',
 
-                        ],
-                        'timeperiod'      =>[
-                            "name"  => $jatbi->lang("Khung thời gian"),
-                            "router"=> '/manager/timeperiod',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/timeperiod.php',
-                        ],
+                        // ],
+                        // 'timeperiod'      =>[
+                        //     "name"  => $jatbi->lang("Khung thời gian"),
+                        //     "router"=> '/manager/timeperiod',
+                        //     "icon"  => '<i class="fas fa-universal-access"></i>',
+                        //     "controllers" => 'controllers/core/timeperiod.php',
+                        // ],
                     ],
                     "controllers"=>"controllers/core/employee.php",
                     "main"=>'false',
@@ -151,15 +151,76 @@
                         'position.add'  =>$jatbi->lang("Thêm Chức vụ"),
                         'position.edit' =>$jatbi->lang("Sửa Chức vụ"),
                         'position.deleted'=>$jatbi->lang("Xóa Chức vụ"),
+                        // 'checkinout' => $jatbi->lang("Hồ sơ ra vào"),
+                        // 'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
+                        // 'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
+                        // 'checkinout.sync' => $jatbi->lang("Đồng Bộ"),
+                        // 'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
+                        // 'timeperiod'      =>$jatbi->lang("Khung thời gian"),
+                        // 'timeperiod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
+                        // 'timeperiod.sync' =>$jatbi->lang("Đồng Bộ"),
+                        // 'timeperiod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
+                    ]
+                ],
+
+                'checkinout'=>[
+                    "menu"=>$jatbi->lang("Quản lý ra vào"),
+                    "url"=>'/checkinout',
+                    "icon"=>'<i class="ti ti-user "></i>',
+                    "sub"=>[
+                        'checkinout'      =>[
+                            "name"  => $jatbi->lang("Thời gian ra vào"),
+                            "router"=> '/manager/checkinout',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/checkinout.php',
+                        ],
+                    ],
+                    "controllers" => 'controllers/core/timeperiod.php',
+                    "main"=>'false',
+                    "permission"=>[
                         'checkinout' => $jatbi->lang("Hồ sơ ra vào"),
                         'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
                         'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
                         'checkinout.sync' => $jatbi->lang("Đồng Bộ"),
                         'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
+                    ]
+                ],
+
+                'timeperiod'=>[
+                    "menu"=>$jatbi->lang("Quản lý khung thời gian"),
+                    "url"=>'/timeperiod',
+                    "icon"=>'<i class="ti ti-user "></i>',
+                    "sub"=>[
+                        'timeperiod'      =>[
+                            "name"  => $jatbi->lang("Khung thời gian"),
+                            "router"=> '/manager/timeperiod',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
+                    ],
+                    "controllers" => 'controllers/core/timeperiod.php',
+                    "main"=>'false',
+                    "permission"=>[
                         'timeperiod'      =>$jatbi->lang("Khung thời gian"),
                         'timeperiod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
                         'timeperiod.sync' =>$jatbi->lang("Đồng Bộ"),
                         'timeperiod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
+                    ]
+                ],
+
+                'face_employee'=>[
+                    "menu"=>$jatbi->lang("Quản lý khuôn mặt"),
+                    "url"=>'/face_employee',
+                    "icon"=>'<i class="ti ti-user "></i>',
+                    "sub"=>[
+                        'face_employee'    =>[
+                            "name"  => $jatbi->lang("Danh sách khuôn mặt"),
+                            "router"=> '/manager/face_employee',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                        ],
+                    ],
+                    "controllers"=>"controllers/core/face_employee.php",
+                    "main"=>'false',
+                    "permission"=>[
                         'face_employee' => $jatbi->lang("Khuôn mặt"),
                         'face_employee.add' => $jatbi->lang("Thêm Khuôn mặt"),
                         'face_employee.edit' => $jatbi->lang("Sửa Khuôn mặt"),
@@ -167,18 +228,19 @@
                         'face_employee.deleted.multiple' => $jatbi->lang("Xóa nhiều Khuôn mặt"),
                     ]
                 ],
+                
                 'record'=>[
-                    "menu"=>$jatbi->lang("Quản lý 2"),
+                    "menu"=>$jatbi->lang("Quản lý hồ sơ ra vào"),
                     "url"=>'/record',
                     "icon"=>'<i class="ti ti-user "></i>',
                     "sub"=>[
                         'record'      =>[
-                            "name"  => $jatbi->lang("Hồ sơ"),
+                            "name"  => $jatbi->lang("Khoảng thời gian"),
                             "router"=> '/record',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
                         ],
                         'record2'      =>[
-                            "name"  => $jatbi->lang("Hồ sơ 2"),
+                            "name"  => $jatbi->lang("Tất cả"),
                             "router"=> '/record2',
                             "icon"  => '<i class="fas fa-universal-access"></i>',
                         ],
