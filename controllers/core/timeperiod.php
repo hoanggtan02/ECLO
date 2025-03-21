@@ -82,7 +82,7 @@
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
             return [
-                "checkbox" => "<input type='checkbox' class='checker' id=box value='{$data['acTzNumber']}'>",
+                "checkbox" => $app->component("box", ["data" => $data['acTzNumber']]),
                 "acTzNumber" => $data['acTzNumber'],
                 "name" => $data['name'],
                 "mon" => "{$data['monStart']} : {$data['monEnd']}",
@@ -91,7 +91,23 @@
                 "thurs" => "{$data['thursStart']} : {$data['thursEnd']}",
                 "fri" => "{$data['friStart']} : {$data['friEnd']}",
                 "sat" => "{$data['satStart']} : {$data['satEnd']}",
-                "sun" => "{$data['sunStart']} : {$data['sunEnd']}",                         
+                "sun" => "{$data['sunStart']} : {$data['sunEnd']}",
+                "action" => $app->component("action", [
+                    "button" => [          
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Sửa"),
+                            'permission' => ['employee.edit'],
+                            'action' => ['data-url' => '/manager/timeperiod-edit?box=' . $data['acTzNumber'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Xóa"),
+                            'permission' => ['employee.deleted'],
+                            'action' => ['data-url' => '/manager/timeperiod-deleted?box=' . $data['acTzNumber'], 'data-action' => 'modal']
+                        ],
+                    ]
+                ]),                         
             ];
         }, $datas);
     
@@ -113,7 +129,7 @@
         echo $response;
     })->setPermissions(['timeperiod']);
 
-    //Thêm hoặc Sửa timeperiod
+    //Thêm timeperiod
     $app->router("/manager/timeperiod-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Khung thời gian");
         echo $app->render('templates/employee/timeperiod-post.html', $vars, 'global');
@@ -209,7 +225,7 @@
             if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
                 // Thêm dữ liệu vào database
                 $app->insert("timeperiod", $insert);
-                $app->update("timeperiod", $insert, ["acTzNumber" => $acTzNumber]);
+                //$app->update("timeperiod", $insert, ["acTzNumber" => $acTzNumber]);
                 echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
             } else {
                 $errorMessage = $apiResponse['msg'] ?? "Không rõ lỗi";
@@ -221,6 +237,111 @@
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
         }
     })->setPermissions(['timeperiod.add']);
+
+    //Sửa timeperiod
+    $app->router("/manager/timeperiod-edit", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Chỉnh sửa Khung thời gian");
+        
+        $acTzNumber = $app->xss($_GET['box'] ?? '');
+        if (empty($acTzNumber)) {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+            return;
+        }
+    
+        $vars['data'] = $app->get("timeperiod", "*", ["acTzNumber" => $acTzNumber]);
+        if ($vars['data']) {
+            echo $app->render('templates/employee/timeperiod-post.html', $vars, 'global');
+        } else {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+        }
+    })->setPermissions(['timeperiod.edit']);
+    
+    $app->router("/manager/timeperiod-edit", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header(['Content-Type' => 'application/json']);
+        
+        $acTzNumber = $app->xss($_POST['acTzNumber'] ?? '');
+        $acTzname = $app->xss($_POST['acTzname'] ?? '');
+        $monStart = $app->xss($_POST['monStart'] ?? '');
+        $monEnd = $app->xss($_POST['monEnd'] ?? '');
+        $tueStart = $app->xss($_POST['tueStart'] ?? '');
+        $tueEnd = $app->xss($_POST['tueEnd'] ?? '');
+        $wedStart = $app->xss($_POST['wedStart'] ?? '');
+        $wedEnd = $app->xss($_POST['wedEnd'] ?? '');
+        $thursStart = $app->xss($_POST['thursStart'] ?? '');
+        $thursEnd = $app->xss($_POST['thursEnd'] ?? '');
+        $friStart = $app->xss($_POST['friStart'] ?? '');
+        $friEnd = $app->xss($_POST['friEnd'] ?? '');
+        $satStart = $app->xss($_POST['satStart'] ?? '');
+        $satEnd = $app->xss($_POST['satEnd'] ?? '');
+        $sunStart = $app->xss($_POST['sunStart'] ?? '');
+        $sunEnd = $app->xss($_POST['sunEnd'] ?? '');
+    
+    
+        // Kiểm tra dữ liệu đầu vào
+        if (empty($acTzNumber) || empty($acTzname)) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống:Mã Nhóm và Tên Nhóm")]);
+            return;
+        }
+        
+        try {
+            $updateData = [
+                "acTzNumber" => $acTzNumber,
+                "name" => $acTzname,
+                "monStart" => $monStart,
+                "monEnd" => $monEnd,
+                "tueStart" => $tueStart,
+                "tueEnd" => $tueEnd,
+                "wedStart" => $wedStart,
+                "wedEnd" => $wedEnd,
+                "thursStart" => $thursStart,
+                "thursEnd" => $thursEnd,
+                "friStart" => $friStart,
+                "friEnd" => $friEnd,
+                "satStart" => $satStart,
+                "satEnd" => $satEnd,
+                "sunStart" => $sunStart,
+                "sunEnd" => $sunEnd
+            ];
+
+            $updateDataAPI = [
+                "acTzNumber" => $acTzNumber,
+                "acTzName" => $acTzname,
+                "monStart" => $monStart,
+                "monEnd" => $monEnd,
+                "tueStart" => $tueStart,
+                "tueEnd" => $tueEnd,
+                "wedStart" => $wedStart,
+                "wedEnd" => $wedEnd,
+                "thursStart" => $thursStart,
+                "thursEnd" => $thursEnd,
+                "friStart" => $friStart,
+                "friEnd" => $friEnd,
+                "satStart" => $satStart,
+                "satEnd" => $satEnd,
+                "sunStart" => $sunStart,
+                "sunEnd" => $sunEnd
+            ];
+            
+            $jatbi->logs('timeperiod', 'timeperiod-edit', $updateData);
+    
+            $apiData = array_merge(['deviceKey' => '77ed8738f236e8df86', 'secret' => '123456'], $updateDataAPI);
+            $headers = ['Authorization: Bearer your_token', 'Content-Type: application/x-www-form-urlencoded'];
+            
+            $response = $app->apiPost('http://camera.ellm.io:8190/api/ac_timezone/merge', $apiData, $headers);
+            $apiResponse = json_decode($response, true);
+            
+            if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
+                $app->update("timeperiod", $updateData, ["acTzNumber" => $acTzNumber]);
+                echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            } else {
+                echo json_encode(["status" => "error", "content" => $apiResponse['msg'] ?? "Không rõ lỗi"]);
+            }
+        } catch (Exception $e) {
+            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        }
+    })->setPermissions(['timeperiod.edit']);
+    
+    
 
     //Xóa timeperiod
     $app->router("/manager/timeperiod-deleted", 'GET', function($vars) use ($app, $jatbi) {
@@ -356,5 +477,8 @@
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
         }
     })->setPermissions(['timeperiod.sync']);
+    
+
+
 
 ?>
