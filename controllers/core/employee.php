@@ -82,7 +82,7 @@
                             'type' => 'button',
                             'name' => $jatbi->lang("Xem ảnh"),
                             'permission' => ['face_employee'],
-                            'action' => ['data-url' => '/manager/face-viewimage?box='.$data['sn'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/manager/face-viewimage?box='.$data['sn'], 'data-record-action' => 'modal']
                         ],
                         [
                             'type' => 'button',
@@ -558,68 +558,133 @@
     $app->router("/manager/timekeeping-view", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Xem chấm công");
 
-        // Lấy personSn từ query string
-        $personSn = $app->xss($_GET['box'] ?? '');
-        if (empty($personSn)) {
-            $vars['error'] = $jatbi->lang("Không tìm thấy mã nhân viên");
-            echo $app->render('templates/common/error-modal.html', $vars, 'global');
-            return;
+    // Lấy personSn từ query string
+    $personSn = $app->xss($_GET['box'] ?? '');
+    if (empty($personSn)) {
+        $vars['error'] = $jatbi->lang("Không tìm thấy mã nhân viên");
+        echo $app->render('templates/common/error-modal.html', $vars, 'global');
+        return;
+    }
+
+    // Lấy thông tin nhân viên từ bảng face_employee (để hiển thị tên)
+    $faceEmployee = $app->get("face_employee", ["employee_sn", "img_base64"], ["employee_sn" => $personSn]);
+    if (!$faceEmployee) {
+        $vars['error'] = $jatbi->lang("Nhân viên không tồn tại");
+        echo $app->render('templates/common/error-modal.html', $vars, 'global');
+        return;
+    }
+
+    // Lấy thông tin từ bảng employee để lấy tên (nếu cần)
+    $employee = $app->get("employee", ["sn", "name"], ["sn" => $personSn]);
+    $vars['employee_name'] = $employee['name'] ?? 'Không rõ';
+    $vars['employee_sn'] = $personSn;
+
+    // Lấy tháng và năm từ query string (mặc định là tháng hiện tại)
+    $currentMonth = isset($_GET['month']) ? (int)$_GET['month'] : date('n'); // 1-12
+    $currentYear = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
+    $vars['current_month'] = $currentMonth;
+    $vars['current_year'] = $currentYear;
+
+    // Tính tháng trước và tháng sau để điều hướng
+    $prevMonth = $currentMonth - 1;
+    $prevYear = $currentYear;
+    if ($prevMonth < 1) {
+        $prevMonth = 12;
+        $prevYear--;
+    }
+    $nextMonth = $currentMonth + 1;
+    $nextYear = $currentYear;
+    if ($nextMonth > 12) {
+        $nextMonth = 1;
+        $nextYear++;
+    }
+    $vars['prev_month'] = $prevMonth;
+    $vars['prev_year'] = $prevYear;
+    $vars['next_month'] = $nextMonth;
+    $vars['next_year'] = $nextYear;
+
+    // Lấy ngày đầu tiên và ngày cuối cùng của tháng
+    $firstDayOfMonth = new DateTime("$currentYear-$currentMonth-01");
+    $lastDayOfMonth = new DateTime("$currentYear-$currentMonth-" . $firstDayOfMonth->format('t'));
+    $firstDayOfWeek = (int)$firstDayOfMonth->format('w'); // 0 (Chủ nhật) đến 6 (Thứ 7)
+    $totalDays = (int)$lastDayOfMonth->format('d');
+
+    // Tạo mảng để lưu các ngày trong tháng
+    $calendar = [];
+    $week = array_fill(0, 7, null);
+    $dayCount = 1;
+
+    // Điền các ô trống trước ngày đầu tiên của tháng
+    for ($i = 0; $i < $firstDayOfWeek; $i++) {
+        $week[$i] = null;
+    }
+
+    // Điền các ngày trong tháng
+    for ($i = $firstDayOfWeek; $i < 7; $i++) {
+        if ($dayCount > $totalDays) break;
+        $week[$i] = $dayCount;
+        $dayCount++;
+    }
+    $calendar[] = $week;
+
+    // Điền các hàng còn lại
+    while ($dayCount <= $totalDays) {
+        $week = array_fill(0, 7, null);
+        for ($i = 0; $i < 7; $i++) {
+            if ($dayCount > $totalDays) break;
+            $week[$i] = $dayCount;
+            $dayCount++;
         }
+        $calendar[] = $week;
+    }
+    $vars['calendar'] = $calendar;
 
-        // Lấy thông tin nhân viên từ bảng face_employee (để hiển thị tên)
-        $faceEmployee = $app->get("face_employee", ["employee_sn", "img_base64"], ["employee_sn" => $personSn]);
-        if (!$faceEmployee) {
-            $vars['error'] = $jatbi->lang("Nhân viên không tồn tại");
-            echo $app->render('templates/common/error-modal.html', $vars, 'global');
-            return;
-        }
+    // Lấy danh sách chấm công từ bảng record
+    $timekeepingRecords = $app->select("record", [
+        "id",
+        "createTime"
+    ], [
+        "personSn" => $personSn,
+        "ORDER" => ["createTime" => "DESC"]
+    ]);
 
-        // Lấy thông tin từ bảng employee để lấy tên (nếu cần)
-        $employee = $app->get("employee", ["sn", "name"], ["sn" => $personSn]);
-        $vars['employee_name'] = $employee['name'] ?? 'Không rõ';
-        $vars['employee_sn'] = $personSn;
+    if (empty($timekeepingRecords)) {
+        $vars['error'] = $jatbi->lang("Không có dữ liệu chấm công");
+    } else {
+        // Nhóm dữ liệu theo ngày
+        $timekeepingByDate = [];
+        $datesWithRecords = [];
 
-        // Lấy danh sách chấm công từ bảng record
-        $timekeepingRecords = $app->select("record", [
-            "id",
-            "createTime"
-        ], [
-            "personSn" => $personSn,
-            "ORDER" => ["createTime" => "DESC"]
-        ]);
+        foreach ($timekeepingRecords as $record) {
+            $dateTime = explode(" ", $record['createTime']);
+            $date = $dateTime[0]; // Ngày: 2025-03-19
+            $time = $dateTime[1]; // Giờ: 14:43:31
 
-        if (empty($timekeepingRecords)) {
-            $vars['error'] = $jatbi->lang("Không có dữ liệu chấm công");
-        } else {
-            // Nhóm dữ liệu theo ngày
-            $timekeepingByDate = [];
-            $datesWithRecords = [];
-
-            foreach ($timekeepingRecords as $record) {
-                // Tách createTime thành ngày và giờ
-                $dateTime = explode(" ", $record['createTime']);
-                $date = $dateTime[0]; // Ngày: 2025-03-19
-                $time = $dateTime[1]; // Giờ: 14:43:31
-
-                // Lưu danh sách ngày có chấm công
-                $datesWithRecords[$date] = true;
-
-                // Nhóm dữ liệu theo ngày để hiển thị chi tiết
-                if (!isset($timekeepingByDate[$date])) {
-                    $timekeepingByDate[$date] = [];
-                }
-                $timekeepingByDate[$date][] = [
-                    'id' => $record['id'],
-                    'time' => $time
-                ];
+            $datesWithRecords[$date] = true;
+            if (!isset($timekeepingByDate[$date])) {
+                $timekeepingByDate[$date] = [];
             }
-
-            $vars['dates_with_records'] = array_keys($datesWithRecords); // Danh sách ngày có chấm công
-            $vars['timekeeping_by_date'] = $timekeepingByDate; // Dữ liệu chi tiết theo ngày
+            $timekeepingByDate[$date][] = [
+                'id' => $record['id'],
+                'time' => $time
+            ];
         }
-    
-        // Render template HTML
-        echo $app->render('templates/common/view-record.html', $vars, 'global');
+
+        $vars['dates_with_records'] = array_keys($datesWithRecords);
+        $vars['timekeeping_by_date'] = $timekeepingByDate;
+
+        // Lấy ngày được chọn từ query string
+        $selectedDate = isset($_GET['selected_date']) ? $app->xss($_GET['selected_date']) : null;
+        $vars['selected_date'] = $selectedDate;
+        if ($selectedDate && isset($timekeepingByDate[$selectedDate])) {
+            $vars['selected_records'] = $timekeepingByDate[$selectedDate];
+        } else {
+            $vars['selected_records'] = [];
+        }
+    }
+
+    // Render template HTML
+    echo $app->render('templates/common/view-record.html', $vars, 'global');
     })->setPermissions([]);
     
 
