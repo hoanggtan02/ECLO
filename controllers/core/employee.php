@@ -102,6 +102,12 @@
                             'permission' => ['employee.deleted'],
                             'action' => ['data-url' => '/manager/employee-deleted?id=' . $data['sn'], 'data-action' => 'modal']
                         ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Xem Thời Gian Ra Vào"),
+                            'permission' => ['checkinout.edit'],
+                            'action' => ['data-url' => '/manager/checkinout-edit?box=' . $data['sn'], 'data-action' => 'modal']
+                        ],
                     ]
                 ]),
             ];
