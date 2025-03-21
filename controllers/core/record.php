@@ -395,16 +395,12 @@
             "AND" => $where['AND'],
         ]);
         $app->select("record2", 
-        // [
-        //     "[>]permissions" => ["permission" => "id"]
-        //     ], 
             [
             'record2.recordId',
             'record2.personName',
             'record2.personSn',
             'record2.personType',
             'record2.createTime',
-            // 'permissions.name (permission)',
             ], $where, function ($data) use (&$datas,$jatbi,$app) {
             $datas[] = [
                 "checkbox" => $app->component("box",["data"=>$data['recordId']]),
