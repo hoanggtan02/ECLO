@@ -42,7 +42,7 @@
                     "url"=>'/record',
                     "icon"=>'<i class="ti ti-book "></i>',
                     "controllers"=>"controllers/core/record.php",
-                    "main"=>'true',
+                    "main"=>'false',
                     "permission"=>[
                         'record'      =>$jatbi->lang("Hồ sơ"),
                         'record.add'  =>$jatbi->lang("Thêm hồ sơ"),
