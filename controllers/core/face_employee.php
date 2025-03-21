@@ -157,16 +157,18 @@
 
     $app->router("/manager/face_employee-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Thêm khuôn mặt nhân viên");
+        $sn = isset($_GET['id']) ? $app->xss($_GET['id']) : '';
         $vars['data'] = [
-            "employee_sn" => '',
+            "employee_sn" => $sn,
             "img_base64" => '',
             "easy" => '1', // Mặc định là chất lượng cao
         ];
+        
         echo $app->render('templates/employee/face_employee-post.html', $vars, 'global');
     })->setPermissions(['face_employee.add']);
 
 
-    $app->router("/manager/face_employee-add", 'POST', function($vars) use ($app, $jatbi) {
+    $app->router("/manager/face_employee-add", 'POST', function($vars) use ($app, $jatbi, $setting) {
         $app->header(['Content-Type' => 'application/json']);
 
         // Lấy dữ liệu từ form
@@ -517,10 +519,13 @@
     
         // Lấy thông tin record từ cơ sở dữ liệu
         $face_employee = $app->select("face_employee", ["employee_sn", "img_base64", "easy"], ["employee_sn" => $recordId]);
+        $employee = $app->select("employee", ["sn"], ["sn" => $recordId]);
+
 
         $vars['image'] = $face_employee[0]['img_base64'];
+        $vars['sn'] = $employee[0]['sn'];
 
         // Render template HTML (không cần header JSON)
-        echo $app->render('templates/common/view-image.html', $vars, 'global');
+        echo $app->render('templates/common/view-image-post.html', $vars, 'global');
     })->setPermissions(['face_employee']);
 ?>

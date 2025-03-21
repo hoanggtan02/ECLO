@@ -1,0 +1,61 @@
+<div class="modal fade modal-load" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg pt-standalone">
+    <div class="modal-content rounded-5">
+      <div
+        class="d-flex w-100 justify-content-end align-items-center position-relative"
+      >
+        <button
+          type="button"
+          class="btn btn-primary position-absolute z-1 rounded-circle d-flex align-items-center justify-content-center width height top right"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+          style="--width: 50px; --height: 50px; --top: -5px; --right: -5px"
+        >
+          <i class="ti ti-x fs-4"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h5 class="fw-bold text-body mb-3"><?=$title?></h5>
+        <?php if (isset($error)): ?>
+        <div class="alert alert-danger"><?=$error?></div>
+        <?php elseif (isset($image)): ?>
+        <div class="text-center">
+          <img
+            src="data:image/jpeg;base64,<?=$image?>"
+            alt="Ảnh khuôn mặt"
+            style="max-width: 100%; max-height: 400px"
+            class="rounded"
+          />
+          <div class="d-flex align-items-center justify-content-end">
+            <button
+              class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+              data-action="modal"
+              data-url="/manager/face_employee-edit?id=<?= $sn ?>"
+            >
+              <i class="ti ti-plus fs-6 me-1"></i> Sửa ảnh
+            </button>
+            <button
+              class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
+              data-action="modal"
+              data-url="/manager/face_employee-deleted?id=<?= $sn ?>"
+            >
+              <i class="ti ti-trash fs-6 me-1"></i> Xóa
+            </button>
+          </div>
+        </div>
+        <?php else: ?>
+        <div class="alert alert-warning">
+          <?=$jatbi->lang("Không có ảnh để hiển thị")?>
+          <button
+            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+            data-action="modal"
+            data-url="/manager/face_employee-add?id=<?= $sn ?>"
+          >
+            <i class="ti ti-plus fs-6 me-1"></i> Thêm ảnh
+          </button>
+        </div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+</div>
