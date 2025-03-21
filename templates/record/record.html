@@ -59,8 +59,7 @@
                     ><?=$jatbi->lang("Mã nhân viên")?></label
                   >
                   <input type="text" name="personSn" class="filter-name
-                  form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Tất
-                  cả nhân viên")?>" value="<?=$data[''] ?? ''?>">
+                  form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Tất cả nhân viên")?>" value="<?=$data[''] ?? ''?>">
                 </div>
                 <div class="mb-3">
                   <label class="fw-bold text-body mb-2"
@@ -87,24 +86,6 @@
                 </div>
               </div>
             </div>
-            <!-- <div class="px-3">
-                           <?=$app->component('select',[
-                                "name"=>'status',
-                                "placeholder"=>$jatbi->lang("Trạng thái"),
-                                "selected" => $app->xss($_GET['status'] ?? ''),
-                                "class" => 'filter-name',
-                                "attr" => 'data-width="100%"',
-                                "options" => [["value"=>"A","text"=>$jatbi->lang("Kích hoạt")],["value"=>"D","text"=>$jatbi->lang("Không Kích hoạt")],]
-                            ])?>
-                           <?=$app->component('select',[
-                                "name"=>'permission',
-                                "placeholder"=>$jatbi->lang("Nhóm quyền"),
-                                "selected" => $app->xss($_GET['permission'] ?? ''),
-                                "class" => 'filter-name',         
-                                "attr" => 'data-width="100%" multiple data-actions-box="true"',
-                                "options" => $permission,
-                            ])?>
-                        </div> -->
             <hr class="border-secondary border-opacity-50 my-2" />
             <div class="px-3 py-2 text-end w-100">
               <button
