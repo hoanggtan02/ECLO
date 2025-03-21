@@ -160,6 +160,7 @@
                         'timeperiod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
                         'timeperiod.sync' =>$jatbi->lang("Đồng Bộ"),
                         'timeperiod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
+                        'timeperiod.edit'=>$jatbi->lang("Sửa Khung thời gian"),
                         'face_employee' => $jatbi->lang("Khuôn mặt"),
                         'face_employee.add' => $jatbi->lang("Thêm Khuôn mặt"),
                         'face_employee.edit' => $jatbi->lang("Sửa Khuôn mặt"),
