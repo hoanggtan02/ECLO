@@ -108,7 +108,57 @@
         $app->header([
             'Content-Type' => 'application/json',
         ]);
-        updateData($app);
+        $headers = [
+            'Authorization: Bearer your_token',
+            'Content-Type: application/x-www-form-urlencoded'
+        ];
+
+        $startTime = $app->max("record", "createTime"); //Lấy createTime trong database 
+        if (!empty($startTime )) {
+            $startTime = strtotime($startTime) * 1000 - 25200000; //trừ 7 tiếng
+            // $recordIdMax = $app->max("record2", "recordId");
+        } else {
+            $startTime = 1740762000000; //Lấy 1/3/2025 
+        }
+        // $today = round(microtime(true) * 1000000); //Lấy thời gian hiện tại và chuyển sang timestamp mili giây (13 chữ số)
+        $today = strtotime("+1 day") * 1000;
+        $endTime = $startTime + 86400000;
+
+        while ($endTime < $today) {
+
+            $apiData = [
+                'deviceKey' => '77ed8738f236e8df86',
+                'secret'    => '123456',
+                'startTime' => $startTime,
+                "endTime"   => $endTime,
+                "length"    => 1000,
+            ];
+
+            $response = $app->apiPost('http://camera.ellm.io:8190/api/record/findList', $apiData, $headers);
+            $apiResponse = json_decode($response, true);
+
+            if (!$apiResponse || !isset($apiResponse['success']) || !$apiResponse['success'] || !isset($apiResponse['data'])) { //Kiểm tra dữ liệu API có hợp lệ không
+                echo json_encode(['status'=>'error','content'=>$jatbi->lang("Không thể kết nối tới API")]);
+                exit;
+            } else {
+                foreach ($apiResponse['data'] as $data) {
+                    $check = $app->select("record","*",["id"=>$data['id']]);
+                    if(count($check) == 0){
+                        $adjustedCreateTime = $data['createTime'] + (7 * 3600 * 1000);//Điều chỉnh thời gian: trừ 6 tiếng từ timestamp của API
+                        $insert = [
+                            "id"   => $data['id'],
+                            "personName" => $data['personName'] ?? "Không rõ",
+                            "personSn"   => $data['personSn'] ?? "",
+                            "personType" => $data['personType'],
+                            "createTime" => date("Y-m-d H:i:s", $adjustedCreateTime / 1000), //Sử dụng thời gian đã điều chỉnh, chuyển timestamp thành thời gian đọc được
+                        ];
+                        $app->insert("record",$insert);
+                    } 
+                }
+            } 
+            $startTime = $startTime + 86400000;
+            $endTime = $endTime + 86400000;
+        }
         echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Cập nhật thành công")]);
     })->setPermissions(['record']);
 
@@ -133,6 +183,7 @@
 
         if(count($datas)>0){
             foreach($datas as $data){
+                $deletedCount++;
                 $app->delete("record",["id"=>$data['id']]);
                 // $name[] = $data['name'];
 
@@ -148,11 +199,11 @@
                 // $apiResponse = json_decode($response, true);
 
                 // if (!empty($apiResponse['success']) && $apiResponse['success'] === true) {
-                //     $deletedCount++;
+    
                 // }
             }
 
-            $jatbi->logs('accounts','accounts-deleted',$datas);
+            $jatbi->logs('record','record-deleted',$datas);
             // $jatbi->trash('/users/accounts-restore',"Tài khoản: ".implode(', ',$name),["database"=>'accounts',"data"=>$boxid]);
             echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Đã xóa thành công $deletedCount hồ sơ")]);
         }
@@ -219,56 +270,3 @@
         // Render template HTML (không cần header JSON)
         echo $app->render('templates/common/view-image.html', $vars, 'global');
     })->setPermissions(['record']);
-
-    function updateData($app) {
-        $headers = [
-            'Authorization: Bearer your_token',
-            'Content-Type: application/x-www-form-urlencoded'
-        ];
-
-        $startTime = $app->max("record", "createTime"); //Lấy createTime trong database 
-        if (!empty($startTime )) {
-            $startTime = strtotime($startTime) * 1000 - 25200000; //trừ 7 tiếng
-            // $recordIdMax = $app->max("record2", "recordId");
-        } else {
-            $startTime = 1740762000000; //Lấy 1/3/2025 
-        }
-        // $today = round(microtime(true) * 1000000); //Lấy thời gian hiện tại và chuyển sang timestamp mili giây (13 chữ số)
-        $today = strtotime("+1 day") * 1000;
-        $endTime = $startTime + 86400000;
-
-        while ($endTime < $today) {
-
-            $apiData = [
-                'deviceKey' => '77ed8738f236e8df86',
-                'secret'    => '123456',
-                'startTime' => $startTime,
-                "endTime"   => $endTime,
-                "length"    => 1000,
-            ];
-
-            $response = $app->apiPost('http://camera.ellm.io:8190/api/record/findList', $apiData, $headers);
-            $apiResponse = json_decode($response, true);
-
-            if (!$apiResponse || !isset($apiResponse['success']) || !$apiResponse['success'] || !isset($apiResponse['data'])) { //Kiểm tra dữ liệu API có hợp lệ không
-                // echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
-            } else {
-                foreach ($apiResponse['data'] as $data) {
-                    $check = $app->select("record","*",["id"=>$data['id']]);
-                    if(count($check) == 0){
-                        $adjustedCreateTime = $data['createTime'] + (7 * 3600 * 1000);//Điều chỉnh thời gian: trừ 6 tiếng từ timestamp của API
-                        $insert = [
-                            "id"   => $data['id'],
-                            "personName" => $data['personName'] ?? "Không rõ",
-                            "personSn"   => $data['personSn'] ?? "",
-                            "personType" => $data['personType'],
-                            "createTime" => date("Y-m-d H:i:s", $adjustedCreateTime / 1000), //Sử dụng thời gian đã điều chỉnh, chuyển timestamp thành thời gian đọc được
-                        ];
-                        $app->insert("record",$insert);
-                    } 
-                }
-            } 
-            $startTime = $startTime + 86400000;
-            $endTime = $endTime + 86400000;
-        }
-    }
