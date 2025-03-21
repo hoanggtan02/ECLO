@@ -14,6 +14,106 @@
                 ],
             ],
         ],
+        "timekeeping"=>[
+            "name"=>$jatbi->lang("Chấm công"),
+            "item"=>[
+                'group-access'=>[
+                    "menu"=>$jatbi->lang("Nhóm kiểm soát"),
+                    "url"=>'/group-access',
+                    "icon"=>'<i class="ti ti-users-group"></i>',
+                    "sub"=>[
+                        'group-access'    =>[
+                            "name"  => $jatbi->lang("Danh sách nhóm"),
+                            "router"=> '/control/group-access',
+                            "icon"  => '<i class="fas fa-key"></i>',
+                        ],
+                    ],
+                    "controllers"=>"controllers/core/group-access.php",
+                    "main"=>'false',
+                    "permission"=>[
+                        'group-access'          => $jatbi->lang("Nhóm kiểm soát"),
+                        'group-access.add'      => $jatbi->lang("Thêm Nhóm kiểm soát"),
+                        'group-access.edit'     => $jatbi->lang("Sửa Nhóm kiểm soát"),
+                        'group-access.deleted'  => $jatbi->lang("Xóa Nhóm kiểm soát"),
+                    ]
+                ],
+                'record'=>[
+                    "menu"=>$jatbi->lang("Danh Sách Ra Vào"),
+                    "url"=>'/record',
+                    "icon"=>'<i class="ti ti-book "></i>',
+                    "controllers"=>"controllers/core/record.php",
+                    "main"=>'true',
+                    "permission"=>[
+                        'record'      =>$jatbi->lang("Hồ sơ"),
+                        'record.add'  =>$jatbi->lang("Thêm hồ sơ"),
+                        'record.edit' =>$jatbi->lang("Sửa hồ so"),
+                        'record.deleted'=>$jatbi->lang("Xóa hồ sơ"),
+                    ]
+                ],
+                'employee'=>[
+                    "menu"=>$jatbi->lang("Quản lý"),
+                    "url"=>'/employee',
+                    "icon"=>'<i class="ti ti-layout-dashboard "></i>',
+                    "sub"=>[
+                        'employee'      =>[
+                            "name"  => $jatbi->lang("Nhân viên"),
+                            "router"=> '/manager/employee',
+                            "icon"  => '<i class="ti ti-user"></i>',
+                        ],
+                        'face_employee'    =>[
+                            "name"  => $jatbi->lang("Khuôn mặt"),
+                            "router"=> '/manager/face_employee',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/face_employee.php',
+                        ],
+                        'checkinout'      =>[
+                            "name"  => $jatbi->lang("Thời gian ra vào"),
+                            "router"=> '/manager/checkinout',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/checkinout.php',
+
+                        ],
+                        'timeperiod'      =>[
+                            "name"  => $jatbi->lang("Khung thời gian"),
+                            "router"=> '/manager/timeperiod',
+                            "icon"  => '<i class="fas fa-universal-access"></i>',
+                            "controllers" => 'controllers/core/timeperiod.php',
+                        ],
+                    ],
+                    "controllers"=>"controllers/core/employee.php",
+                    "main"=>'false',
+                    "permission"=>[
+                        'employee'      =>$jatbi->lang("Nhân viên"),
+                        'employee.add'  =>$jatbi->lang("Thêm Nhân viên"),
+                        'employee.edit' =>$jatbi->lang("Sửa Nhân viên"),
+                        'employee.deleted'=>$jatbi->lang("Xóa Nhân viên"),
+                        'department'    =>$jatbi->lang("Phòng ban"),
+                        'department.add'=>$jatbi->lang("Thêm Phòng ban"),
+                        'department.edit'=>$jatbi->lang("Sửa Phòng ban"),
+                        'department.deleted'=>$jatbi->lang("Xóa Phòng   ban"),
+                        'position'      =>$jatbi->lang("Chức vụ"),
+                        'position.add'  =>$jatbi->lang("Thêm Chức vụ"),
+                        'position.edit' =>$jatbi->lang("Sửa Chức vụ"),
+                        'position.deleted'=>$jatbi->lang("Xóa Chức vụ"),
+                        'checkinout' => $jatbi->lang("Hồ sơ ra vào"),
+                        'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
+                        'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
+                        'checkinout.sync' => $jatbi->lang("Đồng Bộ"),
+                        'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
+                        'timeperiod'      =>$jatbi->lang("Khung thời gian"),
+                        'timeperiod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
+                        'timeperiod.sync' =>$jatbi->lang("Đồng Bộ"),
+                        'timeperiod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
+                        'timeperiod.edit'=>$jatbi->lang("Sửa Khung thời gian"),
+                        'face_employee' => $jatbi->lang("Khuôn mặt"),
+                        'face_employee.add' => $jatbi->lang("Thêm Khuôn mặt"),
+                        'face_employee.edit' => $jatbi->lang("Sửa Khuôn mặt"),
+                        'face_employee.deleted' => $jatbi->lang("Xóa Khuôn mặt"),
+                        'face_employee.deleted.multiple' => $jatbi->lang("Xóa nhiều Khuôn mặt"),
+                    ]
+                ],
+            ],
+        ],
         "page"=>[
             "name"=>'Admin',
             "item"=>[
@@ -84,112 +184,6 @@
                         'config'        =>$jatbi->lang("Cấu hình"),
                         'logs'          =>$jatbi->lang("Nhật ký"),
                         'trash'          =>$jatbi->lang("Thùng rác"),
-                    ]
-                ],
-                'group-access'=>[
-                    "menu"=>$jatbi->lang("Nhóm kiểm soát"),
-                    "url"=>'/group-access',
-                    "icon"=>'<i class="ti ti-user"></i>',
-                    "sub"=>[
-                        'group-access'    =>[
-                            "name"  => $jatbi->lang("Danh sách nhóm"),
-                            "router"=> '/control/group-access',
-                            "icon"  => '<i class="fas fa-key"></i>',
-                        ],
-                    ],
-                    "controllers"=>"controllers/core/group-access.php",
-                    "main"=>'false',
-                    "permission"=>[
-                        'group-access'          => $jatbi->lang("Nhóm kiểm soát"),
-                        'group-access.add'      => $jatbi->lang("Thêm Nhóm kiểm soát"),
-                        'group-access.edit'     => $jatbi->lang("Sửa Nhóm kiểm soát"),
-                        'group-access.deleted'  => $jatbi->lang("Xóa Nhóm kiểm soát"),
-                    ]
-                ],
-                'employee'=>[
-                    "menu"=>$jatbi->lang("Quản lý"),
-                    "url"=>'/employee',
-                    "icon"=>'<i class="ti ti-user "></i>',
-                    "sub"=>[
-                        'employee'      =>[
-                            "name"  => $jatbi->lang("Nhân viên"),
-                            "router"=> '/manager/employee',
-                            "icon"  => '<i class="ti ti-user"></i>',
-                        ],
-                        'face_employee'    =>[
-                            "name"  => $jatbi->lang("Khuôn mặt"),
-                            "router"=> '/manager/face_employee',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/face_employee.php',
-                        ],
-                        'checkinout'      =>[
-                            "name"  => $jatbi->lang("Thời gian ra vào"),
-                            "router"=> '/manager/checkinout',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/checkinout.php',
-
-                        ],
-                        'timeperiod'      =>[
-                            "name"  => $jatbi->lang("Khung thời gian"),
-                            "router"=> '/manager/timeperiod',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/timeperiod.php',
-                        ],
-                    ],
-                    "controllers"=>"controllers/core/employee.php",
-                    "main"=>'false',
-                    "permission"=>[
-                        'employee'      =>$jatbi->lang("Nhân viên"),
-                        'employee.add'  =>$jatbi->lang("Thêm Nhân viên"),
-                        'employee.edit' =>$jatbi->lang("Sửa Nhân viên"),
-                        'employee.deleted'=>$jatbi->lang("Xóa Nhân viên"),
-                        'department'    =>$jatbi->lang("Phòng ban"),
-                        'department.add'=>$jatbi->lang("Thêm Phòng ban"),
-                        'department.edit'=>$jatbi->lang("Sửa Phòng ban"),
-                        'department.deleted'=>$jatbi->lang("Xóa Phòng   ban"),
-                        'position'      =>$jatbi->lang("Chức vụ"),
-                        'position.add'  =>$jatbi->lang("Thêm Chức vụ"),
-                        'position.edit' =>$jatbi->lang("Sửa Chức vụ"),
-                        'position.deleted'=>$jatbi->lang("Xóa Chức vụ"),
-                        'checkinout' => $jatbi->lang("Hồ sơ ra vào"),
-                        'checkinout.add' => $jatbi->lang("Thêm Hồ sơ ra vào"),
-                        'checkinout.edit' => $jatbi->lang("Sửa Hồ sơ ra vào"),
-                        'checkinout.sync' => $jatbi->lang("Đồng Bộ"),
-                        'checkinout.deleted' => $jatbi->lang("Xóa Hồ sơ ra vào"),
-                        'timeperiod'      =>$jatbi->lang("Khung thời gian"),
-                        'timeperiod.add'  =>$jatbi->lang("Thêm Khung thời gian"),
-                        'timeperiod.sync' =>$jatbi->lang("Đồng Bộ"),
-                        'timeperiod.deleted'=>$jatbi->lang("Xóa Khung thời gian"),
-                        'timeperiod.edit'=>$jatbi->lang("Sửa Khung thời gian"),
-                        'face_employee' => $jatbi->lang("Khuôn mặt"),
-                        'face_employee.add' => $jatbi->lang("Thêm Khuôn mặt"),
-                        'face_employee.edit' => $jatbi->lang("Sửa Khuôn mặt"),
-                        'face_employee.deleted' => $jatbi->lang("Xóa Khuôn mặt"),
-                        'face_employee.deleted.multiple' => $jatbi->lang("Xóa nhiều Khuôn mặt"),
-                    ]
-                ],
-                'record'=>[
-                    "menu"=>$jatbi->lang("Quản lý 2"),
-                    "url"=>'/record',
-                    "icon"=>'<i class="ti ti-user "></i>',
-                    "sub"=>[
-                        'record'      =>[
-                            "name"  => $jatbi->lang("Hồ sơ"),
-                            "router"=> '/record',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                        ],
-                        'record2'      =>[
-                            "name"  => $jatbi->lang("Hồ sơ 2"),
-                            "router"=> '/record2',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                        ],
-                    ],
-                    "controllers"=>"controllers/core/record.php",
-                    "main"=>'false',
-                    "permission"=>[
-                        'record'        =>$jatbi->lang("Hồ sơ"),
-                        'record.deleted'=>$jatbi->lang("Xóa hồ sơ"),
-                        'record2'       =>$jatbi->lang("Hồ sơ 2"),
                     ]
                 ],
             ],
