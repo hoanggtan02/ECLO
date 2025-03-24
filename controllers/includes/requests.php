@@ -17,17 +17,19 @@
         "timekeeping"=>[
             "name"=>$jatbi->lang("Chấm công"),
             "item"=>[
+                'api'=>[
+                    "menu"=>null,
+                    "url"=>'/',
+                    //<i class="ti ti-users-group"></i>
+                    "icon"=>null,
+                    "controllers"=>"controllers/core/api.php",
+                    "main"=>'true',
+                    "permission"=>"",
+                ],
                 'group-access'=>[
                     "menu"=>$jatbi->lang("Nhóm kiểm soát"),
-                    "url"=>'/group-access',
+                    "url"=>'/control/group-access',
                     "icon"=>'<i class="ti ti-users-group"></i>',
-                    "sub"=>[
-                        'group-access'    =>[
-                            "name"  => $jatbi->lang("Danh sách nhóm"),
-                            "router"=> '/control/group-access',
-                            "icon"  => '<i class="fas fa-key"></i>',
-                        ],
-                    ],
                     "controllers"=>"controllers/core/group-access.php",
                     "main"=>'false',
                     "permission"=>[
