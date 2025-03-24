@@ -48,7 +48,7 @@
                     "permission"=>[
                         'record'      =>$jatbi->lang("Hồ sơ"),
                         'record.add'  =>$jatbi->lang("Thêm hồ sơ"),
-                        'record.edit' =>$jatbi->lang("Sửa hồ so"),
+                        'record.edit' =>$jatbi->lang("Sửa hồ sơ"),
                         'record.deleted'=>$jatbi->lang("Xóa hồ sơ"),
                     ]
                 ],

@@ -54,3 +54,4 @@ $app->router("/api", 'POST', function($vars) use ($app, $jatbi, $setting) {
     echo json_encode(["status" => "success"]);
 });
 ?>
+
