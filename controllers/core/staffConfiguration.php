@@ -86,7 +86,6 @@ $app->router("/staffConfiguration/department", 'POST', function($vars) use ($app
         "recordsFiltered" => $count,
         "data" => $datas ?? [],
     ]);
-
 })->setPermissions(['staffConfiguration']);
 
 //----------------------------------------Thêm phòng ban----------------------------------------
@@ -160,6 +159,131 @@ $app->router("/staffConfiguration/department-edit/{id}", 'POST', function($vars)
     }
 })->setPermissions(['staffConfiguration']);
 
+
+//========================================Tiền lương========================================
+$app->router("/staffConfiguration/salary", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
+    $vars['title1'] = $jatbi->lang("Tiền lương");
+    // $vars['employee'] = $app->select("employee",["name (text)","sn (value)"],[]);
+    echo $app->render('templates/staffConfiguration/salary.html', $vars);
+})->setPermissions(['staffConfiguration']);
+
+$app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $draw = isset($_POST['draw']) ? intval($_POST['draw']) : 0;
+    $start = $_POST['start'] ?? 0;
+    $length = $_POST['length'] ?? 10;
+    $searchValue = $_POST['search']['value'] ?? '';
+    $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'id';
+    $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
+
+    $personSn = $app->xss($_POST['personSn'] ?? "");
+    $personType = $app->xss($_POST['personType'] ?? "");
+
+    $where = [
+        "AND" => [
+            "OR" => [
+                "staff-salary.id[~]" => $searchValue,
+                "staff-salary.name[~]" => $searchValue,
+                "staff-salary.type[~]" => $searchValue,
+            ],
+        ],
+        "LIMIT" => [$start, $length],
+        "ORDER" => [$orderName => strtoupper($orderDir)]
+    ];
+    
+    // if(!empty($personSn)) {
+    //     $where["AND"]["record.personSn"] = $personSn;
+    // }
+    // if($personType > -1) {
+    //     $where["AND"]["record.personType"] = $personType;
+    // }
+    
+    $count = $app->count("department",[
+        "AND" => $where['AND'],
+    ]);
+
+    $app->select("staff-salary",  
+        [
+        'staff-salary.id',
+        'staff-salary.name',
+        'staff-salary.type',
+        'staff-salary.price',
+        'staff-salary.note',
+        'staff-salary.status',
+        ], $where, function ($data) use (&$datas,$jatbi,$app) {
+        $datas[] = [
+            "checkbox"        => $app->component("box",["data"=>$data['id']]),
+            "id"              => $data['id'],
+            "name"            => $data['name'],
+            "type"            => $data['type'],
+            "price"           => $data['price'],
+            "note"            => $data['note'],
+            "status"          => $app->component("status",["data"=>$data['status'],"permission"=>['staffConfiguration']]),
+            "action"          => $app->component("action",[
+                "button" => [
+                    [
+                        'type' => 'button',
+                        'name' => $jatbi->lang("Sửa"),
+                        // 'permission' => ['accounts.edit'],
+                        'action' => ['data-url' => '/staffConfiguration/department-edit/'.$data['id'], 'data-action' => 'modal']
+                    ],
+                    [
+                        'type' => 'button',
+                        'name' => $jatbi->lang("Xóa"),
+                        // 'permission' => ['accounts.deleted'],
+                        // 'action' => ['data-url' => '/users/accounts-deleted?box='.$data['active'], 'data-action' => 'modal']
+                    ],
+                ]
+            ]),
+        ];
+    }); 
+
+    echo json_encode([
+        "draw" => $draw,
+        "recordsTotal" => $count,
+        "recordsFiltered" => $count,
+        "data" => $datas ?? [],
+    ]);
+})->setPermissions(['staffConfiguration']);
+
+//----------------------------------------Thêm phòng ban----------------------------------------
+$app->router("/staffConfiguration/salary-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $vars['title'] = $jatbi->lang("Thêm Tiền lương");
+            // $vars['permissions'] = $app->select("permissions","*",["deleted"=>0,"status"=>"A"]);
+            // $vars['data'] = [
+            //     "status" => 'A',
+            //     "permission" => '',
+            //     "gender" => '',
+            // ];
+    echo $app->render('templates/staffConfiguration/salary-post.html', $vars, 'global');
+})->setPermissions(['staffConfiguration']);
+
+$app->router("/staffConfiguration/salary-add", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    if($app->xss($_POST['departmentName'])=='') {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Tên Phòng ban không được để trống.")]);
+    } else {
+        $insert = [
+            "departmentName" => $app->xss($_POST['departmentName']),
+            "note"           => $app->xss($_POST['note'])?? '',
+            "status"         => $app->xss($_POST['status']),
+        ];
+        $app->insert("department",$insert);
+        echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+    }
+
+    // $app->insert("department",$insert);
+    // echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Cập nhật thành công")]);
+    // echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+        // $jatbi->logs('accounts','accounts-add',$insert);
+    exit;
+
+})->setPermissions(['staffConfiguration']);
 
 // Tân làm ở sau đây nha
 
