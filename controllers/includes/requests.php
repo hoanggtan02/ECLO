@@ -218,9 +218,15 @@
                     "menu"=>$jatbi->lang("Ứng lương"),
                     "url"=>'/advance-salary',
                     "icon"=>'<i class="ti ti-credit-card"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/advance_salary.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                      'advance-salary'=>$jatbi->lang("Ứng lương"),
+                        'advance-salary.add'   =>$jatbi->lang("Thêm Ứng lương"),
+                        'advance-salary.edit'  =>$jatbi->lang("Sửa Ứng lương"),
+                        'advance-salary.deleted'=>$jatbi->lang("Xóa Ứng lương"),
+      
+                    ]
                 ],
                 'employees'=>[
                     "menu"=>$jatbi->lang("Nhân viên"),
