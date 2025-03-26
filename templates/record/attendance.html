@@ -1,0 +1,239 @@
+<div class="container">
+    <!-- Breadcrumb và tiêu đề -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+            <ul class="breadcrumb small mb-0">
+                <li class="breadcrumb-item small">
+                    <a href="/" class="pjax-load link-secondary"><?=$jatbi->lang("Trang chủ")?></a>
+                </li>
+                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title?></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Thanh công cụ -->
+    <div class="card-header border-0 pb-0 pt-6">
+        <form method="GET" class="pjax-load search-form w-100" data-pjax-state="">
+            <div class="row g-4 align-items-center">
+                <div class="col-sm-3">
+                    <div class="d-flex align-items-center position-relative my-1">
+                        <span class="svg-icon svg-icon-1 position-absolute ms-6">
+                            <i class="ti ti-search"></i>
+                        </span>
+                        <input type="text" name="name" class="form-control form-control-solid w-100 ps-14 search" value="<?=$_GET['name'] ?? ''?>" placeholder="<?=$jatbi->lang("Tìm kiếm")?>">
+                    </div>
+                </div>
+                <div class="col-sm-auto ms-auto">
+                    <div class="d-flex">
+                        <a href="/manager/attendance/excel" class="btn btn-primary me-3"><?=$jatbi->lang("Xuất Excel")?></a>
+                        <a href="/manager/attendance/excel_pro" class="btn btn-primary me-3"><?=$jatbi->lang("Xuất Excel theo công")?></a>
+                        <div class="hstack gap-2">
+                            <button type="button" class="btn btn-light-primary" data-bs-toggle="offcanvas" href="#offcanvasExample">
+                                <i class="ti ti-filter"></i> <?=$jatbi->lang("Thêm điều kiện lọc")?>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+                <div class="offcanvas-header bg-light">
+                    <h5 class="offcanvas-title" id="offcanvasExampleLabel"><?=$jatbi->lang("Thêm điều kiện lọc")?></h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <div class="filer-item personnels">
+                        <label><?=$jatbi->lang("Nhân viên")?></label>
+                        <select name="personnels" data-control="select2" class="form-control" style="width: 100%">
+                            <option value=""><?=$jatbi->lang("Nhân viên")?></option>
+                            <?php foreach ($employees as $emp): ?>
+                                <option value="<?=$emp['sn']?>" <?= $_GET['personnels'] == $emp['sn'] ? 'selected' : '' ?>><?=$emp['name']?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="filer-item month">
+                        <label><?=$jatbi->lang("Tháng")?></label>
+                        <select name="month" data-control="select2" class="form-control" style="width: 100%">
+                            <option value=""><?=$jatbi->lang("Tháng")?></option>
+                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                <option value="<?=$i?>" <?= $month == $i ? 'selected' : '' ?>><?=$i?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <div class="filer-item year">
+                        <label><?=$jatbi->lang("Năm")?></label>
+                        <select name="year" data-control="select2" class="form-control" style="width: 100%">
+                            <option value=""><?=$jatbi->lang("Năm")?></option>
+                            <?php for ($i = 2021; $i <= 2025; $i++): ?>
+                                <option value="<?=$i?>" <?= $year == $i ? 'selected' : '' ?>><?=$i?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="offcanvas-footer border-top p-3 text-center hstack gap-2">
+                    <a class="btn btn-light w-100 filler-cancel pjax-load" href=""><?=$jatbi->lang("Hủy")?></a>
+                    <button type="submit" class="btn btn-success w-100 filler-add" data-bs-dismiss="offcanvas"><?=$jatbi->lang("Thêm điều kiện")?></button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bảng chấm công -->
+    <div class="card-body">
+        <div class="pjax-content-load">
+            <div class="table-responsive">
+                <table class="table table-bordered align-top small" id="attendanceTable">
+                    <thead>
+                        <tr>
+                            <td class="fw-bold align-middle text-center p-1" rowspan="2"><?=$jatbi->lang("Ngày")?></td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">T7</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">CN</td>
+                            <td class="text-center align-middle fw-bold small p-1">T2</td>
+                            <td class="text-center align-middle fw-bold small p-1">T3</td>
+                            <td class="text-center align-middle fw-bold small p-1">T4</td>
+                            <td class="text-center align-middle fw-bold small p-1">T5</td>
+                            <td class="text-center align-middle fw-bold small p-1">T6</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">T7</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">CN</td>
+                            <td class="text-center align-middle fw-bold small p-1">T2</td>
+                            <td class="text-center align-middle fw-bold small p-1">T3</td>
+                            <td class="text-center align-middle fw-bold small p-1">T4</td>
+                            <td class="text-center align-middle fw-bold small p-1">T5</td>
+                            <td class="text-center align-middle fw-bold small p-1">T6</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">T7</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">CN</td>
+                            <td class="text-center align-middle fw-bold small p-1">T2</td>
+                            <td class="text-center align-middle fw-bold small p-1">T3</td>
+                            <td class="text-center align-middle fw-bold small p-1">T4</td>
+                            <td class="text-center align-middle fw-bold small p-1">T5</td>
+                            <td class="text-center align-middle fw-bold small p-1">T6</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">T7</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">CN</td>
+                            <td class="text-center align-middle fw-bold small p-1">T2</td>
+                            <td class="text-center align-middle fw-bold small p-1">T3</td>
+                            <td class="text-center align-middle fw-bold small p-1">T4</td>
+                            <td class="text-center align-middle fw-bold small p-1">T5</td>
+                            <td class="text-center align-middle fw-bold small p-1">T6</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">T7</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">CN</td>
+                            <td class="text-center align-middle fw-bold small p-1">T2</td>
+                        </tr>
+                        <tr>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">01</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">02</td>
+                            <td class="text-center align-middle fw-bold small p-1">03</td>
+                            <td class="text-center align-middle fw-bold small p-1">04</td>
+                            <td class="text-center align-middle fw-bold small p-1">05</td>
+                            <td class="text-center align-middle fw-bold small p-1">06</td>
+                            <td class="text-center align-middle fw-bold small p-1">07</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">08</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">09</td>
+                            <td class="text-center align-middle fw-bold small p-1">10</td>
+                            <td class="text-center align-middle fw-bold small p-1">11</td>
+                            <td class="text-center align-middle fw-bold small p-1">12</td>
+                            <td class="text-center align-middle fw-bold small p-1">13</td>
+                            <td class="text-center align-middle fw-bold small p-1">14</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">15</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">16</td>
+                            <td class="text-center align-middle fw-bold small p-1">17</td>
+                            <td class="text-center align-middle fw-bold small p-1">18</td>
+                            <td class="text-center align-middle fw-bold small p-1">19</td>
+                            <td class="text-center align-middle fw-bold small p-1">20</td>
+                            <td class="text-center align-middle fw-bold small p-1">21</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">22</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">23</td>
+                            <td class="text-center align-middle fw-bold small p-1">24</td>
+                            <td class="text-center align-middle fw-bold small p-1">25</td>
+                            <td class="text-center align-middle fw-bold small p-1">26</td>
+                            <td class="text-center align-middle fw-bold small p-1">27</td>
+                            <td class="text-center align-middle fw-bold small p-1">28</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #ffe7ca">29</td>
+                            <td class="text-center align-middle fw-bold small p-1" style="background: #e1ffca">30</td>
+                            <td class="text-center align-middle fw-bold small p-1">31</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($data)): ?>
+                            <tr>
+                                <td colspan="32" class="text-center"><?=$jatbi->lang("Không có dữ liệu")?></td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($data as $row): ?>
+                                <tr>
+                                    <td class="text-center"><?=$row['name']?></td>
+                                    <?php for ($day = 1; $day <= 31; $day++): ?>
+                                        <td class="text-center">
+                                            <?php if (!empty($row["day_$day"])): ?>
+                                                <div class="status-<?=$row["day_$day"]?>"> </div>
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endfor; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                <div class="row justify-content-start align-items-start">
+                    <div class="col-lg-3">
+                        <div class="d-flex justify-content-start align-items-center mb-2">
+                            <div class="p-3 bg-danger bg-opacity-20 me-2 border"></div>
+                            <span><?=$jatbi->lang("Chưa chấm công về")?></span>
+                        </div>
+                        <div class="d-flex justify-content-start align-items-center mb-2">
+                            <div class="p-3 bg-warning bg-opacity-20 me-2 border"></div>
+                            <span><?=$jatbi->lang("Không chấm công trễ ngày")?></span>
+                        </div>
+                        <div class="d-flex justify-content-start align-items-center mb-2">
+                            <div class="p-3 bg-success bg-opacity-20 me-2 border"></div>
+                            <span><?=$jatbi->lang("Chấm công đủ")?></span>
+                        </div>
+                        <div class="d-flex justify-content-start align-items-center mb-2">
+                            <div class="p-3 bg-primary bg-opacity-20 me-2 border"></div>
+                            <span><?=$jatbi->lang("OFF theo ca làm việc")?></span>
+                        </div>
+                        <div class="d-flex justify-content-start align-items-center mb-2">
+                            <div class="p-3 bg-primary bg-opacity-25 me-2 border"></div>
+                            <span><?=$jatbi->lang("OFF có xin phép")?></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nút hành động -->
+    <div class="action-buttons">
+        <button class="btn btn-danger" data-url="/manager/attendance-deleted" data-action="modal"><i class="ti ti-trash"></i></button>
+        <button class="btn btn-primary" data-url="/manager/attendance-add" data-action="modal"><i class="ti ti-plus"></i></button>
+        <button class="btn btn-info"><i class="ti ti-menu-2"></i></button>
+    </div>
+</div>
+
+<style>
+    .action-buttons {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+    }
+    .action-buttons .btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .status-not-checked { background-color: #ffe6e6; }
+    .status-late { background-color: #fff3cd; }
+    .status-checked { background-color: #d4edda; }
+    .status-off-shift { background-color: #d1ecf1; }
+    .status-off-permitted { background-color: #bee5eb; }
+    #attendanceTable th, #attendanceTable td {
+        text-align: center;
+        vertical-align: middle;
+    }
+</style>

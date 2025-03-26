@@ -195,11 +195,14 @@
             "item"=>[
                 'attendance'=>[
                     "menu"=>$jatbi->lang("Chấm công"),
-                    "url"=>'/attendance',
+                    "url"=>'/manager/attendance',
                     "icon"=>'<i class="ti ti-check"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/attendance.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'attendance'    =>$jatbi->lang("Chấm công"),
+                       
+                    ]
                 ],
                 'salary'=>[
                     "menu"=>$jatbi->lang("Tính lương"),
@@ -245,11 +248,17 @@
                 ],
                 'work_schedule'=>[
                     "menu"=>$jatbi->lang("Bảng phân công"),
-                    "url"=>'/work-schedule',
+                    "url"=>'/manager/assignments',
                     "icon"=>'<i class="ti ti-calendar"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/assignment.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'assignment'    =>$jatbi->lang("Bảng phân công"),
+                        'assignment.add' =>$jatbi->lang("Thêm bảng phân công"),
+                        'assignment.edit' =>$jatbi->lang("Sửa bảng phân công"),
+                        'assignment.deleted' =>$jatbi->lang("Xoá bảng phân công"),
+
+                    ]
                 ],
                 'leave'=>[
                     "menu"=>$jatbi->lang("Nghỉ phép"),
