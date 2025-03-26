@@ -253,17 +253,26 @@
                     "menu"=>$jatbi->lang("Nghỉ phép"),
                     "url"=>'/leave',
                     "icon"=>'<i class="ti ti-calendar-minus"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/leave.php",
                     "main"=>'false',
-                    "permission" => "",
-                ],
+                    "permission"=>[
+                        'leave'          => $jatbi->lang("Nghỉ Phép"),
+                        'leave.add'      => $jatbi->lang("Thêm Nghỉ Phép"),
+                        'leave.edit'     => $jatbi->lang("Sửa Nghỉ Phép"),
+                        'leave.deleted'  => $jatbi->lang("Xóa Nghỉ Phép"),
+                    ]                ],
                 'reward_discipline'=>[
                     "menu"=>$jatbi->lang("Khen thưởng kỉ luật"),
-                    "url"=>'/reward-discipline',
+                    "url"=>'/reward_discipline',
                     "icon"=>'<i class="ti ti-trophy"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/reward_discipline.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'reward_discipline'          => $jatbi->lang("Khen thưởng và kỉ luật"),
+                        'reward_discipline.add'      => $jatbi->lang("Thêm khen thưởng và kỉ luật"),
+                        'reward_discipline.edit'     => $jatbi->lang("Sửa khen thưởng và kỉ luật"),
+                        'reward_discipline.deleted'  => $jatbi->lang("Xóa khen thưởng và kỉ luật"),
+                    ]     
                 ],
                 'overtime'=>[
                     "menu"=>$jatbi->lang("Tăng ca"),

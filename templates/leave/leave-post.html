@@ -1,0 +1,59 @@
+
+<div class="modal fade modal-load" tabindex="-1" data-bs-backdrop="static">
+	<div class="modal-dialog modal-lg pt-standalone">
+		<div class="modal-content rounded-5">
+			<div class="d-flex w-100 justify-content-end align-items-center position-relative">
+				<button type="button" class="btn btn-primary position-absolute z-1 rounded-circle d-flex align-items-center justify-content-center width height top right" 
+					data-bs-dismiss="modal" aria-label="Close" 
+					style="--width:50px;--height:50px;--top:-5px;--right:-5px">
+					<i class="ti ti-x fs-4"></i>
+				</button>
+			</div>
+			<div class="modal-body">
+				<h5 class="fw-bold text-body mb-3"><?= $jatbi->lang("Thêm đơn nghỉ phép") ?></h5>
+				<form method="POST" action="<?= $_SERVER['REQUEST_URI'] ?>">
+					<div class="row g-3">
+						<div class="col-lg-12">
+							<div class="mb-3">
+                                <input type="hidden" name="id" value="<?= $data['id'] ?>">
+								<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Mã nhân viên") ?> <span class="text-danger">*</span></label>
+								<select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" 
+									data-live-search="true" data-width="100%" name="personSN">
+									<option value=""><?= $jatbi->lang("Chọn nhân viên") ?></option>
+									<?php 
+										$employees = $app->select("employee", ['sn', 'name']);
+										foreach ($employees as $employee): 
+											$selected = isset($data['personSN']) && $data['personSN'] == $employee['sn'] ? 'selected' : '';
+									?>
+										<option value="<?= $employee['sn'] ?>" <?= $selected ?>><?= $employee['name'] ?> (<?= $employee['sn'] ?>)</option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div class="mb-3">
+								<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Từ ngày & giờ") ?> <span class="text-danger">*</span></label>
+								<input type="datetime-local" name="start_date" class="form-control py-3 rounded-4 bg-body-tertiary" 
+									value="<?= $data['start_date'] ?? '' ?>">
+							</div>
+							<div class="mb-3">
+								<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Đến ngày & giờ") ?> <span class="text-danger">*</span></label>
+								<input type="datetime-local"     name="end_date" class="form-control py-3 rounded-4 bg-body-tertiary" 
+									value="<?= $data['end_date'] ?? '' ?>">
+							</div>
+							<div class="mb-3">
+								<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Ghi chú") ?></label>
+								<textarea name="note" class="form-control py-3 rounded-4 bg-body-tertiary" 
+									placeholder="<?= $jatbi->lang("Nhập ghi chú nếu có") ?>"><?= $data['note'] ?? '' ?></textarea>
+							</div>
+						</div>
+						<div class="col-lg-12">
+							<button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold" 
+								data-action="submit" data-alert="true" data-load="this">
+								<?= $jatbi->lang("Gửi đơn") ?>
+							</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
