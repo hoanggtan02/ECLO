@@ -23,7 +23,6 @@
         $startDate = $_POST['start_date'] ?? '';
         $endDate = $_POST['end_date'] ?? '';
     
-        // Fix lỗi ORDER cột
         $orderColumnIndex = $_POST['order'][0]['column'] ?? 1;
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
     
