@@ -11,5 +11,11 @@ $app->router("/staffConfiguration/department", 'GET', function($vars) use ($app,
     echo $app->render('templates/staffConfiguration/department.html', $vars);
 })->setPermissions(['staffConfiguration']);
 
+
+
+
+
+// Tân làm ở sau đây nha
+
 ?>
    
