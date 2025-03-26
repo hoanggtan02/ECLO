@@ -294,7 +294,7 @@
                 ],
                 'hr_config'=>[
                     "menu"=>$jatbi->lang("Cấu hình nhân sự"),
-                    "url"=>'/staffConfiguration',
+                    "url"=>'/staffConfiguration/department',
                     "icon"=>'<i class="ti ti-settings"></i>',
                     "controllers"=>"controllers/core/staffConfiguration.php",
                     "main"=>'false',
