@@ -205,9 +205,11 @@
                     "menu"=>$jatbi->lang("Tính lương"),
                     "url"=>'/salary',
                     "icon"=>'<i class="ti ti-cash"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/salary.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission" => [
+                        'salary'=>$jatbi->lang("Tính lương") 
+                    ],
                 ],
                 'advance_salary'=>[
                     "menu"=>$jatbi->lang("Ứng lương"),
@@ -292,11 +294,13 @@
                 ],
                 'hr_config'=>[
                     "menu"=>$jatbi->lang("Cấu hình nhân sự"),
-                    "url"=>'/hr-config',
+                    "url"=>'/staffConfiguration',
                     "icon"=>'<i class="ti ti-settings"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/staffConfiguration.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission" => [
+                        'staffConfiguration'=>$jatbi->lang("Cấu hình nhân sự") 
+                    ],
                 ],
             ],
         ],

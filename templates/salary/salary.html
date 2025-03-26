@@ -1,0 +1,295 @@
+<div class="app-container container-fluid flex-stack">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+            <ul class="breadcrumb small mb-0">
+                <li class="breadcrumb-item small">
+                    <a href="/" class="pjax-load link-secondary"><?=$jatbi->lang("Trang chủ")?></a>
+                </li>
+                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title?>
+                </li>
+            </ul>
+        </div>
+        <div class="filter-search">
+            <div class="d-flex align-items-center justify-content-end">
+                <div class="dropdown">
+                    <button class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                        <i class="ti ti-filter fs-5 me-2"></i><?=$jatbi->lang("Điều kiện lọc")?>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width bg-blur" style="--min-width: 300px; --min-width-xs: 100vw">
+                        <div class="fw-semibold py-2 px-3"><?=$jatbi->lang("Điều kiện lọc")?></div>
+                        <hr class="border-secondary border-opacity-50 my-2" />
+                        <div class="px-3">
+                        <?=$app->component('select',[
+                            "name"=>'status',
+                            "placeholder"=>$jatbi->lang("Phòng ban"),
+                            "selected" => $app->xss($_GET['status'] ?? ''),
+                            "class" => 'filter-name',
+                            "attr" => 'data-width="100%"',
+                            "options" => [["value"=>"A","text"=>$jatbi->lang("Kích hoạt")],["value"=>"D","text"=>$jatbi->lang("Không Kích hoạt")],]
+                        ])?>
+                        <?=$app->component('select',[
+                            "name"=>'employee',
+                            "placeholder"=>$jatbi->lang("Nhân viên"),
+                            "selected" => $app->xss($_GET['permission'] ?? ''),
+                            "class" => 'filter-name',         
+                            "attr" => 'data-width="100%" multiple data-actions-box="true"',
+                            "options" => $employee,
+                        ])?>
+                            <div class="mb-3">
+                                <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Tháng")?></label>
+                                <select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" class="filter-name" data-live-search="true" data-width="100%" name="personType">
+                                    <option value="1"><?=$jatbi->lang("Tháng 1")?></option>
+                                    <option value="2"><?=$jatbi->lang("Tháng 2")?></option>
+                                    <option value="3"><?=$jatbi->lang("Tháng 3")?></option>
+                                    <option value="4"><?=$jatbi->lang("Tháng 4")?></option>
+                                    <option value="5"><?=$jatbi->lang("Tháng 5")?></option>
+                                    <option value="6"><?=$jatbi->lang("Tháng 6")?></option>
+                                    <option value="7"><?=$jatbi->lang("Tháng 7")?></option>
+                                    <option value="8"><?=$jatbi->lang("Tháng 8")?></option>
+                                    <option value="9"><?=$jatbi->lang("Tháng 9")?></option>
+                                    <option value="10"><?=$jatbi->lang("Tháng 10")?></option>
+                                    <option value="11"><?=$jatbi->lang("Tháng 11")?></option>
+                                    <option value="12"><?=$jatbi->lang("Tháng 12")?></option>
+                                </select>
+                            </div>
+                        </div>
+                        <hr class="border-secondary border-opacity-50 my-2" />
+                        <div class="px-3 py-2 text-end w-100">
+                            <button
+                            type="button"
+                            class="btn btn-light px-3 py-2 rounded-pill reset-filter"
+                            >
+                            <?=$jatbi->lang("Làm mới")?>
+                            </button>
+                            <button
+                            type="button"
+                            class="btn btn-primary px-3 py-2 rounded-pill button-filter"
+                            >
+                            <?=$jatbi->lang("Tìm")?>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php if($jatbi->permission(['accounts.deleted']) == 'true' ||
+    $jatbi->permission(['accounts.add']) == 'true'){ ?>
+    <div class="position-fixed bottom right z-3 dropup-center dropup" style="--bottom: 20px; --right: 20px">
+        <button class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center" style="--width: 60px; --height: 60px" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="ti ti-menu-2 fs-2" aria-hidden="true"></i>
+        </button>
+        <ul class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2" style="--min-width: 100%">
+        <?php if($jatbi->permission(['accounts.deleted']) == 'true'){ ?>
+            <li class="my-2">
+              <a
+                class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1"
+                data-action="modal"
+                data-checkbox="input.checker"
+                data-url="/record-delete"
+                style="--width: 50px; --height: 50px"
+              >
+                <i class="ti ti-trash fs-3" aria-hidden="true"></i>
+              </a>
+            </li>
+        <?php } ?>
+        </ul>
+    </div>
+    <?php } ?>
+    <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+        <div class="card-body">
+            <div class="custom-buttons ">
+                <div class="d-flex align-items-center justify-content-end">
+                </div>
+            </div>    
+            <!-- <table class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%"
+              id="datatable"
+              data-table
+              data-type="POST"
+              data-server="true"
+              data-processing="true"
+              data-page-length="10"
+              data-searching="true"
+              data-paging="true" 
+              data-state-save="true"
+          >
+              <thead>
+                  <tr class="text-start text-gray-700 fw-bold fs-7 text-uppercase gs-0">
+                          <th 
+                            data-name="numericalOrder" data-class="bg-info bg-opacity-10"
+                            class="align-middle text-center bg-info bg-opacity-10" rowspan="2" width="1%"></th>
+                          <th 
+                            data-name="personSn" data-class="text-start bg-info bg-opacity-10" 
+                            class="align-middle text-center bg-info bg-opacity-10" rowspan="2">Nhân viên</th>
+                          <th 
+                            data-name="" data-class="text-start bg-info bg-opacity-10" 
+                            class="align-middle text-center bg-info bg-opacity-10" rowspan="2">Phòng ban</th>
+                          <th 
+                            data-class="d-none"
+                            class="text-center bg-success bg-opacity-10" colspan="4">Tiền lương</th>
+                          <th 
+                            data-class="d-none"
+                            class="text-center bg-warning bg-opacity-10" colspan="7">Chấm công</th>
+                          <th 
+                            data-class="d-none"
+                            class="text-center bg-danger bg-opacity-10" colspan="2">Khen thưởng kỉ luật</th>  
+                          <th 
+                            data-class="d-none"
+                            class="text-center bg-primary bg-opacity-10" colspan="2">Tổng</th>
+                      </tr>
+                      <tr class="text-start text-gray-700 fw-bold fs-7 text-uppercase gs-0">
+                          <th 
+                            data-name="numericalOrder" data-class="text-start text-center bg-success bg-opacity-10" 
+                            class="align-middle text-center bg-success bg-opacity-10">Lương TTS</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-start text-center bg-success bg-opacity-10" 
+                            class="text-center bg-success bg-opacity-10">123</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-start text-center bg-success bg-opacity-10" 
+                            class="text-center bg-success bg-opacity-10">lương/ngày</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-start text-center bg-success bg-opacity-10" 
+                            class="text-center bg-success bg-opacity-10">Bảo hiểm</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                            class="text-center bg-warning bg-opacity-10">Ngày công</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                            class="text-center bg-warning bg-opacity-10">Tăng ca</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                            class="text-center bg-warning bg-opacity-10">Đi trễ về sớm</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                            class="text-center bg-warning bg-opacity-10">Nghỉ không lương</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                            class="text-center bg-warning bg-opacity-10">Nghỉ có lương</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                            class="text-center bg-warning bg-opacity-10">Nghỉ không phép</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                            class="text-center bg-warning bg-opacity-10">Tổng</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-danger bg-opacity-10" 
+                            data-class="text-start" class="text-center bg-danger bg-opacity-10">Kỉ luật</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-danger bg-opacity-10" 
+                            data-class="text-start" class="text-center bg-danger bg-opacity-10">khen Thưởng</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-primary bg-opacity-10" 
+                            class="text-center bg-primary bg-opacity-10">Ứng lương</th>
+                          <th 
+                            data-name="dailySalary" data-class="text-center bg-primary bg-opacity-10" 
+                            class="text-center bg-primary bg-opacity-10">Thực lãnh</th>
+                      </tr>
+              </thead>
+              <tbody class="fw-bold">
+              </tbody>
+              <tfoot>
+                  <tr>
+                      <td colspan="11" class="text-end fw-bold">Tổng</td>
+                      <td class="fw-bold text-end text-danger">0</td>
+                      <td class="fw-bold text-end text-danger">0</td>
+                      <td class="fw-bold text-end text-success">0</td>
+                      <td class="fw-bold text-end text-danger">0</td>
+                      <td class="fw-bold text-end text-primary">0</td>
+                  </tr>
+              </tfoot>
+          </table> -->
+            <table 
+            id="datatable"
+            data-table
+            class="table table-striped  align-middle mt-2"
+            data-type="POST"
+            data-server="true"
+            data-processing="true"
+            data-page-length="10"
+            data-searching="true"
+            data-paging="true"
+            data-state-save="true"
+            style="width: 100%">
+                <thead>
+                    <tr class="text-gray-700 fw-bold fs-7 text-uppercase gs-0">
+                        <th 
+                        data-name="numericalOrder" data-class="bg-info bg-opacity-10"
+                        class="align-middle text-center bg-info bg-opacity-10" rowspan="2"></th>              
+                        <th 
+                        data-name="personSn" data-class="text-start bg-info bg-opacity-10" 
+                        class="align-middle text-center bg-info bg-opacity-10" rowspan="2">Nhân viên</th>
+                        <th 
+                        data-name="" data-class="text-start bg-info bg-opacity-10" 
+                        class="align-middle text-center bg-info bg-opacity-10" rowspan="2">Phòng ban</th> 
+                        <td 
+                        data-class=""
+                        class="text-center bg-success bg-opacity-10" colspan="4">Tiền lương</td>
+                        <td 
+                        data-class=""
+                        class="text-center bg-warning bg-opacity-10" colspan="7">Chấm công</td>
+                        <td 
+                        data-class=""
+                        class="text-center bg-danger bg-opacity-10" colspan="2">Khen thưởng kỉ luật</td>  
+                        <td 
+                        data-class=""
+                        class="text-center bg-primary bg-opacity-10" colspan="2">Tổng</td>
+                    </tr>
+                    <tr class="text-gray-700 fw-bold fs-7 text-uppercase gs-0">
+                        <th 
+                        data-name="numericalOrder" data-class="text-start text-center bg-success bg-opacity-10" 
+                        class="align-middle text-center bg-success bg-opacity-10">Lương TTS</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-start text-center bg-success bg-opacity-10" 
+                        class="text-center bg-success bg-opacity-10">123</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-start text-center bg-success bg-opacity-10" 
+                        class="text-center bg-success bg-opacity-10">lương/ngày</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-start text-center bg-success bg-opacity-10" 
+                        class="text-center bg-success bg-opacity-10">Bảo hiểm</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                        class="text-center bg-warning bg-opacity-10">Ngày công</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                        class="text-center bg-warning bg-opacity-10">Tăng ca</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                        class="text-center bg-warning bg-opacity-10">Đi trễ về sớm</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                        class="text-center bg-warning bg-opacity-10">Nghỉ không lương</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                        class="text-center bg-warning bg-opacity-10">Nghỉ có lương</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                        class="text-center bg-warning bg-opacity-10">Nghỉ không phép</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-warning bg-opacity-10" 
+                        class="text-center bg-warning bg-opacity-10">Tổng</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-danger bg-opacity-10" 
+                        class="text-center bg-danger bg-opacity-10">Kỉ luật</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center text-success bg-danger bg-opacity-10" 
+                        class="text-center text-primary bg-danger bg-opacity-10">khen Thưởng</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-primary bg-opacity-10" 
+                        class="text-center bg-primary bg-opacity-10">Ứng lương</th>
+                        <th 
+                        data-name="dailySalary" data-class="text-center bg-primary bg-opacity-10" 
+                        class="text-center">THỰC LÃNH</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+  
