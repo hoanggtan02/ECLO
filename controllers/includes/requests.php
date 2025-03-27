@@ -319,7 +319,10 @@
                     "menu"=>$jatbi->lang("Cấu hình nhân sự"),
                     "url"=>'/staffConfiguration/department',
                     "icon"=>'<i class="ti ti-settings"></i>',
-                    "controllers"=>"controllers/core/staffConfiguration.php",
+                    "controllers" => [
+                        "controllers/core/staffConfiguration.php",
+                        "controllers/core/lateearlytime.php"
+                    ],
                     "main"=>'false',
                     "permission" => [
                         'staffConfiguration'=>$jatbi->lang("Cấu hình nhân sự") 
@@ -330,10 +333,19 @@
     ];
     foreach($requests as $request){
         foreach($request['item'] as $key_item =>  $items){
-            $setRequest[] = [
-                "key" => $key_item,
-                "controllers" =>  $items['controllers'],
-            ];
+            if (is_array($items['controllers'])) {
+                foreach($items['controllers'] as $controller) {
+                    $setRequest[] = [
+                        "key" => $key_item,
+                        "controllers" => $controller,
+                    ];
+                }
+            } else {
+                $setRequest[] = [
+                    "key" => $key_item,
+                    "controllers" => $items['controllers'],
+                ];
+            }
             // Thêm controllers từ sub
             if (isset($items['sub']) && is_array($items['sub'])) {
                 foreach ($items['sub'] as $sub_key => $sub_item) {
