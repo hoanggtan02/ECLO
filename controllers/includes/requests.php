@@ -195,11 +195,14 @@
             "item"=>[
                 'attendance'=>[
                     "menu"=>$jatbi->lang("Chấm công"),
-                    "url"=>'/attendance',
+                    "url"=>'/manager/attendance',
                     "icon"=>'<i class="ti ti-check"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/attendance.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'attendance'    =>$jatbi->lang("Chấm công"),
+                       
+                    ]
                 ],
                 'salary'=>[
                     "menu"=>$jatbi->lang("Tính lương"),
@@ -215,9 +218,15 @@
                     "menu"=>$jatbi->lang("Ứng lương"),
                     "url"=>'/advance-salary',
                     "icon"=>'<i class="ti ti-credit-card"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/advance_salary.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                      'advance-salary'=>$jatbi->lang("Ứng lương"),
+                        'advance-salary.add'   =>$jatbi->lang("Thêm Ứng lương"),
+                        'advance-salary.edit'  =>$jatbi->lang("Sửa Ứng lương"),
+                        'advance-salary.deleted'=>$jatbi->lang("Xóa Ứng lương"),
+      
+                    ]
                 ],
                 'employees'=>[
                     "menu"=>$jatbi->lang("Nhân viên"),
@@ -245,43 +254,66 @@
                 ],
                 'work_schedule'=>[
                     "menu"=>$jatbi->lang("Bảng phân công"),
-                    "url"=>'/work-schedule',
+                    "url"=>'/manager/assignments',
                     "icon"=>'<i class="ti ti-calendar"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/assignment.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'assignment'    =>$jatbi->lang("Bảng phân công"),
+                        'assignment.add' =>$jatbi->lang("Thêm bảng phân công"),
+                        'assignment.edit' =>$jatbi->lang("Sửa bảng phân công"),
+                        'assignment.deleted' =>$jatbi->lang("Xoá bảng phân công"),
+
+                    ]
                 ],
                 'leave'=>[
                     "menu"=>$jatbi->lang("Nghỉ phép"),
                     "url"=>'/leave',
                     "icon"=>'<i class="ti ti-calendar-minus"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/leave.php",
                     "main"=>'false',
-                    "permission" => "",
-                ],
+                    "permission"=>[
+                        'leave'          => $jatbi->lang("Nghỉ Phép"),
+                        'leave.add'      => $jatbi->lang("Thêm Nghỉ Phép"),
+                        'leave.edit'     => $jatbi->lang("Sửa Nghỉ Phép"),
+                        'leave.deleted'  => $jatbi->lang("Xóa Nghỉ Phép"),
+                    ]                ],
                 'reward_discipline'=>[
                     "menu"=>$jatbi->lang("Khen thưởng kỉ luật"),
-                    "url"=>'/reward-discipline',
+                    "url"=>'/reward_discipline',
                     "icon"=>'<i class="ti ti-trophy"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/reward_discipline.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'reward_discipline'          => $jatbi->lang("Khen thưởng và kỉ luật"),
+                        'reward_discipline.add'      => $jatbi->lang("Thêm khen thưởng và kỉ luật"),
+                        'reward_discipline.edit'     => $jatbi->lang("Sửa khen thưởng và kỉ luật"),
+                        'reward_discipline.deleted'  => $jatbi->lang("Xóa khen thưởng và kỉ luật"),
+                    ]     
                 ],
                 'overtime'=>[
                     "menu"=>$jatbi->lang("Tăng ca"),
                     "url"=>'/overtime',
                     "icon"=>'<i class="ti ti-clock"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/overtime.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission" => [
+                        'overtime'      =>$jatbi->lang("Tăng ca"),
+                        'overtime.add'  =>$jatbi->lang("Thêm Tăng ca"),
+                        'overtime.edit' =>$jatbi->lang("Sửa Tăng ca"),
+                        'overtime.deleted'=>$jatbi->lang("Xóa Tăng ca"),],
                 ],
                 'shift'=>[
                     "menu"=>$jatbi->lang("Nhảy ca"),
                     "url"=>'/shift',
                     "icon"=>'<i class="ti ti-refresh"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/shift.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission" => [
+                        'shift'      =>$jatbi->lang("Nhảy ca"),
+                        'shift.add'  =>$jatbi->lang("Thêm Nhảy ca"),
+                        'shift.edit' =>$jatbi->lang("Sửa Nhảy ca"),
+                        'shift.deleted'=>$jatbi->lang("Xóa Nhảy ca"),],
                 ],
                 'hr_config'=>[
                     "menu"=>$jatbi->lang("Cấu hình nhân sự"),
