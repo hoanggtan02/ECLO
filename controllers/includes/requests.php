@@ -301,7 +301,9 @@
                         'overtime'      =>$jatbi->lang("Tăng ca"),
                         'overtime.add'  =>$jatbi->lang("Thêm Tăng ca"),
                         'overtime.edit' =>$jatbi->lang("Sửa Tăng ca"),
-                        'overtime.deleted'=>$jatbi->lang("Xóa Tăng ca"),],
+                        'overtime.deleted'=>$jatbi->lang("Xóa Tăng ca"),
+                        'overtime.approved'=>$jatbi->lang("Cấp phép Tăng ca"),
+                    ],
                 ],
                 'shift'=>[
                     "menu"=>$jatbi->lang("Nhảy ca"),

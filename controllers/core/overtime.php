@@ -9,6 +9,7 @@
         $vars['add'] = '/overtime-add';
         $vars['deleted'] = '/overtime-deleted';
         $vars['edit'] = '/overtime-edit';
+        $vars['approved'] = '/overtime-approved';
         $data = $app->select("overtime", ["ids","type","employee","money","dayStart","dayEnd","note","statu","day"]);
         $vars['data'] = $data;
         echo $app->render('templates/employee/overtime.html', $vars);
@@ -73,6 +74,12 @@
                 "3" => $jatbi->lang("Tăng ca thứ 7"),
             ];
 
+            if ($data['statu'] === 'Approved') {
+                $temp = '<a href="#" class="status-link" " data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            } elseif ($data['statu'] === 'Pending') {                   
+                $temp = '<a href="#" class="status-link" style="color: green;" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            }
+
             return [
                 "checkbox" => $app->component("box", ["data" => $data['ids']]),
                 "ids" => $data['ids'],
@@ -82,7 +89,7 @@
                 "dayStart" => $data['dayStart'],
                 "dayEnd" => $data['dayEnd'],
                 "note" => $data['note'],
-                "statu" => $data['statu'],
+                "statu" => $temp,
                 "day" => $data['day'],
                 "action" => $app->component("action", [
                     "button" => [          
@@ -142,7 +149,7 @@
         $dayStart = isset($_POST['dayStart']) ? $app->xss($_POST['dayStart']) : '';
         $dayEnd = isset($_POST['dayEnd']) ? $app->xss($_POST['dayEnd']) : '';
         $note = isset($_POST['note']) ? $app->xss($_POST['note']) : '';
-        $statu = "pending";
+        $statu = "Pending";
         date_default_timezone_set('Asia/Ho_Chi_Minh'); // Set timezone to Vietnam
         $day = date('Y-m-d H:i:s');
         
@@ -294,4 +301,22 @@
 
     })->setPermissions(['overtime.edit']);
 
+    //Cấp phép overtime
+    $app->router("/overtime-approved", 'GET', function($vars) use ($app, $jatbi) {
+        if (isset($_GET['ids']) && isset($_GET['statu']) && $_GET['statu'] == "Pending") {
+            $update = [
+                "statu"  => "Approved"
+            ];      
+            $app->update("overtime", $update, ["ids" => $_GET['ids']]);
+            echo $app->render('templates/common/restore.html', $vars, 'global');
+        }
+
+    })->setPermissions(['overtime.approved']);
+
+    $app->router("/overtime-approved", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+        echo json_encode(["status" => "success", "content" => $jatbi->lang("Cấp phép thành công")]);
+    })->setPermissions(['overtime.deleted']);
 ?>
