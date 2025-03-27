@@ -248,9 +248,14 @@
                     "menu"=>$jatbi->lang("Bảo hiểm"),
                     "url"=>'/insurance',
                     "icon"=>'<i class="ti ti-shield"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/insurance.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission" => [
+                        'insurance'          => $jatbi->lang("Bảo hiểm"),
+                        'insurance.add'      => $jatbi->lang("Thêm Bảo hiểm"),
+                        'insurance.edit'     => $jatbi->lang("Sửa Bảo hiểm"),
+                        'insurance.deleted'  => $jatbi->lang("Xóa Bảo hiểm"),
+                    ]
                 ],
                 'work_schedule'=>[
                     "menu"=>$jatbi->lang("Bảng phân công"),
@@ -323,7 +328,6 @@
                     "icon"=>'<i class="ti ti-settings"></i>',
                     "controllers" => [
                         "controllers/core/staffConfiguration.php",
-                        "controllers/core/lateearlytime.php"
                     ],
                     "main"=>'false',
                     "permission" => [
