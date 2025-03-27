@@ -195,14 +195,11 @@
             "item"=>[
                 'attendance'=>[
                     "menu"=>$jatbi->lang("Chấm công"),
-                    "url"=>'/manager/attendance',
+                    "url"=>'/attendance',
                     "icon"=>'<i class="ti ti-check"></i>',
-                    "controllers"=>"controllers/core/attendance.php",
+                    "controllers"=>"controllers/core/admin.php",
                     "main"=>'false',
-                    "permission"=>[
-                        'attendance'    =>$jatbi->lang("Chấm công"),
-                       
-                    ]
+                    "permission" => "",
                 ],
                 'salary'=>[
                     "menu"=>$jatbi->lang("Tính lương"),
@@ -218,15 +215,9 @@
                     "menu"=>$jatbi->lang("Ứng lương"),
                     "url"=>'/advance-salary',
                     "icon"=>'<i class="ti ti-credit-card"></i>',
-                    "controllers"=>"controllers/core/advance_salary.php",
+                    "controllers"=>"controllers/core/admin.php",
                     "main"=>'false',
-                    "permission"=>[
-                      'advance-salary'=>$jatbi->lang("Ứng lương"),
-                        'advance-salary.add'   =>$jatbi->lang("Thêm Ứng lương"),
-                        'advance-salary.edit'  =>$jatbi->lang("Sửa Ứng lương"),
-                        'advance-salary.deleted'=>$jatbi->lang("Xóa Ứng lương"),
-      
-                    ]
+                    "permission" => "",
                 ],
                 'employees'=>[
                     "menu"=>$jatbi->lang("Nhân viên"),
@@ -254,17 +245,11 @@
                 ],
                 'work_schedule'=>[
                     "menu"=>$jatbi->lang("Bảng phân công"),
-                    "url"=>'/manager/assignments',
+                    "url"=>'/work-schedule',
                     "icon"=>'<i class="ti ti-calendar"></i>',
-                    "controllers"=>"controllers/core/assignment.php",
+                    "controllers"=>"controllers/core/admin.php",
                     "main"=>'false',
-                    "permission"=>[
-                        'assignment'    =>$jatbi->lang("Bảng phân công"),
-                        'assignment.add' =>$jatbi->lang("Thêm bảng phân công"),
-                        'assignment.edit' =>$jatbi->lang("Sửa bảng phân công"),
-                        'assignment.deleted' =>$jatbi->lang("Xoá bảng phân công"),
-
-                    ]
+                    "permission" => "",
                 ],
                 'leave'=>[
                     "menu"=>$jatbi->lang("Nghỉ phép"),
@@ -295,39 +280,29 @@
                     "menu"=>$jatbi->lang("Tăng ca"),
                     "url"=>'/overtime',
                     "icon"=>'<i class="ti ti-clock"></i>',
-                    "controllers"=>"controllers/core/overtime.php",
+                    "controllers"=>"controllers/core/admin.php",
                     "main"=>'false',
-                    "permission" => [
-                        'overtime'      =>$jatbi->lang("Tăng ca"),
-                        'overtime.add'  =>$jatbi->lang("Thêm Tăng ca"),
-                        'overtime.edit' =>$jatbi->lang("Sửa Tăng ca"),
-                        'overtime.deleted'=>$jatbi->lang("Xóa Tăng ca"),
-                        'overtime.approved'=>$jatbi->lang("Cấp phép Tăng ca"),
-                    ],
+                    "permission" => "",
                 ],
                 'shift'=>[
                     "menu"=>$jatbi->lang("Nhảy ca"),
                     "url"=>'/shift',
                     "icon"=>'<i class="ti ti-refresh"></i>',
-                    "controllers"=>"controllers/core/shift.php",
+                    "controllers"=>"controllers/core/admin.php",
                     "main"=>'false',
-                    "permission" => [
-                        'shift'      =>$jatbi->lang("Nhảy ca"),
-                        'shift.add'  =>$jatbi->lang("Thêm Nhảy ca"),
-                        'shift.edit' =>$jatbi->lang("Sửa Nhảy ca"),
-                        'shift.deleted'=>$jatbi->lang("Xóa Nhảy ca"),],
+                    "permission" => "",
                 ],
                 'hr_config'=>[
                     "menu"=>$jatbi->lang("Cấu hình nhân sự"),
                     "url"=>'/staffConfiguration/department',
                     "icon"=>'<i class="ti ti-settings"></i>',
-                    "controllers" => [
-                        "controllers/core/staffConfiguration.php",
-                        "controllers/core/lateearlytime.php"
-                    ],
+                    "controllers"=>"controllers/core/staffConfiguration.php",
                     "main"=>'false',
                     "permission" => [
-                        'staffConfiguration'=>$jatbi->lang("Cấu hình nhân sự") 
+                        'staffConfiguration'        =>$jatbi->lang("Cấu hình nhân sự"),
+                        'staffConfiguration.add'    =>$jatbi->lang("Thêm cấu hình nhân sự"),
+                        'staffConfiguration.edit'   =>$jatbi->lang("Sửa cấu hình nhân sự"),
+                        'staffConfiguration.delete' =>$jatbi->lang("Xóa cấu hình nhân sự"),
                     ],
                 ],
             ],
@@ -335,19 +310,10 @@
     ];
     foreach($requests as $request){
         foreach($request['item'] as $key_item =>  $items){
-            if (is_array($items['controllers'])) {
-                foreach($items['controllers'] as $controller) {
-                    $setRequest[] = [
-                        "key" => $key_item,
-                        "controllers" => $controller,
-                    ];
-                }
-            } else {
-                $setRequest[] = [
-                    "key" => $key_item,
-                    "controllers" => $items['controllers'],
-                ];
-            }
+            $setRequest[] = [
+                "key" => $key_item,
+                "controllers" =>  $items['controllers'],
+            ];
             // Thêm controllers từ sub
             if (isset($items['sub']) && is_array($items['sub'])) {
                 foreach ($items['sub'] as $sub_key => $sub_item) {
