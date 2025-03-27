@@ -41,23 +41,21 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
         $where["AND"]["record.personSn"] = $personnels;
     }
 
-    // Join bảng record, employee, department và assignments
+    // Join bảng record, employee, department
     $recordEmployeeData = $app->select("record", [
         "[><]employee" => ["personSn" => "sn"],
-        "[>]department" => ["employee.departmentId" => "departmentId"],
-        "[>]assignments" => ["employee.sn" => "employee_id"]
+        "[>]department" => ["employee.departmentId" => "departmentId"]
     ], [
         "record.personSn(employee_sn)",
         "employee.name",
         "employee.departmentId",
         "department.personName(department_name)",
-        "record.createTime",
-        "assignments.timeperiod_id"
+        "record.createTime"
     ], $where) ?? [];
 
     // Debug: Ghi log dữ liệu sau khi join
     if (empty($recordEmployeeData)) {
-        error_log("No data found after joining record with employee, department, and assignments for year: $year");
+        error_log("No data found after joining record with employee and department for year: $year");
     } else {
         error_log("Found " . count($recordEmployeeData) . " records after joining: " . json_encode($recordEmployeeData));
     }
@@ -103,9 +101,28 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
     // Debug: Ghi log dữ liệu leave_requests
     error_log("Leave requests data: " . json_encode($leaveRequestsByEmployee));
 
-    // Kết hợp dữ liệu
+    // Thêm timeperiod_id vào dữ liệu chấm công
     $datas = [];
     foreach ($recordEmployeeData as $record) {
+        $employeeSn = $record['employee_sn'];
+        $createTime = $record['createTime'];
+
+        // Truy vấn bảng assignments để lấy timeperiod_id dựa trên apply_date
+        $assignment = $app->select("assignments", [
+            "timeperiod_id"
+        ], [
+            "employee_id" => $employeeSn,
+            "apply_date[<=]" => $createTime,
+            "ORDER" => ["apply_date" => "DESC"],
+            "LIMIT" => 1
+        ]);
+
+        // Nếu không tìm thấy assignment, để timeperiod_id là null
+        $record['timeperiod_id'] = !empty($assignment) ? $assignment[0]['timeperiod_id'] : null;
+
+        // Debug: Ghi log timeperiod_id được chọn
+        error_log("Employee $employeeSn on $createTime: Selected timeperiod_id = " . ($record['timeperiod_id'] ?? 'null'));
+
         $record['department_name'] = $record['department_name'] ?? 'Không xác định (departmentId: ' . ($record['departmentId'] ?? 'null') . ')';
         $datas[] = $record;
     }
@@ -171,36 +188,47 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
 
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
-            // Lấy timeperiod_id của nhân viên
-            $timeperiodId = $employeeInfo['timeperiod_id'] ?? null;
-            $timePeriod = $timePeriodMap[$timeperiodId] ?? null;
-
-            // Nếu không có timeperiod, dùng mặc định
-            if (!$timePeriod) {
-                $timePeriod = [
-                    "monStart" => "09:00", "monEnd" => "16:30", "tueStart" => "09:00", "tueEnd" => "16:30",
-                    "wedStart" => "09:00", "wedEnd" => "16:30", "thursStart" => "09:00", "thursEnd" => "16:30",
-                    "friStart" => "09:00", "friEnd" => "16:30", "satStart" => "09:00", "satEnd" => "16:30",
-                    "sunStart" => "09:00", "sunEnd" => "16:30",
-                    "mon_off" => 0, "tue_off" => 0, "wed_off" => 0, "thu_off" => 0, "fri_off" => 0, "sat_off" => 0, "sun_off" => 0
-                ];
-                error_log("No timeperiod found for employee $employeeSn, using default");
-            }
-
-            // Ánh xạ ngày trong tuần
-            $dayMap = [
-                1 => ['start' => 'monStart', 'end' => 'monEnd', 'off' => 'mon_off'],
-                2 => ['start' => 'tueStart', 'end' => 'tueEnd', 'off' => 'tue_off'],
-                3 => ['start' => 'wedStart', 'end' => 'wedEnd', 'off' => 'wed_off'],
-                4 => ['start' => 'thursStart', 'end' => 'thursEnd', 'off' => 'thu_off'],
-                5 => ['start' => 'friStart', 'end' => 'friEnd', 'off' => 'fri_off'],
-                6 => ['start' => 'satStart', 'end' => 'satEnd', 'off' => 'sat_off'],
-                7 => ['start' => 'sunStart', 'end' => 'sunEnd', 'off' => 'sun_off']
-            ];
-
-            // Khởi tạo dữ liệu cho tất cả các ngày trong tháng
+            // Lấy timeperiod_id của nhân viên cho từng ngày
             for ($day = 1; $day <= $daysInMonth; $day++) {
-                $dateKey = "$year-$month-$day";
+                $dateKey = "$year-$month-" . sprintf("%02d", $day);
+                $currentDate = $dateKey . " 00:00:00";
+
+                // Truy vấn assignments để lấy timeperiod_id cho ngày hiện tại
+                $assignment = $app->select("assignments", [
+                    "timeperiod_id"
+                ], [
+                    "employee_id" => $employeeSn,
+                    "apply_date[<=]" => $currentDate,
+                    "ORDER" => ["apply_date" => "DESC"],
+                    "LIMIT" => 1
+                ]);
+
+                $timeperiodId = !empty($assignment) ? $assignment[0]['timeperiod_id'] : null;
+                $timePeriod = $timePeriodMap[$timeperiodId] ?? null;
+
+                // Nếu không có timeperiod, dùng mặc định
+                if (!$timePeriod) {
+                    $timePeriod = [
+                        "monStart" => "09:00", "monEnd" => "16:30", "tueStart" => "09:00", "tueEnd" => "16:30",
+                        "wedStart" => "09:00", "wedEnd" => "16:30", "thursStart" => "09:00", "thursEnd" => "16:30",
+                        "friStart" => "09:00", "friEnd" => "16:30", "satStart" => "09:00", "satEnd" => "16:30",
+                        "sunStart" => "09:00", "sunEnd" => "16:30",
+                        "mon_off" => 0, "tue_off" => 0, "wed_off" => 0, "thu_off" => 0, "fri_off" => 0, "sat_off" => 0, "sun_off" => 0
+                    ];
+                    error_log("No timeperiod found for employee $employeeSn on date $dateKey, using default");
+                }
+
+                // Ánh xạ ngày trong tuần
+                $dayMap = [
+                    1 => ['start' => 'monStart', 'end' => 'monEnd', 'off' => 'mon_off'],
+                    2 => ['start' => 'tueStart', 'end' => 'tueEnd', 'off' => 'tue_off'],
+                    3 => ['start' => 'wedStart', 'end' => 'wedEnd', 'off' => 'wed_off'],
+                    4 => ['start' => 'thursStart', 'end' => 'thursEnd', 'off' => 'thu_off'],
+                    5 => ['start' => 'friStart', 'end' => 'friEnd', 'off' => 'fri_off'],
+                    6 => ['start' => 'satStart', 'end' => 'satEnd', 'off' => 'sat_off'],
+                    7 => ['start' => 'sunStart', 'end' => 'sunEnd', 'off' => 'sun_off']
+                ];
+
                 $dayOfWeek = date('N', strtotime($dateKey));
                 $isDayOff = (bool)$timePeriod[$dayMap[$dayOfWeek]['off']];
 
@@ -208,15 +236,11 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                 $isOffPermitted = false;
                 if (isset($leaveRequestsByEmployee[$employeeSn])) {
                     foreach ($leaveRequestsByEmployee[$employeeSn] as $request) {
-                        // Chuyển đổi ngày thành timestamp và bỏ qua giờ phút giây
                         $startDate = strtotime(date('Y-m-d', strtotime($request['start_date'])));
                         $endDate = strtotime(date('Y-m-d', strtotime($request['end_date'])));
-                        $currentDate = strtotime(date('Y-m-d', strtotime($dateKey)));
+                        $currentDateTimestamp = strtotime($dateKey);
 
-                        // Debug: Ghi log các giá trị ngày để kiểm tra
-                        error_log("Employee $employeeSn, Date $dateKey: StartDate = " . date('Y-m-d', $startDate) . ", EndDate = " . date('Y-m-d', $endDate) . ", CurrentDate = " . date('Y-m-d', $currentDate));
-
-                        if ($currentDate >= $startDate && $currentDate <= $endDate) {
+                        if ($currentDateTimestamp >= $startDate && $currentDateTimestamp <= $endDate) {
                             $isOffPermitted = true;
                             error_log("Employee $employeeSn, Date $dateKey: Marked as off-permitted");
                             break;
@@ -250,7 +274,30 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                 $checkOut = null;
                 $status = [];
 
-                // Xác định ngày trong tuần từ createTime
+                // Truy vấn lại timeperiod_id cho ngày chấm công
+                $assignment = $app->select("assignments", [
+                    "timeperiod_id"
+                ], [
+                    "employee_id" => $employeeSn,
+                    "apply_date[<=]" => $dateKey . " 00:00:00",
+                    "ORDER" => ["apply_date" => "DESC"],
+                    "LIMIT" => 1
+                ]);
+
+                $timeperiodId = !empty($assignment) ? $assignment[0]['timeperiod_id'] : null;
+                $timePeriod = $timePeriodMap[$timeperiodId] ?? null;
+
+                if (!$timePeriod) {
+                    $timePeriod = [
+                        "monStart" => "09:00", "monEnd" => "16:30", "tueStart" => "09:00", "tueEnd" => "16:30",
+                        "wedStart" => "09:00", "wedEnd" => "16:30", "thursStart" => "09:00", "thursEnd" => "16:30",
+                        "friStart" => "09:00", "friEnd" => "16:30", "satStart" => "09:00", "satEnd" => "16:30",
+                        "sunStart" => "09:00", "sunEnd" => "16:30",
+                        "mon_off" => 0, "tue_off" => 0, "wed_off" => 0, "thu_off" => 0, "fri_off" => 0, "sat_off" => 0, "sun_off" => 0
+                    ];
+                    error_log("No timeperiod found for employee $employeeSn on date $dateKey (with check-in), using default");
+                }
+
                 $dayOfWeek = date('N', strtotime($dateKey));
                 $isDayOff = (bool)$timePeriod[$dayMap[$dayOfWeek]['off']];
 
@@ -258,15 +305,11 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                 $isOffPermitted = false;
                 if (isset($leaveRequestsByEmployee[$employeeSn])) {
                     foreach ($leaveRequestsByEmployee[$employeeSn] as $request) {
-                        // Chuyển đổi ngày thành timestamp và bỏ qua giờ phút giây
                         $startDate = strtotime(date('Y-m-d', strtotime($request['start_date'])));
                         $endDate = strtotime(date('Y-m-d', strtotime($request['end_date'])));
-                        $currentDate = strtotime(date('Y-m-d', strtotime($dateKey)));
+                        $currentDateTimestamp = strtotime($dateKey);
 
-                        // Debug: Ghi log các giá trị ngày để kiểm tra
-                        error_log("Employee $employeeSn, Date $dateKey (with check-in): StartDate = " . date('Y-m-d', $startDate) . ", EndDate = " . date('Y-m-d', $endDate) . ", CurrentDate = " . date('Y-m-d', $currentDate));
-
-                        if ($currentDate >= $startDate && $currentDate <= $endDate) {
+                        if ($currentDateTimestamp >= $startDate && $currentDateTimestamp <= $endDate) {
                             $isOffPermitted = true;
                             error_log("Employee $employeeSn, Date $dateKey (with check-in): Marked as off-permitted");
                             break;
@@ -274,11 +317,7 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                     }
                 }
 
-                // Debug: Ghi log ngày và trạng thái
-                error_log("Employee $employeeSn on $dateKey (Day $dayOfWeek): IsDayOff = " . ($isDayOff ? 'yes' : 'no') . ", IsOffPermitted = " . ($isOffPermitted ? 'yes' : 'no'));
-
                 if ($isOffPermitted) {
-                    // Nếu ngày này có xin nghỉ phép, ưu tiên trạng thái off-permitted
                     $status[] = 'off-permitted';
                     if (count($checkTimesSorted) >= 2) {
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
@@ -287,7 +326,6 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
                     }
                 } elseif ($isDayOff) {
-                    // Nếu là ngày nghỉ theo ca, gán trạng thái day-off
                     $status[] = 'day-off';
                     if (count($checkTimesSorted) >= 2) {
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
@@ -296,12 +334,8 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
                     }
                 } else {
-                    // Nếu không phải ngày nghỉ, kiểm tra trạng thái chấm công
                     $checkInStandard = $timePeriod[$dayMap[$dayOfWeek]['start']] ?? '09:00';
                     $checkOutStandard = $timePeriod[$dayMap[$dayOfWeek]['end']] ?? '16:30';
-
-                    // Debug: Ghi log khung giờ áp dụng
-                    error_log("Employee $employeeSn on $dateKey (Day $dayOfWeek): CheckInStandard = $checkInStandard, CheckOutStandard = $checkOutStandard");
 
                     if (count($checkTimesSorted) >= 2) {
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
@@ -319,21 +353,11 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                         $checkOutStandardHour = (int)date('H', strtotime($checkOutStandard));
                         $checkOutStandardMinute = (int)date('i', strtotime($checkOutStandard));
 
-                        // Tính sai số thời gian (phút)
-                        $checkInMinutes = $checkInHour * 60 + $checkInMinute;
-                        $checkInStandardMinutes = $checkInStandardHour * 60 + $checkInStandardMinute;
-                        $checkOutMinutes = $checkOutHour * 60 + $checkOutMinute;
-                        $checkOutStandardMinutes = $checkOutStandardHour * 60 + $checkOutStandardMinute;
+                        $lateMinutes = ($checkInHour * 60 + $checkInMinute) - ($checkInStandardHour * 60 + $checkInStandardMinute);
+                        $earlyMinutes = ($checkOutStandardHour * 60 + $checkOutStandardMinute) - ($checkOutHour * 60 + $checkOutMinute);
 
-                        $lateMinutes = $checkInMinutes - $checkInStandardMinutes;
-                        $earlyMinutes = $checkOutStandardMinutes - $checkOutMinutes;
-
-                        // Cho phép sai số 30 phút
-                        $isCheckInOnTime = ($lateMinutes <= 30); // Muộn không quá 30 phút
-                        $isCheckOutOnTime = ($earlyMinutes <= 30); // Sớm không quá 30 phút
-
-                        // Debug: Ghi log sai số
-                        error_log("Employee $employeeSn on $dateKey: Late = $lateMinutes minutes, Early = $earlyMinutes minutes");
+                        $isCheckInOnTime = ($lateMinutes <= 30);
+                        $isCheckOutOnTime = ($earlyMinutes <= 30);
 
                         if ($isCheckInOnTime && $isCheckOutOnTime) {
                             $status[] = 'checked';
