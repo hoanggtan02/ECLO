@@ -50,7 +50,7 @@ $app->router("/staffConfiguration/department", 'POST', function($vars) use ($app
             "departmentId"    => $data['departmentId'],
             "departmentName"  => $data['departmentName'],
             "note"            => $data['note'],
-            "status"          => $app->component("status",["data"=>$data['status'],"permission"=>['staffConfiguration']]),
+            "status"          => $app->component("status",["url"=>"/staffConfiguration/department-status/".$data['departmentId'],"data"=>$data['status'],"permission"=>['staffConfiguration']]),
             "action"          => $app->component("action",[
                 "button" => [
                     [
@@ -77,6 +77,33 @@ $app->router("/staffConfiguration/department", 'POST', function($vars) use ($app
         "data" => $datas ?? [],
     ]);
 })->setPermissions(['staffConfiguration']);
+
+//----------------------------------------Cập nhật trạng thái phòng ban----------------------------------------
+$app->router("/staffConfiguration/department-status/{id}", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $data = $app->get("staff-department","*",["departmentId"=>$vars['id']]);
+    if($data>1){
+        if($data>1){
+            if($data['status']==='A'){
+                $status = "D";
+            } 
+            elseif($data['status']==='D'){
+                $status = "A";
+            }
+            $app->update("staff-department",["status"=>$status],["departmentId"=>$data['departmentId']]);
+            $jatbi->logs('staffConfiguration','department-status',$data);
+            echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+        }
+        else {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+        }
+    }
+    else {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+    }
+})->setPermissions(['staffConfiguration.edit']);
 
 //----------------------------------------Thêm phòng ban----------------------------------------
 $app->router("/staffConfiguration/department-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
@@ -204,7 +231,7 @@ $app->router("/staffConfiguration/position", 'POST', function($vars) use ($app, 
             "id"                => $data['id'],
             "name"              => $data['name'],
             "note"              => $data['note'],
-            "status"            => $app->component("status",["data"=>$data['status'],"permission"=>['staffConfiguration']]),
+            "status"            => $app->component("status",["url"=>"/staffConfiguration/position-status/".$data['id'],"data"=>$data['status'],"permission"=>['staffConfiguration']]),
             "action"            => $app->component("action",[
                 "button" => [
                     [
@@ -232,6 +259,33 @@ $app->router("/staffConfiguration/position", 'POST', function($vars) use ($app, 
     ]);
     
 })->setPermissions(['staffConfiguration']);
+
+//----------------------------------------Cập nhật trạng thái chức vụ----------------------------------------
+$app->router("/staffConfiguration/position-status/{id}", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $data = $app->get("staff-position","*",["id"=>$vars['id']]);
+    if($data>1){
+        if($data>1){
+            if($data['status']==='A'){
+                $status = "D";
+            } 
+            elseif($data['status']==='D'){
+                $status = "A";
+            }
+            $app->update("staff-position",["status"=>$status],["id"=>$data['id']]);
+            $jatbi->logs('staffConfiguration','position-status',$data);
+            echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+        }
+        else {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+        }
+    }
+    else {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+    }
+})->setPermissions(['staffConfiguration.edit']);
 
 //----------------------------------------Thêm chức vụ----------------------------------------
 $app->router("/staffConfiguration/position-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
@@ -336,9 +390,6 @@ $app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $j
     $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'id';
     $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
 
-    $personSn = $app->xss($_POST['personSn'] ?? "");
-    $personType = $app->xss($_POST['personType'] ?? "");
-
     $where = [
         "AND" => [
             "OR" => [
@@ -374,7 +425,7 @@ $app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $j
                 "price"         => $data['priceValue']  == 1 ? $price . ' / ' . 'Giờ' : 
                                 ($data['priceValue'] == 2 ? $price . ' / ' . 'Ngày' : $price . ' / ' . 'Tháng'),
                 "note"          => $data['note'], 
-                "status"        => $app->component("status",["url"=>"/staffConfiguration/salary-status/".$data['id'],"data"=>$data['id'],"permission"=>['staffConfiguration']]),
+                "status"        => $app->component("status",["url"=>"/staffConfiguration/salary-status/".$data['id'],"data"=>$data['status'],"permission"=>['staffConfiguration']]),
                 "action"        => $app->component("action",[
                     "button" => [
                         [
