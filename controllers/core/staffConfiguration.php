@@ -578,6 +578,156 @@ $app->router("/staffConfiguration/salary-delete", 'POST', function($vars) use ($
         echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
     }
 })->setPermissions(['staffConfiguration.delete']);
-// Tân làm ở sau đây nha
+
+//========================================Ngày lễ========================================
+$app->router("/staffConfiguration/holiday", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
+    $vars['title1'] = $jatbi->lang("Ngày lễ");
+    echo $app->render('templates/staffConfiguration/holiday.html', $vars);
+})->setPermissions(['staffConfiguration']);
+
+$app->router("/staffConfiguration/holiday", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $draw = isset($_POST['draw']) ? intval($_POST['draw']) : 0;
+    $start = $_POST['start'] ?? 0;
+    $length = $_POST['length'] ?? 10;
+    $searchValue = $_POST['search']['value'] ?? '';
+    $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'id';
+    $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
+
+    $where = [
+        "AND" => [
+            "OR" => [
+                "staff-holiday.departmentId[~]" => $searchValue,
+                "staff-holiday.name[~]" => $searchValue,
+            ],
+        ],
+        "LIMIT" => [$start, $length],
+        "ORDER" => [$orderName => strtoupper($orderDir)]
+    ];
+    
+    $count = $app->count("staff-salary",[
+        "AND" => $where['AND'],
+    ]);
+
+    $app->select("staff-holiday", [
+        "[>]staff-department" => ["departmentId" => "departmentId"]
+    ] ,
+        [
+        'staff-holiday.id',
+        'staff-holiday.departmentId',
+        'staff-department.departmentName',
+        'staff-holiday.name',
+        'staff-holiday.startDate',
+        'staff-holiday.endDate',
+        'staff-holiday.salaryCoefficient',
+        'staff-holiday.note',
+        'staff-holiday.status',
+        ], function ($data) use (&$datas,$jatbi,$app) {
+            $datas[] = [
+                "checkbox"              => $app->component("box",["data"=>$data['id']]),
+                "department"            => $data['departmentName'] . ' - ' . $data['departmentId'],
+                "name"                  => $data['name'],
+                "day"                   => $data['startDate'] . ' - ' . $data['endDate'],
+                "salaryCoefficient"     => $data['salaryCoefficient'],
+                "note"                  => $data['note'], 
+                "status"                => $app->component("status",["url"=>"/staffConfiguration/holiday-status/".$data['id'],"data"=>$data['status'],"permission"=>['staffConfiguration']]),
+                "action"        => $app->component("action",[
+                    "button" => [
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Sửa"),
+                            // 'permission' => ['staffConfiguration.edit'],
+                            // 'action' => ['data-url' => '/staffConfiguration/salary-edit/'.$data['id'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Xóa"),
+                            // 'permission' => ['staffConfiguration.delete'],
+                            // 'action' => ['data-url' => '/staffConfiguration/salary-delete?box='.$data['id'], 'data-action' => 'modal']
+                        ],
+                    ]
+            ]),
+        ];
+    }); 
+    
+    echo json_encode([
+        "draw" => $draw,
+        "recordsTotal" => $count,
+        "recordsFiltered" => $count,
+        "data" => $datas ?? [],
+    ]);
+})->setPermissions(['staffConfiguration']);
+
+//----------------------------------------Cập nhật trạng thái ngày lễlễ----------------------------------------
+$app->router("/staffConfiguration/holiday-status/{id}", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $data = $app->get("staff-holiday","*",["id"=>$vars['id']]);
+    if($data>1){
+        if($data>1){
+            if($data['status']==='A'){
+                $status = "D";
+            } 
+            elseif($data['status']==='D'){
+                $status = "A";
+            }
+            $app->update("staff-holiday",["status"=>$status],["id"=>$data['id']]);
+            $jatbi->logs('staffConfiguration','holiday-status',$data);
+            echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+        }
+        else {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+        }
+    }
+    else {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+    }
+})->setPermissions(['staffConfiguration.edit']);
+
+//----------------------------------------Thêm ngày lễlễ----------------------------------------
+$app->router("/staffConfiguration/holiday-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $vars['title'] = $jatbi->lang("Thêm Tiền lương");
+    $vars['data'] = [
+        "startDate"         => "1",
+        "endDate"           => "1",
+        "departmentId"      => 0,
+        "salaryCoefficient" => 1,
+        "priceValue"        => "0",
+        "status"            => 'A',
+    ];
+    $vars['department'] = $app->select("staff-department", ['departmentId','departmentName'], []);
+    echo $app->render('templates/staffConfiguration/holiday-post.html', $vars, 'global');
+})->setPermissions(['staffConfiguration.add']);
+
+$app->router("/staffConfiguration/holiday-add", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    if($app->xss($_POST['name'])=='' || $app->xss($_POST['startDate'])=='' || $app->xss($_POST['endDate'])=='' || $app->xss($_POST['salaryCoefficient'])=='') {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Các trường bắt buộc không được để trống.")]);
+        exit;
+    } 
+    // if($app->xss($_POST['price'])<=00) {
+    //     echo json_encode(["status"=>"error","content"=>$jatbi->lang("Số tiền không hợp lệ.")]);
+    //     exit;
+    // } 
+    $insert = [
+        "departmentId"          => $app->xss($_POST['departmentId']),
+        "name"                  => $app->xss($_POST['name'])?? '',
+        "startDate"             => $app->xss($_POST['startDate']),
+        "endDate"               => $app->xss($_POST['endDate']),
+        "salaryCoefficient"     => $app->xss($_POST['salaryCoefficient']),
+        "note"                  => $app->xss($_POST['note']),
+        "status"                => $app->xss($_POST['status']),
+    ];
+    $app->insert("staff-holiday",$insert);
+    echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+    exit;
+ 
+})->setPermissions(['staffConfiguration.add']);
 
 ?>
