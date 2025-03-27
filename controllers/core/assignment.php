@@ -10,6 +10,7 @@ $app->router("/manager/assignments", 'GET', function($vars) use ($app, $jatbi, $
 
     // Sử dụng Medoo để lấy dữ liệu từ bảng assignments
     $data = $app->select("assignments", [
+        "id",
         "timeperiod_id",
         "employee_id",
         "apply_date",
@@ -81,6 +82,7 @@ $app->router("/manager/assignments", 'POST', function($vars) use ($app, $jatbi) 
     $datas = $app->select("assignments", [
         "[>]employee" => ["employee_id" => "sn"]
     ], [
+        "assignments.id",
         "assignments.timeperiod_id",
         "assignments.employee_id",
         "employee.name(employee_name)",
@@ -97,7 +99,7 @@ $app->router("/manager/assignments", 'POST', function($vars) use ($app, $jatbi) 
     // Định dạng dữ liệu trả về cho DataTables
     $formattedData = array_map(function($data) use ($app, $jatbi) {
         return [
-            "checkbox" => "<input class='form-check-input checker' type='checkbox' value='{$data['timeperiod_id']},{$data['employee_id']}'>",
+            "checkbox" => "<input class='form-check-input checker' type='checkbox' value='{$data['id']}'>",
             "employee_id" => $data['employee_id'] ?? '', // Thêm employee_id
             "employee_name" => $data['employee_name'] ?? '',
             "timeperiod_id" => $data['timeperiod_id'] ?? '', // Sử dụng timeperiod_id
@@ -109,13 +111,13 @@ $app->router("/manager/assignments", 'POST', function($vars) use ($app, $jatbi) 
                         'type' => 'button',
                         'name' => $jatbi->lang("Sửa"),
                         'permission' => ['assignment.edit'],
-                        'action' => ['data-url' => '/manager/assignments-edit?timeperiod_id='.$data['timeperiod_id'].'&employee_id='.$data['employee_id'], 'data-action' => 'modal']
+                        'action' => ['data-url' => '/manager/assignments-edit?id='.$data['id'], 'data-action' => 'modal'] // Sử dụng id
                     ],
                     [
                         'type' => 'button',
                         'name' => $jatbi->lang("Xóa"),
                         'permission' => ['assignment.deleted'],
-                        'action' => ['data-url' => '/manager/assignments-deleted?timeperiod_id='.$data['timeperiod_id'].'&employee_id='.$data['employee_id'], 'data-action' => 'modal']
+                        'action' => ['data-url' => '/manager/assignments-deleted?id='.$data['id'], 'data-action' => 'modal'] // Sử dụng id
                     ],
                 ]
             ]),
@@ -155,23 +157,28 @@ $app->router("/manager/assignments-add", 'POST', function($vars) use ($app, $jat
     $notes = $app->xss($_POST['notes'] ?? '');
 
     if (empty($timeperiod_id) || empty($employee_id) || empty($apply_date)) {
-        echo json_encode(["status" => "error", "content" => "Vui lòng không để trống các trường bắt buộc"]);
-        return;
-    }
-
-    if ($app->count("assignments", ["timeperiod_id" => $timeperiod_id, "employee_id" => $employee_id])) {
-        echo json_encode(["status" => "error", "content" => "Phân công này đã tồn tại"]);
+        echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống các trường bắt buộc")]);
         return;
     }
 
     try {
+        $existing = $app->get("assignments", "*", [
+            "timeperiod_id" => $timeperiod_id,
+            "employee_id" => $employee_id,
+            "apply_date" => $apply_date
+        ]);
+        if ($existing) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Phân công này đã tồn tại")]);
+            return;
+        }
+
         $app->insert("assignments", [
             "timeperiod_id" => $timeperiod_id,
             "employee_id" => $employee_id,
             "apply_date" => $apply_date,
             "notes" => $notes
         ]);
-        echo json_encode(["status" => "success", "content" => "Thêm phân công thành công"]);
+        echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm phân công thành công")]);
     } catch (Exception $e) {
         echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
     }
@@ -180,15 +187,21 @@ $app->router("/manager/assignments-add", 'POST', function($vars) use ($app, $jat
 // Sửa assignment
 $app->router("/manager/assignments-edit", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Sửa phân công");
-    $timeperiod_id = $app->xss($_GET['timeperiod_id'] ?? '');
-    $employee_id = $app->xss($_GET['employee_id'] ?? '');
+    $id = $app->xss($_GET['id'] ?? '');
 
-    if (!$timeperiod_id || !$employee_id) {
+
+    if (!$id) {
+        $vars['error_message'] = $jatbi->lang("ID không hợp lệ");
         echo $app->render('templates/common/error-modal.html', $vars, 'global');
         return;
     }
 
-    $vars['data'] = $app->get("assignments", "*", ["timeperiod_id" => $timeperiod_id, "employee_id" => $employee_id]);
+    $vars['data'] = $app->get("assignments", "*", ["id" => $id]);
+    if (!$vars['data']) {
+        $vars['error_message'] = $jatbi->lang("Phân công không tồn tại");
+        echo $app->render('templates/common/error-modal.html', $vars, 'global');
+        return;
+    }
     $vars['employees'] = $app->select("employee", ["sn", "name"], ["ORDER" => ["name" => "ASC"]]);
     $vars['timeperiods'] = $app->select("timeperiod", ["acTzNumber", "name"], ["ORDER" => ["name" => "ASC"]]);
     $vars['data']['edit'] = true;
@@ -204,24 +217,24 @@ $app->router("/manager/assignments-edit", 'POST', function($vars) use ($app, $ja
     $app->header(['Content-Type' => 'application/json']);
 
     $timeperiod_id = $app->xss($_POST['timeperiod_id'] ?? '');
-    $employee_id = $app->xss($_POST['employee_id'] ?? '');
     $apply_date = $app->xss($_POST['apply_date'] ?? '');
     $notes = $app->xss($_POST['notes'] ?? '');
+    $id = $app->xss($_POST['id'] ?? '');
 
 
 
-
-    if (empty($timeperiod_id) || empty($employee_id) || empty($apply_date)) {
-        echo json_encode(["status" => "error", "content" => "Vui lòng không để trống các trường bắt buộc"]);
+    if (empty($timeperiod_id) || empty($id) || empty($apply_date)) {
+        echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống các trường bắt buộc")]);
         return;
     }
 
     try {  
         $app->update("assignments", [
+            "timeperiod_id" => $timeperiod_id,
             "apply_date" => $apply_date,
             "notes" => $notes
-        ], ["timeperiod_id" => $timeperiod_id, "employee_id" => $employee_id]);
-        echo json_encode(["status" => "success", "content" => "Sửa phân công thành công"]);
+        ], ["id" => $id]);
+        echo json_encode(["status" => "success", "content" => $jatbi->lang("Sửa phân công thành công")]);
     } catch (Exception $e) {
         echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
     }
@@ -235,30 +248,37 @@ $app->router("/manager/assignments-deleted", 'GET', function($vars) use ($app, $
 
 $app->router("/manager/assignments-deleted", 'POST', function($vars) use ($app, $jatbi) {
     $app->header(['Content-Type' => 'application/json']);
-    $idString = $_GET['timeperiod_id'] ?? '';
-    $employeeIdString = $_GET['employee_id'] ?? '';
-    $assignments = array_combine(explode(",", $idString), explode(",", $employeeIdString));
 
-    if (empty($assignments)) {
-        echo json_encode(["status" => "error", "content" => "Vui lòng chọn ít nhất một phân công để xóa"]);
+    $idString = $_GET['id'] ?? '';
+    $ids = array_filter(explode(",", $idString));
+
+    if (empty($ids)) {
+        echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng chọn ít nhất một phân công để xóa")]);
         return;
     }
 
     try {
         $successCount = 0;
-        foreach ($assignments as $timeperiod_id => $employee_id) {
-            $timeperiod_id = trim($app->xss($timeperiod_id));
-            $employee_id = trim($app->xss($employee_id));
-            if (empty($timeperiod_id) || empty($employee_id)) continue;
+        foreach ($ids as $id) {
+            $id = trim($app->xss($id));
+            if (empty($id)) continue;
 
-            $app->delete("assignments", ["timeperiod_id" => $timeperiod_id, "employee_id" => $employee_id]);
-            $successCount++;
+            if ($app->delete("assignments", ["id" => $id])) {
+                $successCount++;
+            }
         }
 
-        $message = $successCount === count($assignments) ? "Xóa thành công tất cả phân công" : "Đã xóa $successCount phân công";
+        if ($successCount === 0) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Không có phân công nào được xóa")]);
+            return;
+        }
+
+        $message = $successCount === count($ids) 
+            ? $jatbi->lang("Xóa thành công phân công") 
+            : $jatbi->lang("Đã xóa $successCount phân công trên tổng" );
         echo json_encode(["status" => "success", "content" => $message]);
     } catch (Exception $e) {
-        echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+        echo json_encode(["status" => "error", "content" => $jatbi->lang("Lỗi: ") . $e->getMessage()]);
     }
 })->setPermissions(['assignment.deleted']);
 ?>
