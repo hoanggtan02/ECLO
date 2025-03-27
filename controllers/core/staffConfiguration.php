@@ -194,13 +194,6 @@ $app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $j
         "ORDER" => [$orderName => strtoupper($orderDir)]
     ];
     
-    // if(!empty($personSn)) {
-    //     $where["AND"]["record.personSn"] = $personSn;
-    // }
-    // if($personType > -1) {
-    //     $where["AND"]["record.personType"] = $personType;
-    // }
-    
     $count = $app->count("department",[
         "AND" => $where['AND'],
     ]);
@@ -249,7 +242,7 @@ $app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $j
     ]);
 })->setPermissions(['staffConfiguration']);
 
-//----------------------------------------Thêm phòng ban----------------------------------------
+//----------------------------------------Thêm tiền lương----------------------------------------
 $app->router("/staffConfiguration/salary-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Thêm Tiền lương");
             // $vars['permissions'] = $app->select("permissions","*",["deleted"=>0,"status"=>"A"]);
@@ -265,24 +258,35 @@ $app->router("/staffConfiguration/salary-add", 'POST', function($vars) use ($app
     $app->header([
         'Content-Type' => 'application/json',
     ]);
-    if($app->xss($_POST['departmentName'])=='') {
-        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Tên Phòng ban không được để trống.")]);
+
+    if($app->xss($_POST['salaryType'])<1) {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Loại không được để trống.")]);
+        exit;
     } else {
-        $insert = [
-            "departmentName" => $app->xss($_POST['departmentName']),
-            "note"           => $app->xss($_POST['note'])?? '',
-            "status"         => $app->xss($_POST['status']),
-        ];
-        $app->insert("department",$insert);
-        echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Tên không được để trống.")]);
+        exit;
     }
 
-    // $app->insert("department",$insert);
-    // echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Cập nhật thành công")]);
-    // echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
-        // $jatbi->logs('accounts','accounts-add',$insert);
-    exit;
 
+
+
+    // if($app->xss($_POST['name'])=='') {
+    //     echo json_encode(["status"=>"error","content"=>$jatbi->lang("Tên không được để trống.")]);
+    //     exit;
+    // } 
+    
+
+
+    // $insert = [
+    //     "name"           => $app->xss($_POST['name']),
+    //     "type"           => $app->xss($_POST['type'])?? '',
+    //     "price"          => $price,
+    //     "note"           => $app->xss($_POST['note']),
+    //     "status"         => $app->xss($_POST['status']),
+    // ];
+    // $app->insert("department",$insert);
+    echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+    exit;
 })->setPermissions(['staffConfiguration']);
 
 // Tân làm ở sau đây nha
