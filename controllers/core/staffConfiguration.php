@@ -265,7 +265,7 @@ $app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $j
         "ORDER" => [$orderName => strtoupper($orderDir)]
     ];
     
-    $count = $app->count("department",[
+    $count = $app->count("staff-salary",[
         "AND" => $where['AND'],
     ]);
 
@@ -287,8 +287,8 @@ $app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $j
                 "type"          => $data['type'] == 1 ? 'Tiền lương': ($data['type'] == 2 ? 'Phụ cấp': 'Tăng ca'),
                 "price"         => $data['priceValue']  == 1 ? $price . ' / ' . 'Giờ' : 
                                 ($data['priceValue'] == 2 ? $price . ' / ' . 'Ngày' : $price . ' / ' . 'Tháng'),
-                "note"          => $data['note'],
-                "status"        => $app->component("status",["data"=>$data['status'],"permission"=>['staffConfiguration']]),
+                "note"          => $data['note'], 
+                "status"        => $app->component("status",["url"=>"/staffConfiguration/salary-status/".$data['id'],"data"=>$data['id'],"permission"=>['staffConfiguration']]),
                 "action"        => $app->component("action",[
                     "button" => [
                         [
@@ -315,6 +315,33 @@ $app->router("/staffConfiguration/salary", 'POST', function($vars) use ($app, $j
         "data" => $datas ?? [],
     ]);
 })->setPermissions(['staffConfiguration']);
+
+//----------------------------------------Cập nhật trạng thái tiền lương----------------------------------------
+$app->router("/staffConfiguration/salary-status/{id}", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $data = $app->get("staff-salary","*",["id"=>$vars['id']]);
+    if($data>1){
+        if($data>1){
+            if($data['status']==='A'){
+                $status = "D";
+            } 
+            elseif($data['status']==='D'){
+                $status = "A";
+            }
+            $app->update("staff-salary",["status"=>$status],["id"=>$data['id']]);
+            $jatbi->logs('staffConfiguration','salary-status',$data);
+            echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+        }
+        else {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+        }
+    }
+    else {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+    }
+})->setPermissions(['accounts.edit']);
 
 //----------------------------------------Thêm tiền lương----------------------------------------
 $app->router("/staffConfiguration/salary-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
