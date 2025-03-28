@@ -163,10 +163,17 @@
                                                     $checkIn = $dayData['check_in'];
                                                     $checkOut = $dayData['check_out'];
                                                     $statuses = $dayData['status'] ?? [];
+                                                    $leaveTypeId = $dayData['leave_type_id'] ?? null;
+                                                    $leaveCode = $dayData['leave_code'] ?? null;
+                                                    $leaveName = $dayData['leave_name'] ?? null;
                                                     $style = '';
                                                     if (!empty($statuses)) {
                                                         if (count($statuses) == 1) {
-                                                            $style = 'status-' . $statuses[0];
+                                                            if ($statuses[0] == 'off-permitted') {
+                                                                $style = 'status-off-permitted';
+                                                            } else {
+                                                                $style = 'status-' . $statuses[0];
+                                                            }
                                                         } elseif (count($statuses) == 2 && in_array('late', $statuses) && in_array('not-checked', $statuses)) {
                                                             $style = 'status-late-not-checked';
                                                         }
@@ -178,7 +185,11 @@
                                                         <?php elseif (in_array('day-off', $statuses)): ?>
                                                             <?=$jatbi->lang("OFF")?>
                                                         <?php elseif (in_array('off-permitted', $statuses)): ?>
-                                                            <?=$jatbi->lang("OFF")?>
+                                                            <?php if ($leaveCode): ?>
+                                                                <?=$leaveCode?>
+                                                            <?php else: ?>
+                                                                <?=$jatbi->lang("OFF")?>
+                                                            <?php endif; ?>
                                                         <?php else: ?>
                                                             <!-- Để trống nếu là no-record -->
                                                         <?php endif; ?>
@@ -196,30 +207,40 @@
             <div class="mt-4">
                 <div class="row justify-content-start align-items-start">
                     <div class="col-lg-3">
+                        <!-- Các trạng thái cơ bản -->
                         <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border" style="background: #FF9999;"></div>
+                            <div class="p-3 me-2 border status-not-checked"></div>
                             <span><?=$jatbi->lang("Chưa chấm công về")?></span>
                         </div>
                         <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border" style="background: #FFFF99;"></div>
+                            <div class="p-3 me-2 border status-late"></div>
                             <span><?=$jatbi->lang("Không chấm công trễ ngày")?></span>
                         </div>
                         <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border" style="background: #99FF99;"></div>
+                            <div class="p-3 me-2 border status-checked"></div>
                             <span><?=$jatbi->lang("Chấm công đủ")?></span>
                         </div>
                         <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border" style="background: linear-gradient(to bottom, #FFFF99 50%, #FF9999 50%);"></div>
+                            <div class="p-3 me-2 border status-late-not-checked"></div>
                             <span><?=$jatbi->lang("Trễ + Chưa chấm công về")?></span>
                         </div>
                         <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border" style="background: #ca9363;"></div>
-                            <span><?=$jatbi->lang("OFF có xin phép")?></span>
-                        </div>
-                        <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border" style="background: #e6f3ff;"></div>
+                            <div class="p-3 me-2 border status-day-off"></div>
                             <span><?=$jatbi->lang("OFF theo ca làm việc")?></span>
                         </div>
+                        <div class="d-flex justify-content-start align-items-center mb-2">
+                            <div class="p-3 me-2 border status-off-permitted"></div>
+                            <span><?=$jatbi->lang("OFF có xin phép")?></span>
+                        </div>
+                        <!-- Load các loại nghỉ phép từ leavetype -->
+                        <?php foreach ($leave_types as $leaveType): ?>
+                            <div class="d-flex justify-content-start align-items-center mb-2">
+                                <div class="p-3 me-2 border status-off-permitted">
+                                    <?=$leaveType['Code']?>
+                                </div>
+                                <span><?=$leaveType['Name']?></span>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>
@@ -227,11 +248,11 @@
     </div>
 
     <!-- Nút hành động -->
-    <div class="action-buttons">
+    <!-- <div class="action-buttons">
         <button class="btn btn-danger" data-url="/manager/attendance-deleted" data-action="modal"><i class="ti ti-trash"></i></button>
         <button class="btn btn-primary" data-url="/manager/attendance-add" data-action="modal"><i class="ti ti-plus"></i></button>
         <button class="btn btn-info"><i class="ti ti-menu-2"></i></button>
-    </div>
+    </div> -->
 </div>
 
 <style>
@@ -250,6 +271,17 @@
         align-items: center;
         justify-content: center;
     }
+    
+    /* Định dạng cho ô màu trong phần chú thích */
+    .p-3.me-2.border {
+        height: 30px; /* Đặt chiều cao cố định */
+        padding: 0; /* Xóa padding mặc định của p-3 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0; /* Ngăn ô màu bị co lại */
+    }
+    /* Các trạng thái cơ bản */
     .status-not-checked { background-color: #FF9999; }
     .status-late { background-color: #FFFF99; }
     .status-checked { background-color: #99FF99; }
@@ -257,8 +289,10 @@
         background: linear-gradient(to bottom, #FFFF99 50%, #FF9999 50%);
     }
     .status-no-record { /* Không tô màu */ }
-    .status-off-permitted { background-color: #ca9363; }
     .status-day-off { background-color: #e6f3ff; }
+    
+    /* Trạng thái off-permitted với màu cố định giống "OFF có xin phép" */
+    .status-off-permitted { background-color: #ca9363; }
     #attendanceTable th, #attendanceTable td {
         text-align: center;
         vertical-align: middle;
