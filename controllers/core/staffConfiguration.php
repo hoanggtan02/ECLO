@@ -628,7 +628,7 @@ $app->router("/staffConfiguration/holiday", 'POST', function($vars) use ($app, $
         ], function ($data) use (&$datas,$jatbi,$app) {
             $datas[] = [
                 "checkbox"              => $app->component("box",["data"=>$data['id']]),
-                "department"            => $data['departmentName'] . ' - ' . $data['departmentId'],
+                "department"            => $data['departmentId'] == 0 ? 'Tất cả': $data['departmentName'] . ' - ' . $data['departmentId'] ,
                 "name"                  => $data['name'],
                 "day"                   => $data['startDate'] . ' - ' . $data['endDate'],
                 "salaryCoefficient"     => $data['salaryCoefficient'],
@@ -711,10 +711,10 @@ $app->router("/staffConfiguration/holiday-add", 'POST', function($vars) use ($ap
         echo json_encode(["status"=>"error","content"=>$jatbi->lang("Các trường bắt buộc không được để trống.")]);
         exit;
     } 
-    // if($app->xss($_POST['price'])<=00) {
-    //     echo json_encode(["status"=>"error","content"=>$jatbi->lang("Số tiền không hợp lệ.")]);
-    //     exit;
-    // } 
+    if($app->xss($_POST['startDate']) > $app->xss($_POST['endDate'])) {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Ngày bắt đầu không được lớn hơn ngày kết thúc.")]);
+        exit;
+    } 
     $insert = [
         "departmentId"          => $app->xss($_POST['departmentId']),
         "name"                  => $app->xss($_POST['name'])?? '',
