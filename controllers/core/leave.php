@@ -12,10 +12,7 @@
 
     $app->router("/leave", 'POST', function($vars) use ($app, $jatbi) {
         $app->header(['Content-Type' => 'application/json']);
-    
-        // Đường dẫn file log
-        $logFile = __DIR__ . "/debug_leave.log";
-    
+
         // Nhận dữ liệu từ DataTable
         $draw = $_POST['draw'] ?? 0;
         $start = $_POST['start'] ?? 0;
@@ -34,6 +31,7 @@
             "leave_requests.start_date",
             "leave_requests.end_date",
             "leave_requests.note",
+            "leavetype.Name",
             "leave_requests.created_at"
         ];
         $orderColumn = $validColumns[$orderColumnIndex] ?? "leave_requests.created_at";
@@ -48,25 +46,16 @@
             ];
         }
     
-        // 🛠 Ghi Debug: Kiểm tra điều kiện lọc
-        file_put_contents($logFile, "[" . date("Y-m-d H:i:s") . "] WHERE Condition: " . print_r($where, true) . "\n", FILE_APPEND);
-    
         // Đếm số bản ghi
         $count = $app->count("leave_requests", [
             "[>]employee" => ["personSN" => "sn"]
         ], "leave_requests.id");
     
-        // 🛠 Ghi Debug: Kiểm tra SQL và kết quả count()
-        file_put_contents($logFile, "[" . date("Y-m-d H:i:s") . "] SQL Query: " . $app->getLastQuery() . "\n", FILE_APPEND);
-        file_put_contents($logFile, "[" . date("Y-m-d H:i:s") . "] Count Result: " . $count . "\n", FILE_APPEND);
+
     
-        if ($count === 0) {
-            file_put_contents($logFile, "[" . date("Y-m-d H:i:s") . "] ❌ ERROR: Count trả về 0, kiểm tra lại dữ liệu!\n", FILE_APPEND);
-        }
-    
-        // Truy vấn danh sách đơn nghỉ phép với JOIN
         $datas = $app->select("leave_requests", [
-            "[>]employee" => ["personSN" => "sn"]
+            "[>]employee" => ["personSN" => "sn"],
+            "[>]leavetype" => ["LeaveId" => "LeaveTypeID"]
         ], [
             "leave_requests.id",
             "leave_requests.personSN",
@@ -75,12 +64,12 @@
             "leave_requests.start_date",
             "leave_requests.end_date",
             "leave_requests.note",
+            "leavetype.Name",
             "leave_requests.created_at"
         ], $where) ?? [];
+
     
-        // Ghi log kết quả truy vấn danh sách nghỉ phép
-        file_put_contents($logFile, "[" . date("Y-m-d H:i:s") . "] Data Result: " . print_r($datas, true) . "\n", FILE_APPEND);
-    
+            
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
             return [
@@ -89,7 +78,8 @@
                 "leave_days" => $data['leave_days'],
                 "start_date" => date("H:i d/m/Y", strtotime($data['start_date'])),
                 "end_date" => date("H:i d/m/Y", strtotime($data['end_date'])),
-                "note" => $data['   note'],
+                "note" => $data['note'],
+                "leaveType" => $data['Name'] ?? $jatbi->lang("Không xác định"),
                 "created_at" => date("d/m/Y H:i:s", strtotime($data['created_at'])),
                 "action" => $app->component("action", [
                     "button" => [
@@ -109,80 +99,15 @@
                 ]),
             ];
         }, $datas);
+
     
         // Trả về dữ liệu JSON
         echo json_encode([
             "draw" => $draw,
             "recordsTotal" => $count,
             "recordsFiltered" => $count,
-            "data" => $formattedData
+            "data" => $formattedData,
         ]);
-    })->setPermissions(['leave']);
-    
-    
-
-    $app->router("/leave", 'GET', function($vars) use ($app, $jatbi, $setting) {
-        $vars['title'] = $jatbi->lang("Nghỉ Phép");
-        $vars['add'] = '/leave-add';
-        $vars['deleted'] = '/leave-deleted';
-        echo $app->render('templates/leave/leave.html', $vars);
-    })->setPermissions(['leave']);
-    
-    $app->router("/leave", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header(['Content-Type' => 'application/json']);
-    
-        $draw = $_POST['draw'] ?? 0;
-        $start = (int) ($_POST['start'] ?? 0);
-        $length = (int) ($_POST['length'] ?? 10);
-        $searchValue = $_POST['search']['value'] ?? '';
-        
-        $orderColumnIndex = $_POST['order'][0]['column'] ?? 1;
-        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
-    
-        $validColumns = ["employee.name", "leave_requests.leave_days", "leave_requests.start_date", "leave_requests.end_date", "leave_requests.note", "leave_requests.created_at"];
-        $orderColumn = $validColumns[$orderColumnIndex] ?? "leave_requests.created_at";
-    
-        $where = [
-            "AND" => [
-                "OR" => [
-                    "employee.name[~]" => $searchValue,
-                    "leave_requests.note[~]" => $searchValue,
-                ]
-            ]
-        ];
-    
-        $count = $app->count("leave_requests", ["[>]employee" => ["personSN" => "sn"], "AND" => $where["AND"]]);
-    
-        $datas = $app->select("leave_requests", ["[>]employee" => ["personSN" => "sn"]], [
-            "leave_requests.id",
-            "leave_requests.personSN",
-            "employee.name",
-            "leave_requests.leave_days",
-            "leave_requests.start_date",
-            "leave_requests.end_date",
-            "leave_requests.note",
-            "leave_requests.created_at"
-        ], array_merge($where, ["ORDER" => [$orderColumn => $orderDir], "LIMIT" => [$start, $length]])) ?? [];
-    
-        $formattedData = array_map(function($data) use ($app, $jatbi) {
-            return [
-                "checkbox" => $app->component("box", ["data" => $data['id']]),
-                "employee_name" => $data['name'] ?? $jatbi->lang("Không xác định"),
-                "leave_days" => $data['leave_days'],
-                "start_date" => date("H:i d/m/Y", strtotime($data['start_date'])),
-                "end_date" => date("H:i d/m/Y", strtotime($data['end_date'])),
-                "note" => $data['note'],
-                "created_at" => date("d/m/Y H:i:s", strtotime($data['created_at'])),
-                "action" => $app->component("action", [
-                    "button" => [
-                        ['type' => 'button', 'name' => $jatbi->lang("Sửa"), 'permission' => ['leave.edit'], 'action' => ['data-url' => '/leave-edit?id=' . $data['id'], 'data-action' => 'modal']],
-                        ['type' => 'button', 'name' => $jatbi->lang("Xóa"), 'permission' => ['leave.deleted'], 'action' => ['data-url' => '/leave-deleted?id=' . $data['id'], 'data-action' => 'modal']]
-                    ]
-                ]),
-            ];
-        }, $datas);
-    
-        echo json_encode(["draw" => $draw, "recordsTotal" => $count, "recordsFiltered" => $count, "data" => $formattedData]);
     })->setPermissions(['leave']);
     
     $app->router("/leave-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
