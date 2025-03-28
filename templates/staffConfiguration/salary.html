@@ -21,7 +21,7 @@
                   </li>
                   <li class="nav-item my-0">
                       <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                          " href="/staffConfiguration" data-pjax-state="">Chức vụ</a>
+                          " href="/staffConfiguration/position" data-pjax-state="">Chức vụ</a>
                   </li>
                   <li class="nav-item my-0">
                       <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
@@ -42,7 +42,7 @@
                   </li>
                   <li class="nav-item my-0">
                       <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                          " href="/hrm/config/holiday/" data-pjax-state="">Ngày lễ</a>
+                          " href="/staffConfiguration/holiday" data-pjax-state="">Ngày lễ</a>
                   </li>
               </ul>
           </div>
@@ -53,7 +53,7 @@
           <div class="custom-buttons d-none">
               <div class="d-flex align-items-center justify-content-end">
                   <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/staffConfiguration/salary-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
-                  <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/staffConfiguration/salary-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
+                  <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/staffConfiguration/salary-delete"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
               </div>
           </div>
           <table id="datatable" 

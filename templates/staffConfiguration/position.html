@@ -59,13 +59,12 @@
                 </li>
                 <li class="nav-item my-0">
                     <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                        " href="/staffConfiguration/position" data-pjax-state="">Chức vụ</a>
+                    active" href="/staffConfiguration/position" data-pjax-state="">Chức vụ</a>
                 </li>
                 <li class="nav-item my-0">
                     <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                        " href="/hrm/config/salary/" data-pjax-state="">Tiền lương</a>
+                        " href="/staffConfiguration/salary" data-pjax-state="">Tiền lương</a>
                 </li>
-               
                 <li class="nav-item my-0">
                     <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
                         " href="/hrm/config/timelate/" data-pjax-state="">Đi trễ về sớm</a>
@@ -80,7 +79,7 @@
                 </li>
                 <li class="nav-item my-0">
                     <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                        " href="/hrm/config/holiday/" data-pjax-state="">Ngày lễ</a>
+                        " href="/staffConfiguration/holiday" data-pjax-state="">Ngày lễ</a>
                 </li>
             </ul>
         </div>
@@ -107,8 +106,8 @@
   <div class="card-body">
           <div class="custom-buttons d-none">
               <div class="d-flex align-items-center justify-content-end">
-                  <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/reward_discipline-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
-                  <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/reward_discipline-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
+                  <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/staffConfiguration/position-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
+                  <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/staffConfiguration/position-delete"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
               </div>
           </div>
           <table id="datatable" 
@@ -124,16 +123,12 @@
               style="width:100%">
               <thead>
                   <tr>
-                      <th data-name="checkbox" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-center">
-                          <div class="form-check"> 
-                              <input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"/>
-                          </div>
-                      </th>                        
-                      <th data-name="positionName" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("TÊN")?></th>
-                      <th data-name="positionId" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("MÃ")?></th>
-                      <th data-name="note" data-orderable="true" class="text-nowrap" data-visible="true" data-class=""><?=$jatbi->lang("GHI CHÚ")?></th>
-                      <th data-name="active" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><?=$jatbi->lang("Trạng thái")?></th>
-                      <th data-name="action" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-end"><?=$jatbi->lang("Tùy chọn")?></th>
+                        <th data-name="checkbox" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><div class="form-check"><input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"></div></th>
+                        <th data-name="name" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("Tên")?></th>
+                        <th data-name="id" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("Mã")?></th>
+                        <th data-name="note" data-orderable="false" class="text-nowrap" data-visible="true" data-class=""><?=$jatbi->lang("Ghi chú")?></th>
+                        <th data-name="status" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><?=$jatbi->lang("Trạng thái")?></th>
+                        <th data-name="action" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-end"><?=$jatbi->lang("Tùy chọn")?></th>
                   </tr>
               </thead>
           </table>
