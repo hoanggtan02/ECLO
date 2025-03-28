@@ -230,11 +230,16 @@
                 ],
                 'employees'=>[
                     "menu"=>$jatbi->lang("Nhân viên"),
-                    "url"=>'/employees',
+                    "url"=>'/manager/employee',
                     "icon"=>'<i class="ti ti-id-badge"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/employee.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'employee'      =>$jatbi->lang("Nhân viên"),
+                        'employee.add'  =>$jatbi->lang("Thêm Nhân viên"),
+                        'employee.edit' =>$jatbi->lang("Sửa Nhân viên"),
+                        'employee.deleted'=>$jatbi->lang("Xóa Nhân viên"),
+                    ],
                 ],
                 'labor_contract'=>[
                     "menu"=>$jatbi->lang("Hợp đồng lao động"),
