@@ -328,10 +328,16 @@
                     "icon"=>'<i class="ti ti-settings"></i>',
                     "controllers" => [
                         "controllers/core/staffConfiguration.php",
+                        "controllers/core/timeperiod.php",
+                        "controllers/core/leavetype.php",
                     ],
                     "main"=>'false',
                     "permission" => [
-                        'staffConfiguration'=>$jatbi->lang("Cấu hình nhân sự") 
+                        'staffConfiguration'=>$jatbi->lang("Cấu hình nhân sự"),
+                        'leavetype' => $jatbi->lang("Loại nghỉ phép"),
+                        'leavetype.add' => $jatbi->lang("Thêm Loại nghỉ phép"),
+                        'leavetype.edit' => $jatbi->lang("Sửa Loại nghỉ phép"),
+                        'leavetype.deleted' => $jatbi->lang("Xóa Loại nghỉ phép"),
                     ],
                 ],
             ],

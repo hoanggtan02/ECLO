@@ -5,7 +5,7 @@
 
     // Khung thời gian
     $app->router("/manager/timeperiod", 'GET', function($vars) use ($app, $jatbi, $setting) {
-        $vars['title'] = $jatbi->lang("Khung thời gian");
+        $vars['title'] = $jatbi->lang("Thời gian làm việc");
         $vars['add'] = '/manager/timeperiod-add';
         $vars['deleted'] = '/manager/timeperiod-deleted';
         $vars['sync'] = '/manager/timeperiod-sync';

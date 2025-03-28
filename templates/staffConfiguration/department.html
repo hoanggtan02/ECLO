@@ -1,86 +1,188 @@
 <div class="container">
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
-            <ul class="breadcrumb small mb-0">
-                <li class="breadcrumb-item small">
-                    <a href="/" class="pjax-load link-secondary"><?=$jatbi->lang("Trang chủ")?></a>
-                </li>
-                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title1?>
-                </li>
-            </ul>
-        </div>
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+      <ul class="breadcrumb small mb-0">
+        <li class="breadcrumb-item small">
+          <a href="/" class="pjax-load link-secondary"
+            ><?=$jatbi->lang("Trang chủ")?></a
+          >
+        </li>
+        <li class="breadcrumb-item small text-body" aria-current="page">
+          <?=$title1?>
+        </li>
+      </ul>
     </div>
-    <div class="card bg-body bg-opacity-50 card-custom shadow-sm border-0 rounded-2 mb-3">
-        <div class="card-body flex-column">
-            <div class="card-rounded d-flex flex-stack flex-wrap">
-                <ul class="nav flex-wrap border-transparent fw-bold">
-                    <li class="nav-item my-0">
-                        <a class="pjax-load btn fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                            " href="/staffConfiguration/department" data-pjax-state="">Phòng ban</a>
-                    </li>
-                    <li class="nav-item my-0">
-                        <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                            " href="/staffConfiguration/position" data-pjax-state="">Chức vụ</a>
-                    </li>
-                    <li class="nav-item my-0">
-                        <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                            " href="/staffConfiguration/salary" data-pjax-state="">Tiền lương</a>
-                    </li>
-                   
-                    <li class="nav-item my-0">
-                        <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                            " href="/hrm/config/timelate/" data-pjax-state="">Đi trễ về sớm</a>
-                    </li>
-                    <li class="nav-item my-0">
-                        <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                            " href="/staffConfiguration/workingTime" data-pjax-state="">Thời gian làm việc</a>
-                    </li>
-                    <li class="nav-item my-0">
-                        <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                            " href="/hrm/config/furlough/" data-pjax-state="">Nghỉ phép</a>
-                    </li>
-                    <li class="nav-item my-0">
-                        <a class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase 
-                            " href="/hrm/config/holiday/" data-pjax-state="">Ngày lễ</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
+  </div>
+  <div
+    class="card bg-body bg-opacity-50 card-custom shadow-sm border-0 rounded-2 mb-3"
+  >
+    <div class="card-body flex-column">
+      <div class="card-rounded d-flex flex-stack flex-wrap">
+        <ul class="nav flex-wrap border-transparent fw-bold">
+          <li class="nav-item my-0">
+            <a
+              class="pjax-load btn fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              href="/staffConfiguration/department"
+              data-pjax-state=""
+              >Phòng ban</a
+            >
+          </li>
+          <li class="nav-item my-0">
+            <a
+              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              href="/staffConfiguration/position"
+              data-pjax-state=""
+              >Chức vụ</a
+            >
+          </li>
+          <li class="nav-item my-0">
+            <a
+              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              href="/staffConfiguration/salary"
+              data-pjax-state=""
+              >Tiền lương</a
+            >
+          </li>
+
+          <li class="nav-item my-0">
+            <a
+              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              href="/hrm/config/timelate/"
+              data-pjax-state=""
+              >Đi trễ về sớm</a
+            >
+          </li>
+          <li class="nav-item my-0">
+            <a
+              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              href="/staffConfiguration/workingTime"
+              data-pjax-state=""
+              >Thời gian làm việc</a
+            >
+          </li>
+          <li class="nav-item my-0">
+            <a
+              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              href="/manager/leavetypes"
+              data-pjax-state=""
+              >Nghỉ phép</a
+            >
+          </li>
+          <li class="nav-item my-0">
+            <a
+              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              href="/hrm/config/holiday/"
+              data-pjax-state=""
+              >Ngày lễ</a
+            >
+          </li>
+        </ul>
+      </div>
     </div>
-    <div class="card bg-body bg-opacity-50 shadow-sm border-0 rounded-2">
-		<div class="card-body">
-            <div class="custom-buttons d-none">
-                <div class="d-flex align-items-center justify-content-end">
-                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/staffConfiguration/department-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
-                    <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/users/accounts-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
-                </div>
-            </div>
-            <table id="datatable" 
-                    data-table 
-                    class="table align-middle" 
-                    data-type="POST" 
-                    data-server="true" 
-                    data-processing="true" 
-                    data-page-length="10"
-                    data-searching="true"
-                    data-paging="true"
-                    data-state-save='true'
-                    style="width:100%">
-                <thead>
-                    <tr>
-                        <th data-name="checkbox" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><div class="form-check"><input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"></div></th>
-                        <th data-name="departmentName" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-nowrap"><?=$jatbi->lang("Tên")?></th>
-                        <th data-name="departmentId" data-orderable="true" class="text-nowrap " data-visible="true" data-class="text-start"><?=$jatbi->lang("Mã")?></th>
-                        <th data-name="note" data-orderable="false" class="text-nowrap " data-visible="true" data-class=""><?=$jatbi->lang("Ghi chú")?></th>                        
-                        <th data-name="status" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-center"><?=$jatbi->lang("Trạng thái")?></th>
-                        <th data-name="action" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-end"><?=$jatbi->lang("Tùy chọn")?></th>
-                    </tr>
-                </thead>
-            </table>
-		</div>
-	</div>
+  </div>
+  <div class="card bg-body bg-opacity-50 shadow-sm border-0 rounded-2">
+    <div class="card-body">
+      <div class="custom-buttons d-none">
+        <div class="d-flex align-items-center justify-content-end">
+          <button
+            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+            data-action="modal"
+            data-url="/staffConfiguration/department-add"
+          >
+            <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Thêm")?>
+          </button>
+          <button
+            class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
+            data-action="modal"
+            data-checkbox="input.checker"
+            data-url="/users/accounts-deleted"
+          >
+            <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Xóa")?>
+          </button>
+        </div>
+      </div>
+      <table
+        id="datatable"
+        data-table
+        class="table align-middle"
+        data-type="POST"
+        data-server="true"
+        data-processing="true"
+        data-page-length="10"
+        data-searching="true"
+        data-paging="true"
+        data-state-save="true"
+        style="width: 100%"
+      >
+        <thead>
+          <tr>
+            <th
+              data-name="checkbox"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-center"
+            >
+              <div class="form-check">
+                <input
+                  class="form-check-input checkall"
+                  type="checkbox"
+                  value=""
+                  data-checkbox="input.checker"
+                />
+              </div>
+            </th>
+            <th
+              data-name="departmentName"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-nowrap"
+            >
+              <?=$jatbi->lang("Tên")?>
+            </th>
+            <th
+              data-name="departmentId"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Mã")?>
+            </th>
+            <th
+              data-name="note"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class=""
+            >
+              <?=$jatbi->lang("Ghi chú")?>
+            </th>
+            <th
+              data-name="status"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-center"
+            >
+              <?=$jatbi->lang("Trạng thái")?>
+            </th>
+            <th
+              data-name="action"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-end"
+            >
+              <?=$jatbi->lang("Tùy chọn")?>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
 </div>
-
-
-  
