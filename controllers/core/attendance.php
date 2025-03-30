@@ -1,3 +1,4 @@
+
 <?php
 if (!defined('ECLO')) die("Hacking attempt");
 $jatbi = new Jatbi($app);
@@ -547,3 +548,4 @@ $app->router("/manager/attendance/excel_pro", 'GET', function($vars) use ($app, 
     $app->header(['Content-Type' => 'application/json']);
     echo json_encode(["status" => "success", "content" => "Đang xuất file Excel theo công..."]);
 })->setPermissions(['attendance']);
+
