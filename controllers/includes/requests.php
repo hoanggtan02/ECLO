@@ -321,11 +321,15 @@
                     "icon"=>'<i class="ti ti-settings"></i>',
                     "controllers" => [
                         "controllers/core/staffConfiguration.php",
-                        "controllers/core/lateearlytime.php"
+                        "controllers/core/latetime.php",
                     ],
                     "main"=>'false',
                     "permission" => [
-                        'staffConfiguration'=>$jatbi->lang("Cấu hình nhân sự") 
+                        'staffConfiguration'=>$jatbi->lang(key: "Cấu hình nhân sự") ,
+                        'latetime' =>$jatbi->lang(key: "Đi trễ về sớm"),
+                        'latetime.add' =>$jatbi->lang(key: "Thêm đi trễ về sớm"),
+                        'latetime.edit' =>$jatbi->lang(key: "Sửa đi trễ về sớm"),
+                        'latetime.deleted' =>$jatbi->lang(key: "Xóa đi trễ về sớm"),
                     ],
                 ],
             ],

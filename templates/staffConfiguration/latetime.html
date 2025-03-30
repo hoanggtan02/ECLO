@@ -22,7 +22,7 @@
         <ul class="nav flex-wrap border-transparent fw-bold">
           <li class="nav-item my-0">
             <a
-              class="pjax-load btn fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
               href="/staffConfiguration/department"
               data-pjax-state=""
               >Phòng ban</a
@@ -44,10 +44,9 @@
               >Tiền lương</a
             >
           </li>
-
           <li class="nav-item my-0">
             <a
-              class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+              class="pjax-load btn fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
               href="/staffConfiguration/latetime"
               data-pjax-state=""
               >Đi trễ về sớm</a
@@ -88,7 +87,7 @@
           <button
             class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
             data-action="modal"
-            data-url="/staffConfiguration/department-add"
+            data-url="/staffConfiguration/latetime-add"
           >
             <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
             <?=$jatbi->lang("Thêm")?>
@@ -97,7 +96,7 @@
             class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
             data-action="modal"
             data-checkbox="input.checker"
-            data-url="/users/accounts-deleted"
+            data-url="/staffConfiguration/latetime-deleted"
           >
             <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i>
             <?=$jatbi->lang("Xóa")?>
@@ -114,7 +113,7 @@
         data-page-length="10"
         data-searching="true"
         data-paging="true"
-        data-state-save="true"
+        data-state-save="false"
         style="width: 100%"
       >
         <thead>
@@ -136,31 +135,67 @@
               </div>
             </th>
             <th
-              data-name="departmentName"
+              data-name="id"
               data-orderable="true"
               class="text-nowrap"
-              data-visible="true"
-              data-class="text-nowrap"
+              data-visible="false"
+              data-class="text-start"
             >
-              <?=$jatbi->lang("Tên")?>
+              <?=$jatbi->lang("ID")?>
             </th>
             <th
-              data-name="departmentId"
+              data-name="type"
               data-orderable="true"
               class="text-nowrap"
               data-visible="true"
               data-class="text-start"
             >
-              <?=$jatbi->lang("Mã")?>
+              <?=$jatbi->lang("Loại")?>
             </th>
             <th
-              data-name="note"
+              data-name="name"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Tên")?>
+            </th>
+            <th
+              data-name="value"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Giá trị")?>
+            </th>
+            <th
+              data-name="amount"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Số tiền")?>
+            </th>
+            <th
+              data-name="apply_date"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Ngày áp dụng")?>
+            </th>
+            <th
+              data-name="content"
               data-orderable="false"
               class="text-nowrap"
               data-visible="true"
-              data-class=""
+              data-class="text-start"
             >
-              <?=$jatbi->lang("Ghi chú")?>
+              <?=$jatbi->lang("Nội dung")?>
             </th>
             <th
               data-name="status"
