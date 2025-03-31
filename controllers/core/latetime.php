@@ -46,12 +46,9 @@ $app->router("/staffConfiguration/latetime", 'POST', function($vars) use ($app, 
         "ORDER" => [$orderName => strtoupper($orderDir)]
     ];
 
-    // Debug: Kiểm tra điều kiện WHERE
-    error_log("WHERE condition for latetime: " . json_encode($where));
 
-    // Đếm tổng số bản ghi (không tính LIMIT)
+
     $count = $app->count("latetime", ["AND" => $where['AND']]);
-    error_log("Total records in latetime: " . $count);
 
     // Lấy dữ liệu từ bảng latetime
     $datas = [];
@@ -65,8 +62,7 @@ $app->router("/staffConfiguration/latetime", 'POST', function($vars) use ($app, 
         "content",
         "status"
     ], $where, function ($data) use (&$datas, $jatbi, $app) {
-        // Debug: Kiểm tra dữ liệu lấy được từ bảng latetime
-        error_log("Record from latetime: " . json_encode($data));
+
 
         $content = $data['content'] ?: $jatbi->lang("Không có nội dung");
         // Thay thế ký tự xuống dòng \n bằng <br>
@@ -83,7 +79,7 @@ $app->router("/staffConfiguration/latetime", 'POST', function($vars) use ($app, 
             "amount"      => $data['amount'] ? number_format($data['amount'], 0, '.', ',') . ' VNĐ' : $jatbi->lang("Không xác định"),
             "apply_date"  => $data['apply_date'] ? date('d/m/Y', strtotime($data['apply_date'])) : $jatbi->lang("Không xác định"),
             "content"     => $content,
-            "status"      => $app->component("status", ["data" => $data['status'], "permission" => ['staffConfiguration']]),
+            "status"                => $app->component("status",["url"=>"/staffConfiguration/latetime-status/".$data['id'],"data"=>$data['status'],"permission"=>['latetime.edit']]),
             "action"      => $app->component("action", [
                 "button" => [
                     [
@@ -102,9 +98,6 @@ $app->router("/staffConfiguration/latetime", 'POST', function($vars) use ($app, 
             ]),
         ];
     });
-
-    // Debug: Kiểm tra dữ liệu trả về
-    error_log("Data for DataTables: " . json_encode($datas));
 
     // Trả về dữ liệu dưới dạng JSON cho DataTables
     $response = json_encode([
@@ -130,21 +123,6 @@ $app->router("/staffConfiguration/latetime", 'POST', function($vars) use ($app, 
 })->setPermissions(['latetime']);
 
 //----------------------------------------Thêm Đi trễ về sớm----------------------------------------
-// $app->router("/staffConfiguration/latetime-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
-//     $vars['title'] = $jatbi->lang("Thêm Đi trễ về sớm");
-//     $vars['data'] = [
-//         "type"       => '',
-//         "name"       => '',
-//         "value"      => '',
-//         "amount"     => '',
-//         "apply_date" => date('Y-m-d'),
-//         "content"    => '',
-//         "status"     => '1',
-//     ];
-//     echo $app->render('templates/staffConfiguration/latetime-post.html', $vars, 'global');
-// })->setPermissions(['latetime.add']);
-
-
 $app->router("/staffConfiguration/latetime-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Thêm Đi trễ về sớm");
 
@@ -153,76 +131,11 @@ $app->router("/staffConfiguration/latetime-add", 'GET', function($vars) use ($ap
     $vars['employees'] = $employees ?: [];
 
     $vars['data'] = [
-        "sn"         => '', 
-        "type"       => '',
-        "name"       => '',
-        "value"      => '',
-        "amount"     => '',
         "apply_date" => date('Y-m-d'),
-        "content"    => '',
-        "status"     => '1',
+        "status"     => 'A',
     ];
     echo $app->render('templates/staffConfiguration/latetime-post.html', $vars, 'global');
 })->setPermissions(['latetime.add']);
-
-// $app->router("/staffConfiguration/latetime-add", 'POST', function($vars) use ($app, $jatbi) {
-//     $app->header([
-//         'Content-Type' => 'application/json',
-//     ]);
-
-//     // Kiểm tra dữ liệu đầu vào
-//     $type = trim($_POST['type'] ?? '');
-//     $name = trim($_POST['name'] ?? '');
-//     $value = trim($_POST['value'] ?? '');
-//     $amount = trim($_POST['amount'] ?? '');
-//     $apply_date = trim($_POST['apply_date'] ?? '');
-//     $content = trim($_POST['content'] ?? '');
-//     $status = trim($_POST['status'] ?? '');
-
-//     if ($type == '' || $name == '' || $value == '' || $amount == '' || $apply_date == '') {
-//         echo json_encode([
-//             'status' => 'error',
-//             'content' => $jatbi->lang("Vui lòng điền đầy đủ thông tin bắt buộc"),
-//         ]);
-//         return;
-//     }
-
-//     // Chuẩn bị dữ liệu để lưu vào DB
-//     $latetimeData = [
-//         "type"       => $type,
-//         "name"       => $name,
-//         "value"      => (int) $value, // Chuyển về kiểu số nguyên
-//         "amount"     => (float) $amount, // Chuyển về kiểu số thực
-//         "apply_date" => date("Y-m-d", strtotime($apply_date)), // Định dạng ngày hợp lệ
-//         "content"    => $content,
-//         "status"     => $status,
-//     ];
-
-    
-
-//     // Thêm dữ liệu vào bảng latetime
-//     $inserted = $app->insert("latetime", $latetimeData);
-
-//     if (!$inserted) {
-//         echo json_encode([
-//             'status' => 'error',
-//             'content' => $jatbi->lang("Lỗi khi thêm vào cơ sở dữ liệu"),
-//         ]);
-//         return;
-//     }
-
-//     // Ghi log nếu thêm thành công
-//     $jatbi->logs('latetime', 'latetime-add', $latetimeData);
-
-//     // Trả về kết quả thành công
-//     echo json_encode([
-//         'status' => 'success',
-//         'content' => $jatbi->lang("Thêm đi trễ về sớm thành công"),
-//         'reload' => true,
-//     ]);
-// })->setPermissions(['latetime.add']);
-
-
 
 $app->router("/staffConfiguration/latetime-add", 'POST', function($vars) use ($app, $jatbi) {
     $app->header([
@@ -285,7 +198,7 @@ $app->router("/staffConfiguration/latetime-add", 'POST', function($vars) use ($a
     echo json_encode([
         'status' => 'success',
         'content' => $jatbi->lang("Thêm đi trễ về sớm thành công"),
-        'reload' => true,
+        
     ]);
 })->setPermissions(['latetime.add']);
 
@@ -300,6 +213,7 @@ $app->router("/staffConfiguration/latetime-edit/{id}", 'GET', function($vars) us
         return;
     }
 
+    $formattedAmount = number_format($latetime[0]['amount'], 0, '.', '');
     // Truyền dữ liệu vào template
     $vars['title'] = $jatbi->lang("Sửa Đi trễ về sớm");
     $vars['data'] = [
@@ -307,7 +221,7 @@ $app->router("/staffConfiguration/latetime-edit/{id}", 'GET', function($vars) us
         'type'       => $latetime[0]['type'],
         'name'       => $latetime[0]['name'],
         'value'      => $latetime[0]['value'],
-        'amount'     => $latetime[0]['amount'],
+        'amount'     => $formattedAmount,
         'apply_date' => $latetime[0]['apply_date'],
         'content'    => $latetime[0]['content'],
         'status'     => $latetime[0]['status'],
@@ -316,8 +230,6 @@ $app->router("/staffConfiguration/latetime-edit/{id}", 'GET', function($vars) us
 
     echo $app->render('templates/staffConfiguration/latetime-post.html', $vars, 'global');
 })->setPermissions(['latetime.edit']);
-
-
 
 $app->router("/staffConfiguration/latetime-edit/{id}", 'POST', function($vars) use ($app, $jatbi) {
     $app->header([
@@ -338,7 +250,6 @@ $app->router("/staffConfiguration/latetime-edit/{id}", 'POST', function($vars) u
 
     // Kiểm tra dữ liệu đầu vào
     $type = trim($_POST['type'] ?? '');
-   
     $value = trim($_POST['value'] ?? '');
     $amount = trim($_POST['amount'] ?? '');
     $apply_date = trim($_POST['apply_date'] ?? '');
@@ -356,7 +267,6 @@ $app->router("/staffConfiguration/latetime-edit/{id}", 'POST', function($vars) u
     // Chuẩn bị dữ liệu để cập nhật vào DB
     $latetimeData = [
         "type"       => $type,
-        
         "value"      => (int) $value,
         "amount"     => (float) $amount,
         "apply_date" => date("Y-m-d", strtotime($apply_date)),
@@ -382,7 +292,7 @@ $app->router("/staffConfiguration/latetime-edit/{id}", 'POST', function($vars) u
     echo json_encode([
         'status' => 'success',
         'content' => $jatbi->lang("Cập nhật đi trễ về sớm thành công"),
-        'reload' => true,
+    
     ]);
 })->setPermissions(['latetime.edit']);
 
@@ -446,4 +356,34 @@ $app->router("/staffConfiguration/latetime-deleted", 'POST', function($vars) use
         'reload' => true,
     ]);
 })->setPermissions(['latetime.deleted']);
+
+//----------------------------------------Cập nhật trạng thái----------------------------------------
+$app->router("/staffConfiguration/latetime-status/{id}", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $data = $app->get("latetime","*",["id"=>$vars['id']]);
+    if($data){
+        if($data){
+            if($data['status']==='A'){
+                $status = "D";
+            } 
+            elseif($data['status']==='D'){
+                $status = "A";
+            }
+            $app->update("latetime",["status"=>$status],["id"=>$data['id']]);
+            $jatbi->logs('staffConfiguration','latetime-status',$data);
+            echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+        }
+        else {
+            echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+        }
+    }
+    else {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+    }
+})->setPermissions(['latetime.edit']);
+
+
+
 ?>
