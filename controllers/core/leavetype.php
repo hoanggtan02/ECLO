@@ -4,7 +4,7 @@ $jatbi = new Jatbi($app);
 $setting = $app->getValueData('setting');
 
 // Hiển thị danh sách loại nghỉ phép
-$app->router("/manager/leavetypes", 'GET', function($vars) use ($app, $jatbi, $setting) {
+$app->router("/staffConfiguration/leavetypes", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Loại nghỉ phép");
     $vars['add'] = '/manager/leavetypes-add';
     $vars['deleted'] = '/manager/leavetypes-deleted';
@@ -27,7 +27,7 @@ $app->router("/manager/leavetypes", 'GET', function($vars) use ($app, $jatbi, $s
 })->setPermissions(['leavetype']);
 
 // Tải dữ liệu cho DataTables
-$app->router("/manager/leavetypes", 'POST', function($vars) use ($app, $jatbi) {
+$app->router("/staffConfiguration/leavetypes", 'POST', function($vars) use ($app, $jatbi) {
     $app->header(['Content-Type' => 'application/json']);
 
     $draw = $_POST['draw'] ?? 0;

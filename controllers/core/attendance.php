@@ -1,3 +1,4 @@
+
 <?php
 if (!defined('ECLO')) die("Hacking attempt");
 $jatbi = new Jatbi($app);
@@ -73,19 +74,25 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
     // Debug: Ghi log dữ liệu timeperiod
     error_log("Time period data: " . json_encode($timePeriodMap));
 
-    // Lấy dữ liệu từ bảng leave_requests
+    // Lấy dữ liệu từ bảng leave_requests và join với leavetype
     $leaveRequests = $app->select("leave_requests", [
-        "personSN",
-        "start_date",
-        "end_date"
+        "[>]leavetype" => ["LeaveId" => "LeaveTypeID"]
+    ], [
+        "leave_requests.personSN",
+        "leave_requests.start_date",
+        "leave_requests.end_date",
+        "leave_requests.LeaveId",
+        "leavetype.Code",
+        "leavetype.Name"
     ], [
         "AND" => [
-            "start_date[<=]" => "$year-$month-31 23:59:59",
-            "end_date[>=]" => "$year-$month-01 00:00:00"
+            "leave_requests.start_date[<=]" => "$year-$month-31 23:59:59",
+            "leave_requests.end_date[>=]" => "$year-$month-01 00:00:00",
+            "Status" => 1 // Chỉ lấy những yêu cầu đã được phê duyệt
         ]
     ]) ?? [];
 
-    // Nhóm leave_requests theo personSN
+    // Nhóm leave_requests theo personSN và lưu thông tin loại nghỉ phép
     $leaveRequestsByEmployee = [];
     foreach ($leaveRequests as $request) {
         $personSN = $request['personSN'];
@@ -94,12 +101,35 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
         }
         $leaveRequestsByEmployee[$personSN][] = [
             'start_date' => $request['start_date'],
-            'end_date' => $request['end_date']
+            'end_date' => $request['end_date'],
+            'leave_type_id' => $request['LeaveId'],
+            'leave_code' => $request['Code'],
+            'leave_name' => $request['Name']
         ];
     }
 
     // Debug: Ghi log dữ liệu leave_requests
     error_log("Leave requests data: " . json_encode($leaveRequestsByEmployee));
+
+    // Lấy tất cả loại nghỉ phép để tạo màu sắc động
+    $leaveTypes = $app->select("leavetype", [
+        "LeaveTypeID",
+        "Code",
+        "Name"
+    ],[
+        "Status" => 1,
+    ]);
+    $vars['leave_types'] = $leaveTypes;
+
+    // Tạo mảng màu sắc cho từng loại nghỉ phép
+    $leaveTypeColors = [];
+    $colors = [
+        '#f4a261', '#e76f51', '#2a9d8f', '#264653', '#e9c46a', '#f4e4bc', '#d4a5a5', '#a3bffa'
+    ]; // Danh sách màu sắc
+    foreach ($leaveTypes as $index => $leaveType) {
+        $leaveTypeColors[$leaveType['LeaveTypeID']] = $colors[$index % count($colors)];
+    }
+    $vars['leave_type_colors'] = $leaveTypeColors;
 
     // Thêm timeperiod_id vào dữ liệu chấm công
     $datas = [];
@@ -186,7 +216,8 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                 "name" => $employeeInfo['name'] ?? 'Nhân viên không xác định',
             ];
 
-            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            // $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
 
             // Lấy timeperiod_id của nhân viên cho từng ngày
             for ($day = 1; $day <= $daysInMonth; $day++) {
@@ -234,6 +265,9 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
 
                 // Kiểm tra xem ngày này có nằm trong khoảng thời gian xin nghỉ phép không
                 $isOffPermitted = false;
+                $leaveTypeId = null;
+                $leaveCode = null;
+                $leaveName = null;
                 if (isset($leaveRequestsByEmployee[$employeeSn])) {
                     foreach ($leaveRequestsByEmployee[$employeeSn] as $request) {
                         $startDate = strtotime(date('Y-m-d', strtotime($request['start_date'])));
@@ -242,7 +276,10 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
 
                         if ($currentDateTimestamp >= $startDate && $currentDateTimestamp <= $endDate) {
                             $isOffPermitted = true;
-                            error_log("Employee $employeeSn, Date $dateKey: Marked as off-permitted");
+                            $leaveTypeId = $request['leave_type_id'];
+                            $leaveCode = $request['leave_code'];
+                            $leaveName = $request['leave_name'];
+                            error_log("Employee $employeeSn, Date $dateKey: Marked as off-permitted with LeaveTypeID $leaveTypeId");
                             break;
                         }
                     }
@@ -251,17 +288,29 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                 // Gán trạng thái mặc định cho ngày
                 if ($isOffPermitted) {
                     $status = ['off-permitted'];
+                    $employeeData["day_$day"] = [
+                        "check_in" => null,
+                        "check_out" => null,
+                        "status" => $status,
+                        "leave_type_id" => $leaveTypeId,
+                        "leave_code" => $leaveCode,
+                        "leave_name" => $leaveName
+                    ];
                 } elseif ($isDayOff) {
                     $status = ['day-off'];
+                    $employeeData["day_$day"] = [
+                        "check_in" => null,
+                        "check_out" => null,
+                        "status" => $status
+                    ];
                 } else {
                     $status = ['no-record'];
+                    $employeeData["day_$day"] = [
+                        "check_in" => null,
+                        "check_out" => null,
+                        "status" => $status
+                    ];
                 }
-
-                $employeeData["day_$day"] = [
-                    "check_in" => null,
-                    "check_out" => null,
-                    "status" => $status
-                ];
             }
 
             // Xử lý các ngày có bản ghi chấm công
@@ -303,6 +352,9 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
 
                 // Kiểm tra xem ngày này có nằm trong khoảng thời gian xin nghỉ phép không
                 $isOffPermitted = false;
+                $leaveTypeId = null;
+                $leaveCode = null;
+                $leaveName = null;
                 if (isset($leaveRequestsByEmployee[$employeeSn])) {
                     foreach ($leaveRequestsByEmployee[$employeeSn] as $request) {
                         $startDate = strtotime(date('Y-m-d', strtotime($request['start_date'])));
@@ -311,7 +363,10 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
 
                         if ($currentDateTimestamp >= $startDate && $currentDateTimestamp <= $endDate) {
                             $isOffPermitted = true;
-                            error_log("Employee $employeeSn, Date $dateKey (with check-in): Marked as off-permitted");
+                            $leaveTypeId = $request['leave_type_id'];
+                            $leaveCode = $request['leave_code'];
+                            $leaveName = $request['leave_name'];
+                            error_log("Employee $employeeSn, Date $dateKey (with check-in): Marked as off-permitted with LeaveTypeID $leaveTypeId");
                             break;
                         }
                     }
@@ -325,6 +380,14 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                     } elseif (count($checkTimesSorted) == 1) {
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
                     }
+                    $employeeData["day_$day"] = [
+                        "check_in" => $checkIn,
+                        "check_out" => $checkOut,
+                        "status" => $status,
+                        "leave_type_id" => $leaveTypeId,
+                        "leave_code" => $leaveCode,
+                        "leave_name" => $leaveName
+                    ];
                 } elseif ($isDayOff) {
                     $status[] = 'day-off';
                     if (count($checkTimesSorted) >= 2) {
@@ -333,6 +396,11 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                     } elseif (count($checkTimesSorted) == 1) {
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
                     }
+                    $employeeData["day_$day"] = [
+                        "check_in" => $checkIn,
+                        "check_out" => $checkOut,
+                        "status" => $status
+                    ];
                 } else {
                     $checkInStandard = $timePeriod[$dayMap[$dayOfWeek]['start']] ?? '09:00';
                     $checkOutStandard = $timePeriod[$dayMap[$dayOfWeek]['end']] ?? '16:30';
@@ -373,13 +441,12 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                         $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
                         $status[] = 'not-checked';
                     }
+                    $employeeData["day_$day"] = [
+                        "check_in" => $checkIn,
+                        "check_out" => $checkOut,
+                        "status" => $status
+                    ];
                 }
-
-                $employeeData["day_$day"] = [
-                    "check_in" => $checkIn,
-                    "check_out" => $checkOut,
-                    "status" => $status
-                ];
             }
 
             $departmentData[$departmentId]['employees'][] = $employeeData;
@@ -482,3 +549,4 @@ $app->router("/manager/attendance/excel_pro", 'GET', function($vars) use ($app, 
     $app->header(['Content-Type' => 'application/json']);
     echo json_encode(["status" => "success", "content" => "Đang xuất file Excel theo công..."]);
 })->setPermissions(['attendance']);
+

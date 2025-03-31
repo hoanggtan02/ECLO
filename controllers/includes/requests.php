@@ -230,11 +230,16 @@
                 ],
                 'employees'=>[
                     "menu"=>$jatbi->lang("Nhân viên"),
-                    "url"=>'/employees',
+                    "url"=>'/manager/employee',
                     "icon"=>'<i class="ti ti-id-badge"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/employee.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission"=>[
+                        'employee'      =>$jatbi->lang("Nhân viên"),
+                        'employee.add'  =>$jatbi->lang("Thêm Nhân viên"),
+                        'employee.edit' =>$jatbi->lang("Sửa Nhân viên"),
+                        'employee.deleted'=>$jatbi->lang("Xóa Nhân viên"),
+                    ],
                 ],
                 'labor_contract'=>[
                     "menu"=>$jatbi->lang("Hợp đồng lao động"),
@@ -328,6 +333,7 @@
                     "icon"=>'<i class="ti ti-settings"></i>',
                     "controllers" => [
                         "controllers/core/staffConfiguration.php",
+                        "controllers/core/latetime.php",
                         "controllers/core/timeperiod.php",
                         "controllers/core/leavetype.php",
                     ],
@@ -338,6 +344,11 @@
                         'leavetype.add' => $jatbi->lang("Thêm Loại nghỉ phép"),
                         'leavetype.edit' => $jatbi->lang("Sửa Loại nghỉ phép"),
                         'leavetype.deleted' => $jatbi->lang("Xóa Loại nghỉ phép"),
+                        'latetime' => $jatbi->lang("Đi muộn về sớm"),
+                        'latetime.add' => $jatbi->lang("Thêm Đi muộn về sớm"),
+                        'latetime.edit' => $jatbi->lang("Sửa Đi muộn về sớm"),
+                        'latetime.deleted' => $jatbi->lang("Xóa Đi muộn về sớm"),
+
                     ],
                 ],
             ],

@@ -1,0 +1,160 @@
+<div class="container">
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+      <ul class="breadcrumb small mb-0">
+        <li class="breadcrumb-item small">
+          <a href="/" class="pjax-load link-secondary"
+            ><?=$jatbi->lang("Trang chủ")?></a
+          >
+        </li>
+        <li class="breadcrumb-item small text-body" aria-current="page">
+          <?=$title1?>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <?php include 'templates/staffConfiguration/menuStaffCog.html'; ?>
+
+  <div class="card bg-body bg-opacity-50 shadow-sm border-0 rounded-2">
+    <div class="card-body">
+      <div class="custom-buttons d-none">
+        <div class="d-flex align-items-center justify-content-end">
+          <button
+            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+            data-action="modal"
+            data-url="/staffConfiguration/latetime-add"
+          >
+            <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Thêm")?>
+          </button>
+          <button
+            class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
+            data-action="modal"
+            data-checkbox="input.checker"
+            data-url="/staffConfiguration/latetime-deleted"
+          >
+            <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Xóa")?>
+          </button>
+        </div>
+      </div>
+      <hr class="border-secondary border-opacity-50 my-2" />
+      <table
+        id="datatable"
+        data-table
+        class="table align-middle"
+        data-type="POST"
+        data-server="true"
+        data-processing="true"
+        data-page-length="10"
+        data-searching="true"
+        data-paging="true"
+        data-state-save="false"
+        style="width: 100%"
+      >
+        <thead>
+          <tr>
+            <th
+              data-name="checkbox"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-center"
+            >
+              <div class="form-check">
+                <input
+                  class="form-check-input checkall"
+                  type="checkbox"
+                  value=""
+                  data-checkbox="input.checker"
+                />
+              </div>
+            </th>
+            <th
+              data-name="id"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="false"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("ID")?>
+            </th>
+            <th
+              data-name="type"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Loại")?>
+            </th>
+            <th
+              data-name="name"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Tên")?>
+            </th>
+            <th
+              data-name="value"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Giá trị")?>
+            </th>
+            <th
+              data-name="amount"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Số tiền")?>
+            </th>
+            <th
+              data-name="apply_date"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Ngày áp dụng")?>
+            </th>
+            <th
+              data-name="content"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("Nội dung")?>
+            </th>
+            <th
+              data-name="status"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-center"
+            >
+              <?=$jatbi->lang("Trạng thái")?>
+            </th>
+            <th
+              data-name="action"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-end"
+            >
+              <?=$jatbi->lang("Tùy chọn")?>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+</div>
