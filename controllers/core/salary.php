@@ -9,6 +9,9 @@
     $app->router("/salary", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Tính lương");
         $vars['employee'] = $app->select("employee",["name (text)","sn (value)"],[]);
+        $vars['month'] = date('m');
+        $vars['year'] = (int) date('y');
+        $vars['salary'] = $app->select("staff-salary",["id","name","price","priceValue"],["type[<]" => 3,"status" => 'A',]);
         echo $app->render('templates/salary/salary.html', $vars);
     })->setPermissions(['salary']);
 
@@ -20,28 +23,27 @@
         $start = $_POST['start'] ?? 0;
         $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
-        $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'id';
+        $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'numericalOrder';
         $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
 
-        $startTime = $app->xss($_POST['startTime'] ?? "");
-        $endTime = $app->xss($_POST['endTime'] ?? "");
-        $personSn = $app->xss($_POST['personSn'] ?? "");
-        $personType = $app->xss($_POST['personType'] ?? "");
+        $month = $app->xss($_POST['month'] ?? "");
+        $year = $app->xss($_POST['year'] ?? "");
+        // $MY = sprintf("%02d/%s", $month, $year);
 
-        // $where = [
-        //     "AND" => [
-        //         "OR" => [
-        //             "record.id[~]" => $searchValue,
-        //             "record.personName[~]" => $searchValue,
-        //             "record.personSn[~]" => $searchValue,
-        //         ],
-        //     ],
-        //     "LIMIT" => [$start, $length],
-        //     "ORDER" => [$orderName => strtoupper($orderDir)]
-        // ];
+        $where = [
+            "AND" => [
+                "OR" => [
+                    // "salary.id[~]" => $searchValue,
+                    // "salary.personName[~]" => $searchValue,
+                    "salary.personSn[~]" => $searchValue,
+                ],
+            ],
+            "LIMIT" => [$start, $length],
+            // "ORDER" => [$orderName => strtoupper($orderDir)]
+        ];
         
-        // if(!empty($startTime)) {
-        //     $where["AND"]["record.createTime[>=]"] = $startTime;
+        // if(!empty($MY)) {
+        //     $where["AND"]["salary.MY"] = $MY;
         // }
         // if(!empty($endTime)) {
         //     $endTime = date("Y-m-d", strtotime($endTime . " +1 day"));
@@ -55,32 +57,57 @@
         // }
         
         $count = $app->count("salary",[
-            // "AND" => $where['AND'],
+            "AND" => $where['AND'],
         ]);
 
         $app->select("salary",  
             [
-            'salary.personSn',
-            'salary.department',
-            'salary.dailySalary',
-            'salary.insurance',
-            'salary.workday',
-            'salary.overtime',
-            'salary.leaveWithoutPay',
-            'salary.paidLeave',
-            ], function ($data) use (&$datas,$jatbi,$app) {
-            $datas[] = [
-                "numericalOrder"  => 0,
-                "personSn"        => $data['personSn'],
-                "department"      => $data['department'],
-                "dailySalary"     => $data['dailySalary'],
-                "insurance"       => $data['insurance'],
-                "workday"         => $data['workday'], 
-                "overtime"        => $data['overtime'],
-                "leaveWithoutPay" => $data['leaveWithoutPay'],
-                "paidLeave"       => $data['paidLeave'],
-                'total'           => 0,
-            ];
+            'personSn',
+            'departmentId',
+            'salary',
+            'workingDays',
+            'overtime',
+            'lateArrival',
+            'earlyLeave',
+            'unpaidLeave',
+            'paidLeave',
+            'unauthorizedLeave',
+            // 'reward',
+            // 'discipline',
+            // 'salaryAdvance',
+            // 'salaryReceived',
+            // 'salary.attendanceTracking',
+            // 'salary.reward',
+            // 'salary.discipline',
+            // 'salary.salaryAdvance',
+            // 'salary.salaryReceived',
+            // 'salary.month',
+            ], $where, function ($data) use (&$datas,$jatbi,$app) {
+                $salary = json_decode($data['salary'], true);
+                $datas[] = array_merge([
+                    "numericalOrder"            => 0,
+                    "personSn"                  => $data['personSn'],
+                    "departmentId"              => $data['departmentId'],
+                    "workingDays"               => $data['workingDays'],
+                    "overtime"                  => $data['overtime'],
+                    "lateArrival/earlyLeave"    => $data['lateArrival'] . ' / ' . $data['earlyLeave'],
+                    "unpaidLeave"               => $data['unpaidLeave'],
+                    "paidLeave"                 => $data['paidLeave'],
+                    "unauthorizedLeave"         => $data['unauthorizedLeave'],
+                    // "dailySalary"     => $data['dailySalary'],
+                    // "insurance"       => $data['insurance'],
+                    // "workday"         => $data['workday'], 
+                    // "overtime"        => $data['overtime'],
+                    // "leaveWithoutPay" => $data['leaveWithoutPay'],
+                    // "paidLeave"       => $data['paidLeave'],
+                    // 'total'           => 0,
+                ],$salary);
+          
+            
+            // foreach ($salary as $key => $value) {
+            //     $entry[$key] = $value;
+            // }
+      
         }); 
     
         echo json_encode([

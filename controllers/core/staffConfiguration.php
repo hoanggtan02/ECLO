@@ -661,7 +661,7 @@ $app->router("/staffConfiguration/holiday", 'POST', function($vars) use ($app, $
     ]);
 })->setPermissions(['staffConfiguration']);
 
-//----------------------------------------Cập nhật trạng thái ngày lễlễ----------------------------------------
+//----------------------------------------Cập nhật trạng thái ngày lễ----------------------------------------
 $app->router("/staffConfiguration/holiday-status/{id}", 'POST', function($vars) use ($app, $jatbi) {
     $app->header([
         'Content-Type' => 'application/json',
@@ -688,7 +688,7 @@ $app->router("/staffConfiguration/holiday-status/{id}", 'POST', function($vars) 
     }
 })->setPermissions(['staffConfiguration.edit']);
 
-//----------------------------------------Thêm ngày lễlễ----------------------------------------
+//----------------------------------------Thêm ngày lễ----------------------------------------
 $app->router("/staffConfiguration/holiday-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Thêm Tiền lương");
     $vars['data'] = [
@@ -707,14 +707,21 @@ $app->router("/staffConfiguration/holiday-add", 'POST', function($vars) use ($ap
     $app->header([
         'Content-Type' => 'application/json',
     ]);
-    if($app->xss($_POST['name'])=='' || $app->xss($_POST['startDate'])=='' || $app->xss($_POST['endDate'])=='' || $app->xss($_POST['salaryCoefficient'])=='') {
+
+    $salaryCoefficient = $app->xss($_POST['salaryCoefficient'] ?? '');
+    if($app->xss($_POST['name'])=='' || $app->xss($_POST['startDate'])=='' || $app->xss($_POST['endDate'])=='' || $salaryCoefficient =='') {
         echo json_encode(["status"=>"error","content"=>$jatbi->lang("Các trường bắt buộc không được để trống.")]);
         exit;
     } 
     if($app->xss($_POST['startDate']) > $app->xss($_POST['endDate'])) {
         echo json_encode(["status"=>"error","content"=>$jatbi->lang("Ngày bắt đầu không được lớn hơn ngày kết thúc.")]);
         exit;
-    } 
+    }
+    if (is_numeric($salaryCoefficient) && floatval($salaryCoefficient) >= 0) {// kiểm tra
+    } else {
+        echo json_encode(["status"=>"error","content"=>$jatbi->lang("Hệ số lương không hợp lệ.")]);
+        exit;
+    }
     $insert = [
         "departmentId"          => $app->xss($_POST['departmentId']),
         "name"                  => $app->xss($_POST['name'])?? '',
