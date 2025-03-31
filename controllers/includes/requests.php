@@ -243,11 +243,16 @@
                 ],
                 'labor_contract'=>[
                     "menu"=>$jatbi->lang("Hợp đồng lao động"),
-                    "url"=>'/labor-contract',
+                    "url"=>'/labor_contract',
                     "icon"=>'<i class="ti ti-file"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/labor_contract.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission" => [
+                        'labor_contract'          => $jatbi->lang("Hợp đồng lao động"),
+                        'labor_contract.add'      => $jatbi->lang("Thêm Hợp đồng lao động"),
+                        'labor_contract.edit'     => $jatbi->lang("Sửa Hợp đồng lao động"),
+                        'labor_contract.deleted'  => $jatbi->lang("Xóa Hợp đồng lao động"),
+                    ]
                 ],
                 'insurance'=>[
                     "menu"=>$jatbi->lang("Bảo hiểm"),
