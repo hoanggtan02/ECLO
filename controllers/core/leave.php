@@ -87,13 +87,13 @@
                             'type' => 'button',
                             'name' => $jatbi->lang("Sửa"),
                             'permission' => ['leave.edit'],
-                            'action' => ['data-url' => '/manager/leave-edit?id=' . $data['id'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/leave-edit?id=' . $data['id'], 'data-action' => 'modal']
                         ],
                         [
                             'type' => 'button',
                             'name' => $jatbi->lang("Xóa"),
                             'permission' => ['leave.deleted'],
-                            'action' => ['data-url' => '/manager/leave-deleted?id=' . $data['id'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/leave-deleted?id=' . $data['id'], 'data-action' => 'modal']
                         ],
                     ]
                 ]),
@@ -248,87 +248,71 @@
     })->setPermissions(['leave.edit']);
     
     $app->router("/leave-edit", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header([
-            'Content-Type' => 'application/json',
-        ]);
+        $app->header(['Content-Type' => 'application/json']);
     
+        // Lấy ID đơn nghỉ phép
         $id = isset($_POST['id']) ? $app->xss($_POST['id']) : null;
     
-        if (!$id) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("ID đơn nghỉ không hợp lệ")]);
+        if (!$id || !is_numeric($id)) {
+            echo json_encode(["status" => "error", "content" => "ID đơn nghỉ không hợp lệ"]);
             return;
         }
     
+        // Kiểm tra đơn nghỉ có tồn tại không
         $data = $app->get("leave_requests", "*", ["id" => $id]);
-    
         if (!$data) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy đơn nghỉ")]);
+            echo json_encode(["status" => "error", "content" => "Không tìm thấy đơn nghỉ"]);
             return;
         }
     
         // Lấy dữ liệu từ request
-        $employee_sn = isset($_POST['personSN']) ? $app->xss($_POST['personSN']) : '';
-        $leave_type  = isset($_POST['leave_type']) ? $app->xss($_POST['leave_type']) : '';
-        $start_date  = isset($_POST['start_date']) ? $app->xss($_POST['start_date']) : '';
-        $end_date    = isset($_POST['end_date']) ? $app->xss($_POST['end_date']) : '';
-        $note        = isset($_POST['note']) ? $app->xss($_POST['note']) : '';
-
-
+        $employee_sn = $app->xss($_POST['personSN'] ?? '');
+        $leaveId     = $app->xss($_POST['LeaveId'] ?? '');
+        $start_date  = $app->xss($_POST['start_date'] ?? '');
+        $end_date    = $app->xss($_POST['end_date'] ?? '');
+        $note        = $app->xss($_POST['note'] ?? '');
     
         // Kiểm tra dữ liệu đầu vào
-        if ($employee_sn === '' || $start_date === '' || $end_date === '') {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
+        if (!$employee_sn || !$start_date || !$end_date) {
+            echo json_encode(["status" => "error", "content" => "Vui lòng không để trống các trường bắt buộc"]);
             return;
         }
-    
+        
         // Chuyển đổi ngày tháng
         try {
             $startDateTime = new DateTime($start_date);
             $endDateTime   = new DateTime($end_date);
         } catch (Exception $e) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Ngày không hợp lệ")]);
+            echo json_encode(["status" => "error", "content" => "Ngày không hợp lệ"]);
             return;
         }
     
         // Tính toán số ngày nghỉ
         $interval = $startDateTime->diff($endDateTime);
-    
-        if ($interval->days == 0) {
-            // Nghỉ trong cùng 1 ngày
-            $hours = $interval->h + ($interval->i / 60);
-            $leaveDays = ($hours <= 6) ? 0.5 : 1;
-        } else {
-            // Nghỉ nhiều ngày
-            $leaveDays = $interval->days + 1;
-        }
+        $leaveDays = ($interval->days == 0) ? (($interval->h + ($interval->i / 60) <= 6) ? 0.5 : 1) : $interval->days + 1;
     
         // Mảng dữ liệu cập nhật
         $update = [
             "personSN"    => $employee_sn,
+            "LeaveId"     => $leaveId, 
             "leave_days"  => $leaveDays,
-            "start_date"  => $startDateTime->format('Y-m-d'),
-            "end_date"    => $endDateTime->format('Y-m-d'),
+            "start_date"  => $startDateTime->format('Y-m-d H:i:s'),
+            "end_date"    => $endDateTime->format('Y-m-d H:i:s'),
             "note"        => $note,
-            "created_at"  => date("Y-m-d H:i:s"), // Cập nhật thời gian chỉnh sửa
+            "created_at"  => date("Y-m-d H:i:s"),
         ];
-    
-        // Debug: Log dữ liệu cập nhật
-        error_log("Update Data: " . json_encode($update));
     
         // Thực hiện cập nhật
         $result = $app->update("leave_requests", $update, ["id" => $id]);
     
         if (!$result) {
-            error_log("SQL Update Error: " . json_encode($app->error()));
             echo json_encode(["status" => "error", "content" => "Lỗi cập nhật dữ liệu"]);
             return;
         }
     
-        // Ghi log thay đổi
-        $jatbi->logs('leave_requests', 'leave-edit', $update);
-    
         // Phản hồi thành công
-        echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+        echo json_encode(["status" => "success", "content" => "Cập nhật thành công", "leave_days" => $leaveDays]);
     })->setPermissions(['leave.edit']);
+    
     
 ?>
