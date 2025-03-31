@@ -205,9 +205,9 @@
                 </table>
             </div>
             <div class="mt-4">
-                <div class="row justify-content-start align-items-start">
+                <div class="row">
+                    <!-- Cột trạng thái cố định -->
                     <div class="col-lg-3">
-                        <!-- Các trạng thái cơ bản -->
                         <div class="d-flex justify-content-start align-items-center mb-2">
                             <div class="p-3 me-2 border status-not-checked"></div>
                             <span><?=$jatbi->lang("Chưa chấm công về")?></span>
@@ -232,20 +232,41 @@
                             <div class="p-3 me-2 border status-off-permitted"></div>
                             <span><?=$jatbi->lang("OFF có xin phép")?></span>
                         </div>
-                        <!-- Load các loại nghỉ phép từ leavetype -->
-                        <?php foreach ($leave_types as $leaveType): ?>
-                            <div class="d-flex justify-content-start align-items-center mb-2">
-                                <div class="p-3 me-2 border status-off-permitted">
-                                    <?=$leaveType['Code']?>
+                    </div>
+            
+                    <!-- Cột trạng thái động từ $leave_types -->
+                    <div class="col-lg-9">
+                        <div class="row">
+                            <?php 
+                            $count = 0;
+                            foreach ($leave_types as $leaveType): 
+                                if ($count % 6 == 0): // Mỗi 6 phần tử sẽ tạo cột mới
+                            ?>
+                                <div class="col-lg-3">
+                            <?php endif; ?>
+                                    <div class="d-flex justify-content-start align-items-center mb-2">
+                                        <div class="p-3 me-2 border status-off-permitted">
+                                            <?=$leaveType['Code']?>
+                                        </div>
+                                        <span><?=$leaveType['Name']?></span>
+                                    </div>
+                            <?php 
+                                $count++;
+                                if ($count % 6 == 0): // Đóng cột sau mỗi 6 phần tử
+                            ?>
                                 </div>
-                                <span><?=$leaveType['Name']?></span>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endif; ?>
+                            <?php endforeach; ?>
+                            
+                            <!-- Đóng cột nếu chưa đủ 6 phần tử cuối cùng -->
+                            <?php if ($count % 6 != 0): ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+            
 
     <!-- Nút hành động -->
     <!-- <div class="action-buttons">
