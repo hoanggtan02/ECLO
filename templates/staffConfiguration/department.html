@@ -1,69 +1,47 @@
 <div class="container">
   <div class="mb-3 d-flex justify-content-between align-items-center">
-    <div>
-      <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
-      <ul class="breadcrumb small mb-0">
-        <li class="breadcrumb-item small">
-          <a href="/" class="pjax-load link-secondary"
-            ><?=$jatbi->lang("Trang chủ")?></a
-          >
-        </li>
-        <li class="breadcrumb-item small text-body" aria-current="page">
-          <?=$title1?>
-        </li>
-      </ul>
-    </div>
-    <div class="filter-search">
-      <div class="d-flex align-items-center justify-content-end">
-        <div class="dropdown">
-          <button
-            class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            data-bs-auto-close="outside"
-          >
-            <i class="ti ti-filter fs-5 me-2"></i
-            ><?=$jatbi->lang("Điều kiện lọc")?>
-          </button>
-          <div
-            class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width bg-blur"
-            style="--min-width: 300px"
-          >
-            <div class="fw-semibold py-2 px-3">
-              <?=$jatbi->lang("Điều kiện lọc")?>
-            </div>
-            <hr class="border-secondary border-opacity-50 my-2" />
-            <div class="row g-3 px-3">
-              <?=$app->component('select',[ "name"=>'status',
-              "placeholder"=>$jatbi->lang("Trạng thái"), "selected" =>
-              $app->xss($_GET['status'] ?? ''), "class" => 'filter-name', "attr"
-              => 'data-width="100%"', "options" =>
-              [["value"=>"A","text"=>$jatbi->lang("Kích
-              hoạt")],["value"=>"D","text"=>$jatbi->lang("Không Kích hoạt")],]
-              ])?>
-            </div>
-            <hr class="border-secondary border-opacity-50 my-2" />
-            <div class="px-3 py-2 text-end w-100">
-              <button
-                type="button"
-                class="btn btn-light px-3 py-2 rounded-pill reset-filter"
-              >
-                <?=$jatbi->lang("Làm mới")?>
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary px-3 py-2 rounded-pill button-filter"
-              >
-                <?=$jatbi->lang("Tìm")?>
-              </button>
+
+      <div>
+          <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+          <ul class="breadcrumb small mb-0">
+              <li class="breadcrumb-item small">
+                  <a href="/" class="pjax-load link-secondary"><?=$jatbi->lang("Trang chủ")?></a>
+              </li>
+              <li class="breadcrumb-item small text-body" aria-current="page"><?=$title1?>
+              </li>
+          </ul>
+      </div>
+      <div class="filter-search">
+        <div class="d-flex align-items-center justify-content-end">
+          <div class="dropdown">
+            <button class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center"
+              type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+              <i class="ti ti-filter fs-5 me-2"></i><?=$jatbi->lang("Điều kiện lọc")?>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width bg-blur"
+              style="--min-width: 300px">
+              <div class="fw-semibold py-2 px-3"><?=$jatbi->lang("Điều kiện lọc")?></div>
+              <hr class="border-secondary border-opacity-50 my-2" />
+              <div class="row g-3 px-3">
+                  <?=$app->component('select',[
+                              "name"=>'status',
+                              "placeholder"=>$jatbi->lang("Trạng thái"),
+                              "selected" => $app->xss($_GET['status'] ?? ''),
+                              "class" => 'filter-name',
+                              "attr" => 'data-width="100%"',
+                              "options" => [["value"=>"A","text"=>$jatbi->lang("Kích hoạt")],["value"=>"D","text"=>$jatbi->lang("Không Kích hoạt")],]
+                          ])?>
+              </div>
+              <hr class="border-secondary border-opacity-50 my-2" />
+              <div class="px-3 py-2 text-end w-100">
+                <button type="button" class="btn btn-light px-3 py-2 rounded-pill reset-filter"><?=$jatbi->lang("Làm mới")?></button>
+                <button type="button" class="btn btn-primary px-3 py-2 rounded-pill button-filter"><?=$jatbi->lang("Tìm")?></button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div> 
   </div>
-
   <?php include 'templates/staffConfiguration/menuStaffCog.html'; ?>
 
   <div class="card bg-body bg-opacity-50 shadow-sm border-0 rounded-2">

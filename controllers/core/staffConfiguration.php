@@ -194,7 +194,8 @@ $app->router("/staffConfiguration/department-delete", 'POST', function($vars) us
 
 //========================================Chức vụ========================================
 $app->router("/staffConfiguration/position", 'GET', function($vars) use ($app, $jatbi, $setting) {
-    $vars['title'] = $jatbi->lang("Chức vụ");
+    $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
+    $vars['title1'] = $jatbi->lang("Chức vụ");
     echo $app->render('templates/staffConfiguration/position.html', $vars);
 })->setPermissions(['staffConfiguration-position']);
 
@@ -636,7 +637,7 @@ $app->router("/staffConfiguration/holiday", 'POST', function($vars) use ($app, $
         [
         'staff-holiday.id',
         'staff-holiday.departmentId',
-        'department.departmentName',
+        'department.personName',
         'staff-holiday.name',
         'staff-holiday.startDate',
         'staff-holiday.endDate',
@@ -646,7 +647,7 @@ $app->router("/staffConfiguration/holiday", 'POST', function($vars) use ($app, $
         ], $where, function ($data) use (&$datas,$jatbi,$app) {
             $datas[] = [
                 "checkbox"              => $app->component("box",["data"=>$data['id']]),
-                "department"            => $data['departmentId'] == 0 ? 'Tất cả': $data['departmentName'] . ' - ' . $data['departmentId'] ,
+                "department"            => $data['departmentId'] == 0 ? 'Tất cả': $data['personName'] . ' - ' . $data['departmentId'] ,
                 "name"                  => $data['name'],
                 "day"                   => $data['startDate'] . ' - ' . $data['endDate'],
                 "salaryCoefficient"     => $data['salaryCoefficient'],
@@ -717,7 +718,7 @@ $app->router("/staffConfiguration/holiday-add", 'GET', function($vars) use ($app
         "priceValue"        => "0",
         "status"            => 'A',
     ];
-    $vars['department'] = $app->select("department", ['departmentId','departmentName'], []);
+    $vars['department'] = $app->select("department", ['departmentId','personName (departmentName)'], []);
     echo $app->render('templates/staffConfiguration/holiday-post.html', $vars, 'global');
 })->setPermissions(['staffConfiguration-holiday.add']);
 
@@ -760,7 +761,7 @@ $app->router("/staffConfiguration/holiday-add", 'POST', function($vars) use ($ap
 $app->router("/staffConfiguration/holiday-edit/{id}", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Sửa Ngày lễ");
     $vars['data'] = $app->get("staff-holiday","*",["id"=>$vars['id']]);
-    $vars['department'] = $app->select("department", ['departmentId','departmentName'], []);
+    $vars['department'] = $app->select("department", ['departmentId','personName (departmentName)'], []);
     if($vars['data']>1){
         echo $app->render('templates/staffConfiguration/holiday-post.html', $vars, 'global');
     }
@@ -825,5 +826,6 @@ $app->router("/staffConfiguration/holiday-delete", 'POST', function($vars) use (
         echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
     }
 })->setPermissions(['staffConfiguration-holiday.delete']);
+$vars['title'] = $jatbi->lang("Chức vụ");
 
 ?>
