@@ -28,30 +28,30 @@ $app->router("/staffConfiguration/department", 'POST', function($vars) use ($app
     $where = [
         "AND" => [
             "OR" => [
-                "staff-department.departmentId[~]" => $searchValue,
-                "staff-department.departmentName[~]" => $searchValue,
+                "department.departmentId[~]" => $searchValue,
+                "department.personName[~]" => $searchValue,
             ],
-            "staff-department.status[<>]" => $status,
+            "department.status[<>]" => $status,
         ],
         "LIMIT" => [$start, $length],
         "ORDER" => [$orderName => strtoupper($orderDir)]
     ];
     
-    $count = $app->count("staff-department",[
+    $count = $app->count("department",[
         "AND" => $where['AND'],
     ]);
 
-    $app->select("staff-department",  
+    $app->select("department",  
         [
-        'staff-department.departmentId',
-        'staff-department.departmentName',
-        'staff-department.note',
-        'staff-department.status',
+        'department.departmentId',
+        'department.personName',
+        'department.note',
+        'department.status',
         ], $where, function ($data) use (&$datas,$jatbi,$app) {
         $datas[] = [
             "checkbox"        => $app->component("box",["data"=>$data['departmentId']]),
             "departmentId"    => $data['departmentId'],
-            "departmentName"  => $data['departmentName'],
+            "departmentName"  => $data['personName'],
             "note"            => $data['note'],
             "status"          => $app->component("status",["url"=>"/staffConfiguration/department-status/".$data['departmentId'],"data"=>$data['status'],"permission"=>['staffConfiguration']]),
             "action"          => $app->component("action",[
@@ -86,7 +86,7 @@ $app->router("/staffConfiguration/department-status/{id}", 'POST', function($var
     $app->header([
         'Content-Type' => 'application/json',
     ]);
-    $data = $app->get("staff-department","*",["departmentId"=>$vars['id']]);
+    $data = $app->get("department","*",["departmentId"=>$vars['id']]);
     if($data>1){
         if($data>1){
             if($data['status']==='A'){
@@ -95,7 +95,7 @@ $app->router("/staffConfiguration/department-status/{id}", 'POST', function($var
             elseif($data['status']==='D'){
                 $status = "A";
             }
-            $app->update("staff-department",["status"=>$status],["departmentId"=>$data['departmentId']]);
+            $app->update("department",["status"=>$status],["departmentId"=>$data['departmentId']]);
             $jatbi->logs('staffConfiguration','department-status',$data);
             echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
         }
@@ -129,7 +129,7 @@ $app->router("/staffConfiguration/department-add", 'POST', function($vars) use (
             "note"           => $app->xss($_POST['note'])?? '',
             "status"         => $app->xss($_POST['status']),
         ];
-        $app->insert("staff-department",$insert);
+        $app->insert("department",$insert);
         $jatbi->logs('staffConfiguration','department-add',$insert);
         echo json_encode(['status'=>'success','content'=>$jatbi->lang("Thêm thành công")]);
     }
@@ -140,7 +140,7 @@ $app->router("/staffConfiguration/department-add", 'POST', function($vars) use (
 //----------------------------------------Sửa phòng ban----------------------------------------
 $app->router("/staffConfiguration/department-edit/{id}", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Sửa Phòng ban");
-    $vars['data'] = $app->get("staff-department","*",["departmentId"=>$vars['id']]);
+    $vars['data'] = $app->get("department","*",["departmentId"=>$vars['id']]);
     if($vars['data']>1){
         echo $app->render('templates/staffConfiguration/department-post.html', $vars, 'global');
     }
@@ -161,7 +161,7 @@ $app->router("/staffConfiguration/department-edit/{id}", 'POST', function($vars)
             "note"           => $app->xss($_POST['note'])?? '',
             "status"         => $app->xss($_POST['status']),
         ];
-        $app->update("staff-department",$insert,["departmentId"=>$vars['id']]);
+        $app->update("department",$insert,["departmentId"=>$vars['id']]);
         $jatbi->logs('staffConfiguration','department-edit departmentId = '.$vars['id'],$insert);
         echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
     }
@@ -178,11 +178,11 @@ $app->router("/staffConfiguration/department-delete", 'POST', function($vars) us
         'Content-Type' => 'application/json',
     ]);
     $boxid = explode(',', $app->xss($_GET['box']));
-    $datas = $app->select("staff-department","*",["id"=>$boxid]);
+    $datas = $app->select("department","*",["id"=>$boxid]);
 
     if(count($datas)>0){
         foreach($datas as $data){
-            $app->delete("staff-department",["id"=>$data['id']]);
+            $app->delete("department",["id"=>$data['id']]);
         }
         $jatbi->logs('staffConfiguration','department-delete',$datas);
         echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Xóa thành công.")]);
@@ -631,12 +631,12 @@ $app->router("/staffConfiguration/holiday", 'POST', function($vars) use ($app, $
     ]);
 
     $app->select("staff-holiday", [
-        "[>]staff-department" => ["departmentId" => "departmentId"]
+        "[>]department" => ["departmentId" => "departmentId"]
     ] ,
         [
         'staff-holiday.id',
         'staff-holiday.departmentId',
-        'staff-department.departmentName',
+        'department.departmentName',
         'staff-holiday.name',
         'staff-holiday.startDate',
         'staff-holiday.endDate',
@@ -717,7 +717,7 @@ $app->router("/staffConfiguration/holiday-add", 'GET', function($vars) use ($app
         "priceValue"        => "0",
         "status"            => 'A',
     ];
-    $vars['department'] = $app->select("staff-department", ['departmentId','departmentName'], []);
+    $vars['department'] = $app->select("department", ['departmentId','departmentName'], []);
     echo $app->render('templates/staffConfiguration/holiday-post.html', $vars, 'global');
 })->setPermissions(['staffConfiguration.add']);
 
@@ -760,7 +760,7 @@ $app->router("/staffConfiguration/holiday-add", 'POST', function($vars) use ($ap
 $app->router("/staffConfiguration/holiday-edit/{id}", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Sửa Ngày lễ");
     $vars['data'] = $app->get("staff-holiday","*",["id"=>$vars['id']]);
-    $vars['department'] = $app->select("staff-department", ['departmentId','departmentName'], []);
+    $vars['department'] = $app->select("department", ['departmentId','departmentName'], []);
     if($vars['data']>1){
         echo $app->render('templates/staffConfiguration/holiday-post.html', $vars, 'global');
     }
