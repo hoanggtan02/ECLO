@@ -27,7 +27,7 @@
         $start = $_POST['start'] ?? 0;
         $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
-        $type = $_POST['type'] ?? '';
+        $statu = $_POST['statu'] ?? ''; // Lọc theo trạng thái
     
         // Fix lỗi ORDER cột
         $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
@@ -49,8 +49,8 @@
             "ORDER" => [$orderColumn => $orderDir]
         ];
     
-        if (!empty($type)) {
-            $where["AND"]["shift.employee"] = $type;
+        if (!empty($statu)) {
+            $where["AND"]["shift.statu"] = $statu;
         }
     
         // Đếm số bản ghi
@@ -66,13 +66,12 @@
     
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
-            $shiftLabels = [
-                "1" => $jatbi->lang("Tăng ca ngày tết"),
-                "2" => $jatbi->lang("Tăng ca 2 giờ"),
-                "3" => $jatbi->lang("Tăng ca thứ 7"),
-            ];
+            $shiftLabels = array_column($app->select("timeperiod", ["acTzNumber", "name"]), "name", "acTzNumber");
+
             $temp = $shiftLabels[$data['shift']] ?? $jatbi->lang("Không xác định");
             $temp2 = $shiftLabels[$data['shift2']] ?? $jatbi->lang("Không xác định");
+
+
             $statuLabels = [
                 "1" => $jatbi->lang("Kích hoạt"),
                 "2" => $jatbi->lang("Không kích hoạt"),
@@ -130,6 +129,9 @@
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
         }, $app->select("employee", ["name"]));
+        $vars['ca'] = array_map(function($employee) {
+            return $employee['acTzNumber'] . ' - ' . $employee['name'];
+        }, $app->select("timeperiod", ["name", "acTzNumber"]));
 
         echo $app->render('templates/employee/shift-post.html', $vars, 'global');
     })->setPermissions(['shift.add']);
@@ -164,8 +166,10 @@
             return;
         }
         try {
+            $temp = substr($shift, 0, 1);
+            $temp2 = substr($shift2, 0, 1);
             // Dữ liệu để lưu vào database
-            $insert = ["idshift" => $idshift, "employee" => $employee, "shift" => $shift, "day" => $day, "timeStart" => $timeStart, "timeEnd" => $timeEnd, "shift2" => $shift2, "day2" => $day2, "timeStart2" => $timeStart2, "timeEnd2" => $timeEnd2, "statu" => $statu, "note" => $note, "dayCreat" => $dayCreat];
+            $insert = ["idshift" => $idshift, "employee" => $employee, "shift" => $temp, "day" => $day, "timeStart" => $timeStart, "timeEnd" => $timeEnd, "shift2" => $temp2, "day2" => $day2, "timeStart2" => $timeStart2, "timeEnd2" => $timeEnd2, "statu" => $statu, "note" => $note, "dayCreat" => $dayCreat];
               
             // Ghi log
             $jatbi->logs('shift', 'shift-add', $insert);
@@ -222,6 +226,9 @@
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
         }, $app->select("employee", ["name"]));
+        $vars['ca'] = array_map(function($employee) {
+            return $employee['acTzNumber'] . ' - ' . $employee['name'];
+        }, $app->select("timeperiod", ["name", "acTzNumber"]));
 
         $idshift = isset($_GET['idshift']) ? $app->xss($_GET['idshift']) : null;
 
@@ -279,15 +286,17 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Giờ bắt đầu không được sau giờ kết thúc")]);
             return;
         }
-        
+        $temp = substr($shift, 0, 1);
+        $temp2 = substr($shift2, 0, 1);
+
         // Cập nhật dữ liệu trong database
         $update = [
             "employee"  => $employee,
-            "shift"     => $shift,
+            "shift"     => $temp,
             "day"       => $day,
             "timeStart" => $timeStart,
             "timeEnd"   => $timeEnd,
-            "shift2"    => $shift2,
+            "shift2"    => $temp2,
             "day2"      => $day2,
             "timeStart2"=> $timeStart2,
             "timeEnd2"  => $timeEnd2,

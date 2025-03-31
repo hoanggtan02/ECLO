@@ -28,7 +28,7 @@
         $start = $_POST['start'] ?? 0;
         $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
-        $type = $_POST['type'] ?? '';
+        $statu = $_POST['statu'] ?? '';
     
         // Fix lỗi ORDER cột
         $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
@@ -44,24 +44,30 @@
                 "OR" => [
                     "overtime.employee[~]" => $searchValue,
                     "overtime.note[~]" => $searchValue,
-                    "overtime.statu[~]" => $searchValue,                ]
+                ]
             ],
             "LIMIT" => [$start, $length],
             "ORDER" => [$orderColumn => $orderDir]
         ];
     
-        if (!empty($type)) {
-            $where["AND"]["overtime.employee"] = $type;
+        if (!empty($statu)) {
+            $where["AND"]["overtime.statu"] = $statu;
         }
     
-        // Đếm số bản ghi
-        $count = $app->count("overtime", ["AND" => $where["AND"]]);
-    
+        // Lọc dữ liệu để loại bỏ các hàng có type D
+        $excludedIds = array_column($app->select("staff-salary", ["id"], ["status" => "A"]), "id");
+
+        // Thêm điều kiện để loại trừ các type nằm trong excludedIds
+        $where["AND"]["overtime.type"] = $excludedIds;
+
         // Truy vấn danh sách Khung thời gian
         $datas = $app->select("overtime", [
             'ids','type','employee','money','dayStart','dayEnd','note','statu','day'
         ], $where) ?? [];
-    
+
+        // Đếm số bản ghi
+        $count = $app->count("overtime", ["AND" => $where["AND"]]);
+
         // Log dữ liệu truy vấn để kiểm tra
         error_log("Fetched overtimes Data: " . print_r($datas, true));
     

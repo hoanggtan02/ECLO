@@ -28,7 +28,7 @@
         $start = $_POST['start'] ?? 0;
         $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
-        $type = $_POST['type'] ?? '';
+        $statu = $_POST['statu'] ?? '';
     
         // Fix lỗi ORDER cột
         $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
@@ -52,8 +52,8 @@
             "ORDER" => [$orderColumn => $orderDir]
         ];
     
-        if (!empty($type)) {
-            $where["AND"]["insurance.employee"] = $type;
+        if (!empty($statu)) {
+            $where["AND"]["insurance.statu"] = $statu;
         }
     
         // Đếm số bản ghi
