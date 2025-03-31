@@ -194,7 +194,8 @@ $app->router("/staffConfiguration/department-delete", 'POST', function($vars) us
 
 //========================================Chức vụ========================================
 $app->router("/staffConfiguration/position", 'GET', function($vars) use ($app, $jatbi, $setting) {
-    $vars['title'] = $jatbi->lang("Chức vụ");
+    $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
+    $vars['title1'] = $jatbi->lang("Chức vụ");
     echo $app->render('templates/staffConfiguration/position.html', $vars);
 })->setPermissions(['staffConfiguration']);
 
