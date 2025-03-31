@@ -10,7 +10,48 @@
         </div>
         <div class="filter-search">
             <div class="d-flex align-items-center justify-content-end">
-
+                <div class="d-flex align-items-center justify-content-end">
+                    <div class="dropdown">
+                      <button
+                        class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        data-bs-auto-close="outside"
+                      >
+                        <i class="ti ti-filter fs-5 me-2"></i> Điều kiện lọc
+                      </button>
+                      <div
+                        class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width bg-blur"
+                        style="--min-width: 300px"
+                      >
+                        <div class="fw-semibold py-2 px-3">Điều kiện lọc</div>
+                        <hr class="border-secondary border-opacity-50 my-2" />
+                        <div class="px-3">
+                          <select name="statu" class="form-select filter-name mt-2">
+                            <option value="">Trạng Thái</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Pending">Pending</option>
+                          </select>
+                        </div>
+                        <hr class="border-secondary border-opacity-50 my-2" />
+                        <div class="px-3 py-2 text-end w-100">
+                          <button
+                            type="button"
+                            class="btn btn-light px-3 py-2 rounded-pill reset-filter"
+                          >
+                            Làm mới
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-primary px-3 py-2 rounded-pill button-filter"
+                          >
+                            Tìm
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
             </div>
         </div>
     </div>

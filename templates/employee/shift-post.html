@@ -41,11 +41,14 @@
                                     <tbody>
                                         <tr>
                                             <td>
-                                                <select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%" name="shift">
+                                                <select name="shift" data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%">
                                                     <option value=""><?= $jatbi->lang("Ca làm") ?></option>
-                                                    <option value="1" <?= isset($data['shift']) && $data['shift'] == 1 ? 'selected' : '' ?>>Tăng ca ngày tết</option>
-                                                    <option value="2" <?= isset($data['shift']) && $data['shift'] == 2 ? 'selected' : '' ?>>Tăng ca 2 giờ</option>
-                                                    <option value="3" <?= isset($data['shift']) && $data['shift'] == 3 ? 'selected' : '' ?>>Tăng ca thứ 7</option>
+                                                        <?php foreach ($ca as $name): ?>
+                                                        <?php $temp = substr($name, 0, 1); ?>
+                                                        <option value="<?= $name ?>" <?= isset($data['shift']) && $data['shift'] == $temp ? 'selected' : '' ?>>
+                                                            <?= $name ?>
+                                                        </option>
+                                                        <?php endforeach; ?>
                                                 </select>
                                             </td>
                                             <td>
@@ -75,11 +78,14 @@
                                     <tbody>
                                         <tr>
                                             <td>
-                                                <select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%" name="shift2">
+                                                <select name="shift2" data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%">
                                                     <option value=""><?= $jatbi->lang("Ca làm") ?></option>
-                                                    <option value="1" <?= isset($data['shift2']) && $data['shift2'] == 1 ? 'selected' : '' ?>>Tăng ca ngày tết</option>
-                                                    <option value="2" <?= isset($data['shift2']) && $data['shift2'] == 2 ? 'selected' : '' ?>>Tăng ca 2 giờ</option>
-                                                    <option value="3" <?= isset($data['shift2']) && $data['shift2'] == 3 ? 'selected' : '' ?>>Tăng ca thứ 7</option>
+                                                        <?php foreach ($ca as $name): ?>
+                                                        <?php $temp = substr($name, 0, 1); ?>
+                                                        <option value="<?= $name ?>" <?= isset($data['shift2']) && $data['shift2'] == $temp ? 'selected' : '' ?>>
+                                                            <?= $name ?>
+                                                        </option>
+                                                        <?php endforeach; ?>
                                                 </select>
                                             </td>
                                             <td>
