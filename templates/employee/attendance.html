@@ -88,7 +88,7 @@
                         <tr>
                             <td class="fw-bold align-middle text-center p-1" rowspan="2"><?=$jatbi->lang("Ngày")?></td>
                             <?php
-                            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+                            $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
                             $daysOfWeek = [
                                 1 => 'T2',
                                 2 => 'T3',

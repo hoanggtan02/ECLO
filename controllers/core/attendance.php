@@ -216,7 +216,8 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
                 "name" => $employeeInfo['name'] ?? 'Nhân viên không xác định',
             ];
 
-            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            // $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
 
             // Lấy timeperiod_id của nhân viên cho từng ngày
             for ($day = 1; $day <= $daysInMonth; $day++) {
