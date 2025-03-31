@@ -333,7 +333,7 @@
                     "icon"=>'<i class="ti ti-settings"></i>',
                     "controllers" => [
                         "controllers/core/staffConfiguration.php",
-
+                        "controllers/core/latetime.php",
                         "controllers/core/timeperiod.php",
                         "controllers/core/leavetype.php",
                     ],
@@ -344,6 +344,10 @@
                         'leavetype.add' => $jatbi->lang("Thêm Loại nghỉ phép"),
                         'leavetype.edit' => $jatbi->lang("Sửa Loại nghỉ phép"),
                         'leavetype.deleted' => $jatbi->lang("Xóa Loại nghỉ phép"),
+                        'latetime' => $jatbi->lang("Đi muộn về sớm"),
+                        'latetime.add' => $jatbi->lang("Thêm Đi muộn về sớm"),
+                        'latetime.edit' => $jatbi->lang("Sửa Đi muộn về sớm"),
+                        'latetime.deleted' => $jatbi->lang("Xóa Đi muộn về sớm"),
 
                     ],
                 ],
