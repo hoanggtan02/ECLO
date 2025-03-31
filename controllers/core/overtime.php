@@ -3,9 +3,9 @@
     $jatbi = new Jatbi($app);
     $setting = $app->getValueData('setting');
 
-// Khung thời gian
+// Tăng Ca
     $app->router("/overtime", 'GET', function($vars) use ($app, $jatbi, $setting) {
-        $vars['title'] = $jatbi->lang("Tăng ca");
+        $vars['title'] = $jatbi->lang("Tăng Ca");
         $vars['add'] = '/overtime-add';
         $vars['deleted'] = '/overtime-deleted';
         $vars['edit'] = '/overtime-edit';
@@ -43,7 +43,6 @@
             "AND" => [
                 "OR" => [
                     "overtime.employee[~]" => $searchValue,
-                    "overtime.money[~]" => $searchValue,
                     "overtime.note[~]" => $searchValue,
                     "overtime.statu[~]" => $searchValue,                ]
             ],
@@ -68,11 +67,8 @@
     
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
-            $typeLabels = [
-                "1" => $jatbi->lang("Tăng ca ngày tết"),
-                "2" => $jatbi->lang("Tăng ca 2 giờ"),
-                "3" => $jatbi->lang("Tăng ca thứ 7"),
-            ];
+            
+            $typeLabels = array_column($app->select("staff-salary", ["id", "name"]), "name", "id");
 
             if ($data['statu'] === 'Approved') {
                 $temp = '<a href="#" class="status-link" " data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
@@ -132,8 +128,11 @@
     $app->router("/overtime-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Thêm Tăng ca");
         $vars['nv1'] = array_map(function($employee) {
-            return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+            return $employee['sn'] . ' - ' . $employee['name'];
+        }, $app->select("employee", ["name", "sn"]));
+        $vars['tangca'] = array_map(function($type) {
+            return $type['id'] . ' - ' . $type['name']. ' , ' . $type['price'];
+        }, $app->select("staff-salary", ["id", "name", "price"], ["type" => 3, "status" => "A"]));
 
         echo $app->render('templates/employee/overtime-post.html', $vars, 'global');
     })->setPermissions(['overtime.add']);
@@ -163,12 +162,14 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Ngày bắt đầu không được sau ngày kết thúc")]);
             return;
         }
+        $temp = substr($type, 0, 1);
+        $temp2 = substr($employee, strpos($employee, "- ") + 2);
         try {
             // Dữ liệu để lưu vào database
             $insert = [
-                "ids" => $app->xss($_POST['ids'] ?? ''),
-                "employee" => $app->xss($_POST['employee'] ?? ''),
-                "type" => $app->xss($_POST['type'] ?? ''),
+                "ids" => $ids,
+                "employee" => $temp2,
+                "type" => $temp,
                 "money" => $app->xss($_POST['money'] ?? ''),
                 "dayStart" => $app->xss($_POST['dayStart'] ?? ''),
                 "dayEnd" => $app->xss($_POST['dayEnd'] ?? ''),
@@ -228,8 +229,11 @@
     $app->router("/overtime-edit", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Sửa Overtime");
         $vars['nv1'] = array_map(function($employee) {
-            return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+            return $employee['sn'] . ' - ' . $employee['name'];
+        }, $app->select("employee", ["name", "sn"]));
+        $vars['tangca'] = array_map(function($type) {
+            return $type['id'] . ' - ' . $type['name']. ' , ' . $type['price'];
+        }, $app->select("staff-salary", ["id", "name", "price"], ["type" => 3, "status" => "A"]));
         $ids = isset($_GET['ids']) ? $app->xss($_GET['ids']) : null;
         if (!$ids) {
             echo $app->render('templates/common/error-modal.html', $vars, 'global');
@@ -260,7 +264,7 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy Tăng ca")]);
             return;
         }
-    
+
         // Kiểm tra dữ liệu đầu vào
         $employee = isset($_POST['employee']) ? $app->xss($_POST['employee']) : '';
         $type = isset($_POST['type']) ? $app->xss($_POST['type']) : '';
@@ -280,11 +284,13 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Ngày bắt đầu không sau ngày kết thúc")]);
             return;
         }
-    
+
+        $temp = substr($type, 0, 1);
+        $temp2 = substr($employee, strpos($employee, "- ") + 2);
         // Cập nhật dữ liệu trong database
         $update = [
-            "employee"  => $employee,
-            "type"    => $type,
+            "employee"  => $temp2,
+            "type"    => $temp,
             "money" => $money,
             "dayStart"  => $dayStart,
             "dayEnd"    => $dayEnd,
@@ -302,21 +308,25 @@
     })->setPermissions(['overtime.edit']);
 
     //Cấp phép overtime
-    $app->router("/overtime-approved", 'GET', function($vars) use ($app, $jatbi) {
-        if (isset($_GET['ids']) && isset($_GET['statu']) && $_GET['statu'] == "Pending") {
-            $update = [
-                "statu"  => "Approved"
-            ];      
-            $app->update("overtime", $update, ["ids" => $_GET['ids']]);
+    $app->router("/overtime-approved", 'GET', function($vars) use ($app) {
+        if (isset($_GET['ids']) && isset($_GET['statu']) && $_GET['statu'] == "Pending") {       
+            $vars['ids'] = $_GET['ids'];
             echo $app->render('templates/common/restore.html', $vars, 'global');
         }
-
     })->setPermissions(['overtime.approved']);
 
     $app->router("/overtime-approved", 'POST', function($vars) use ($app, $jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
         ]);
+        $ids = isset($_GET['ids']) ? $app->xss($_GET['ids']) : null;
+        if (!$ids) {
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Mã tăng ca không hợp lệ: $ids")]);
+            return;
+        }
+        $update = [
+            "statu"  => "Approved"
+        ];      
+        $app->update("overtime", $update, ["ids" => $ids]);
         echo json_encode(["status" => "success", "content" => $jatbi->lang("Cấp phép thành công")]);
-    })->setPermissions(['overtime.deleted']);
-?>
+    })->setPermissions(['overtime.approved']);
