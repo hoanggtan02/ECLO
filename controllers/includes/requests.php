@@ -57,11 +57,11 @@
                     "url"=>'/employee',
                     "icon"=>'<i class="ti ti-layout-dashboard "></i>',
                     "sub"=>[
-                        'employee'      =>[
-                            "name"  => $jatbi->lang("Nhân viên"),
-                            "router"=> '/manager/employee',
-                            "icon"  => '<i class="ti ti-user"></i>',
-                        ],
+                        // 'employee'      =>[
+                        //     "name"  => $jatbi->lang("Nhân viên"),
+                        //     "router"=> '/manager/employee',
+                        //     "icon"  => '<i class="ti ti-user"></i>',
+                        // ],
                         'face_employee'    =>[
                             "name"  => $jatbi->lang("Khuôn mặt"),
                             "router"=> '/manager/face_employee',
@@ -75,12 +75,12 @@
                             "controllers" => 'controllers/core/checkinout.php',
 
                         ],
-                        'timeperiod'      =>[
-                            "name"  => $jatbi->lang("Khung thời gian"),
-                            "router"=> '/manager/timeperiod',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/timeperiod.php',
-                        ],
+                        // 'timeperiod'      =>[
+                        //     "name"  => $jatbi->lang("Khung thời gian"),
+                        //     "router"=> '/manager/timeperiod',
+                        //     "icon"  => '<i class="fas fa-universal-access"></i>',
+                        //     "controllers" => 'controllers/core/timeperiod.php',
+                        // ],
                     ],
                     "controllers"=>"controllers/core/employee.php",
                     "main"=>'false',
