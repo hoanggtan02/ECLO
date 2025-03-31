@@ -147,13 +147,13 @@
                             'type' => 'button',
                             'name' => $jatbi->lang("Sửa"),
                             'permission' => ['labor_contract.edit'],
-                            'action' => ['data-url' => '/labor_contract?id='.$data['id'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/labor_contract-edit?id='.$data['id'], 'data-action' => 'modal']
                         ],
                         [
                             'type' => 'button',
                             'name' => $jatbi->lang("Xóa"),
                             'permission' => ['labor_contract.deleted'],
-                            'action' => ['data-url' => '/labor_contract?id='.$data['id'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/labor_contract-deleted?id='.$data['id'], 'data-action' => 'modal']
                         ],
                     ]
                 ]),
@@ -245,13 +245,13 @@
         }
     })->setPermissions(['labor_contract.add']);
 
-    // Xóa đơn nghỉ phép
-    $app->router("/leave-deleted", 'GET', function($vars) use ($app, $jatbi) {
-        $vars['title'] = $jatbi->lang("Xóa Đơn Nghỉ Phép");
+    // Xóa hợp đồng lao động
+    $app->router("/labor_contract-deleted", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Xóa Hợp Đồng Lao Động");
         echo $app->render('templates/common/deleted.html', $vars, 'global');
-    })->setPermissions(['leave.deleted']);
+    })->setPermissions(['labor_contract.deleted']);
 
-    $app->router("/leave-deleted", 'POST', function($vars) use ($app, $jatbi) {
+    $app->router("/labor_contract-deleted", 'POST', function($vars) use ($app, $jatbi) {
         $app->header(['Content-Type' => 'application/json']);
         
         // Lấy danh sách ID cần xóa
@@ -262,8 +262,8 @@
             $leaveIds = array_map('trim', explode(',', $app->xss($_GET['box'])));
         }
         
-        if (empty($leaveIds)) {
-            echo json_encode(["status" => "error", "content" => "Thiếu ID đơn nghỉ phép để xóa"]);
+        if (empty($leaveIds)) { 
+            echo json_encode(["status" => "error", "content" => "Thiếu ID hợp đồng để xóa"]);
             return;
         }
         
@@ -275,7 +275,7 @@
                 if (empty($leaveId)) continue; // Bỏ qua nếu giá trị rỗng
         
                 // Xóa khỏi database
-                $deleteResult = $app->delete("leave_requests", ["id" => $leaveId]);
+                $deleteResult = $app->delete("employee_contracts", ["id" => $leaveId]);
         
                 if ($deleteResult->rowCount() > 0) {
                     $deletedCount++;
@@ -299,9 +299,9 @@
         } catch (Exception $e) {
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
         }
-    })->setPermissions(['leave.deleted']);
+    })->setPermissions(['labor_contract.deleted']);
 
-    //Sửa Xin nghỉ
+    //Sửa hợp đồng lao động
 
     $app->router("/leave-edit", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Sửa Đơn Nghỉ");
