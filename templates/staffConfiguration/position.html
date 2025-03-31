@@ -192,7 +192,6 @@
     </ul>
   </div>
   <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
-    <<<<<<< HEAD
     <div class="card-body">
       <div class="custom-buttons d-none">
         <div class="d-flex align-items-center justify-content-end">
@@ -294,110 +293,6 @@
           </tr>
         </thead>
       </table>
-      =======
-      <div class="card-body">
-        <div class="custom-buttons d-none">
-          <div class="d-flex align-items-center justify-content-end">
-            <button
-              class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
-              data-action="modal"
-              data-url="/reward_discipline-add"
-            >
-              <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
-              <?=$jatbi->lang("Thêm")?>
-            </button>
-            <button
-              class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
-              data-action="modal"
-              data-checkbox="input.checker"
-              data-url="/reward_discipline-deleted"
-            >
-              <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i>
-              <?=$jatbi->lang("Xóa")?>
-            </button>
-          </div>
-        </div>
-        <table
-          id="datatable"
-          data-table
-          class="table align-middle"
-          data-type="POST"
-          data-server="true"
-          data-processing="true"
-          data-page-length="10"
-          data-searching="true"
-          data-paging="true"
-          data-state-save="true"
-          style="width: 100%"
-        >
-          <thead>
-            <tr>
-              <th
-                data-name="checkbox"
-                data-orderable="false"
-                class="text-nowrap"
-                data-visible="true"
-                data-class="text-center"
-              >
-                <div class="form-check">
-                  <input
-                    class="form-check-input checkall"
-                    type="checkbox"
-                    value=""
-                    data-checkbox="input.checker"
-                  />
-                </div>
-              </th>
-              <th
-                data-name="positionName"
-                data-orderable="true"
-                class="text-nowrap"
-                data-visible="true"
-                data-class="text-start"
-              >
-                <?=$jatbi->lang("TÊN")?>
-              </th>
-              <th
-                data-name="positionId"
-                data-orderable="true"
-                class="text-nowrap"
-                data-visible="true"
-                data-class="text-start"
-              >
-                <?=$jatbi->lang("MÃ")?>
-              </th>
-              <th
-                data-name="note"
-                data-orderable="true"
-                class="text-nowrap"
-                data-visible="true"
-                data-class=""
-              >
-                <?=$jatbi->lang("GHI CHÚ")?>
-              </th>
-              <th
-                data-name="active"
-                data-orderable="false"
-                class="text-nowrap"
-                data-visible="true"
-                data-class="text-center"
-              >
-                <?=$jatbi->lang("Trạng thái")?>
-              </th>
-              <th
-                data-name="action"
-                data-orderable="false"
-                class="text-nowrap"
-                data-visible="true"
-                data-class="text-end"
-              >
-                <?=$jatbi->lang("Tùy chọn")?>
-              </th>
-            </tr>
-          </thead>
-        </table>
-      </div>
-      >>>>>>> pthanh
     </div>
   </div>
 </div>
