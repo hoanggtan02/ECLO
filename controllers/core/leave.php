@@ -5,8 +5,8 @@
 
     $app->router("/leave", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Nghỉ Phép");
-        $vars['add'] = '/leave-add';
-        $vars['deleted'] = '/leave-deleted';
+        // $vars['add'] = '/leave-add';
+        // $vars['deleted'] = '/leave-deleted';
         echo $app->render('templates/leave/leave.html', $vars);
     })->setPermissions(['leave']);
 
@@ -117,31 +117,29 @@
     
     $app->router("/leave-add", 'POST', function($vars) use ($app, $jatbi) {
         $app->header(['Content-Type' => 'application/json']);
-    
-        $personSN  = $app->xss($_POST['personSN'] ?? '');
+        
+        // Lấy và làm sạch dữ liệu đầu vào
+        $personSN = $app->xss($_POST['personSN'] ?? '');
+        $leaveId = $app->xss($_POST['LeaveId'] ?? '');
         $startDateTimeStr = $app->xss($_POST['start_date'] ?? '');
         $endDateTimeStr = $app->xss($_POST['end_date'] ?? '');
-        $note      = $app->xss($_POST['note'] ?? '');
-    
-        // Kiểm tra dữ liệu đầu vào
-        if (empty($personSN) || empty($startDateTimeStr) || empty($endDateTimeStr)) {
-            echo json_encode(["status" => "error", "content" => "Dữ liệu ngày nghỉ bị thiếu"]);
+        $note = $app->xss($_POST['note'] ?? '');
+
+        // Kiểm tra dữ liệu đầu vào bắt buộc
+        if (!$personSN || !$leaveId || !$startDateTimeStr || !$endDateTimeStr) {
+            echo json_encode(["status" => "error", "content" => "Vui lòng điền đầy đủ thông tin"]);
             return;
         }
     
         try {
-            // Chuyển đổi thành đối tượng DateTime
             $startDateTime = new DateTime($startDateTimeStr);
             $endDateTime = new DateTime($endDateTimeStr);
-            $currentDateTime = new DateTime(); // Lấy thời gian hiện tại
+            $currentDateTime = new DateTime();
     
-            // Kiểm tra ngày bắt đầu không được lớn hơn ngày kết thúc
             if ($startDateTime > $endDateTime) {
                 echo json_encode(["status" => "error", "content" => "Ngày bắt đầu không được lớn hơn ngày kết thúc"]);
                 return;
             }
-    
-            // Kiểm tra ngày bắt đầu không được trong quá khứ (tùy vào yêu cầu hệ thống)
             if ($startDateTime < $currentDateTime) {
                 echo json_encode(["status" => "error", "content" => "Ngày bắt đầu không được ở quá khứ"]);
                 return;
@@ -149,30 +147,27 @@
     
             // Tính toán số ngày nghỉ
             $interval = $startDateTime->diff($endDateTime);
-    
-            if ($interval->days == 0) {
-                // Nghỉ trong cùng 1 ngày
-                $hours = $interval->h + ($interval->i / 60);
-                $leaveDays = ($hours <= 6) ? 0.5 : 1;
-            } else {
-                // Nghỉ nhiều ngày
-                $leaveDays = $interval->days + 1;
-            }
-    
-            // Chuẩn bị dữ liệu để lưu vào database
-            $insert = [
+            $leaveDays = ($interval->days == 0) ? (($interval->h + ($interval->i / 60) <= 6) ? 0.5 : 1) : $interval->days + 1;
+          
+            // Lưu vào database
+            $result = $app->insert("leave_requests", [
                 "personSN" => $personSN,
                 "leave_days" => $leaveDays,
-                "start_date" => $startDateTimeStr,
-                "end_date" => $endDateTimeStr,
-                "note" => $note,
-                "created_at" => date("Y-m-d H:i:s")
-            ];
-    
-            $app->insert("leave_requests", $insert);
-            echo json_encode(["status" => "success", "content" => "Thêm đơn nghỉ phép thành công", "leave_days" => $leaveDays]);
+                "start_date" => $startDateTime->format("Y-m-d H:i:s"),
+                "end_date" => $endDateTime->format("Y-m-d H:i:s"),
+                "note" => $note ?: NULL,
+                "created_at" => $currentDateTime->format("Y-m-d H:i:s"),
+                "LeaveId" => $leaveId
+            ]);
+
+            if (!$result) {
+                echo json_encode(["status" => "error", "content" => "Lỗi SQL: " . $app->getLastError()]);
+                die();
+            }
+            
+            echo json_encode(["status" => $result ? "success" : "error", "content" => $result ? "Thêm đơn nghỉ phép thành công" : "Không thể thêm đơn nghỉ phép, vui lòng thử lại", "leave_days" => $leaveDays]);
         } catch (Exception $e) {
-            echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
+            echo json_encode(["status" => "error", "content" => "Lỗi hệ thống: " . $e->getMessage()]);
         }
     })->setPermissions(['leave.add']);
 
