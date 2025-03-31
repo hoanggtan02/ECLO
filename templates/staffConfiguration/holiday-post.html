@@ -16,11 +16,11 @@
                     <div class="row g-3 mb-3">
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Từ ngày")?> <span class="text-danger">*</span></label>
-                            <input type="date" name="startDate" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Số tiền")?>" value="<?=$data['price'] ?? ''?>">
+                            <input type="date" name="startDate" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['startDate'] ?? ''?>">
                         </div>
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Đến ngày")?> <span class="text-danger">*</span></label>
-                            <input type="date" name="endDate" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Số tiền")?>" value="<?=$data['price'] ?? ''?>">
+                            <input type="date" name="endDate" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['endDate'] ?? ''?>">
                         </div>
                         <div class="mb-3">
                             <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Hệ số lương")?> <span class="text-danger">*</span></label>
@@ -38,7 +38,7 @@
                             <?php
                             if($department) {
                                 foreach ($department as $d) { ?>
-                                    <option value="<?=$d['departmentId']?>"><?=$d['departmentName'] . ' - ' . $d['departmentId']?></option>
+                                    <option value="<?=$d['departmentId']?>" <?=$data['departmentId'] == $d['departmentId']?'selected':''?>><?=$d['departmentName'] . ' - ' . $d['departmentId']?></option>
                             <?php }
                             } ?>
                         </select>
