@@ -75,7 +75,7 @@
         $formattedData = array_map(function($data) use ($app, $jatbi) {
             
             $typeLabels = array_column($app->select("staff-salary", ["id", "name"]), "name", "id");
-
+            $moneylabel = number_format($data['money'], 0, '.', ',');
             if ($data['statu'] === 'Approved') {
                 $temp = '<a href="#" class="status-link" " data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
             } elseif ($data['statu'] === 'Pending') {                   
@@ -87,7 +87,7 @@
                 "ids" => $data['ids'],
                 "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
                 "employee" => $data['employee'],
-                "money" => $data['money'],
+                "money" => $moneylabel,
                 "dayStart" => $data['dayStart'],
                 "dayEnd" => $data['dayEnd'],
                 "note" => $data['note'],
@@ -170,13 +170,14 @@
         }
         $temp = substr($type, 0, 1);
         $temp2 = substr($employee, strpos($employee, "- ") + 2);
+        $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
         try {
             // Dữ liệu để lưu vào database
             $insert = [
                 "ids" => $ids,
                 "employee" => $temp2,
                 "type" => $temp,
-                "money" => $app->xss($_POST['money'] ?? ''),
+                "money" => $temp3,
                 "dayStart" => $app->xss($_POST['dayStart'] ?? ''),
                 "dayEnd" => $app->xss($_POST['dayEnd'] ?? ''),
                 "note" => $note,
@@ -293,11 +294,13 @@
 
         $temp = substr($type, 0, 1);
         $temp2 = substr($employee, strpos($employee, "- ") + 2);
+        $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
+
         // Cập nhật dữ liệu trong database
         $update = [
             "employee"  => $temp2,
             "type"    => $temp,
-            "money" => $money,
+            "money" => $temp3,
             "dayStart"  => $dayStart,
             "dayEnd"    => $dayEnd,
             "note" => $note,
