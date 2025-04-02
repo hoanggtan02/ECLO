@@ -828,4 +828,4 @@ $app->router("/staffConfiguration/holiday-delete", 'POST', function($vars) use (
 })->setPermissions(['staffConfiguration-holiday.delete']);
 $vars['title'] = $jatbi->lang("Chức vụ");
 
-?>
+?> 

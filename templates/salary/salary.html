@@ -57,8 +57,8 @@
                               <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Năm")?></label>
                               <select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" class="filter-name" data-live-search="true" data-width="100%" name="yesr">
                                   <?php 
-                                  for($i = 2020; $i < 2030; $i++) {?>
-                                    <option value="<?=$i?>" <?=$year== '$i'?'selected':''?>><?=$i?></option>
+                                  for($i = 2020; $i <= $year; $i++) {?>
+                                    <option value="<?=$i?>" <?=$year == $i?'selected':''?>><?=$i?></option>
                                   <?php }?>
                               </select>
                           </div>
@@ -84,11 +84,11 @@
         </div>
     </div>
     <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+        <!-- <h4 class="mt-2 fw-bold text-center"><?=$title?></h4> -->
+
         <div class="card-body">
-            <div class="custom-buttons ">
-                <div class="d-flex align-items-center justify-content-end">
-                </div>
-            </div>    
+
+            
             <table 
             id="datatable"
             data-table
@@ -114,7 +114,7 @@
                         class="align-middle text-center bg-info bg-opacity-10" rowspan="2">Phòng ban</th> 
                         <td 
                         data-class=""
-                        class="text-center bg-success bg-opacity-10" colspan="<?php echo count($salary) + 2;?>">Tiền lương</td>
+                        class="text-center bg-success bg-opacity-10" colspan="<?php if(!empty($salary_list)) { echo count($salary_list) + 2; } else { echo 2; };?>">Tiền lương</td>
                         <td
                         data-class=""
                         class="text-center bg-warning bg-opacity-10" colspan="7">Chấm công</td>
@@ -123,21 +123,21 @@
                         class="text-center bg-danger bg-opacity-10" colspan="2">Khen thưởng kỉ luật</td>  
                         <td 
                         data-class=""
-                        class="text-center bg-primary bg-opacity-10" colspan="2">Tổng</td>
+                        class="text-center bg-primary bg-opacity-10" colspan="3">Tổng</td>
                     </tr>
                     <tr class="text-gray-700 fw-bold fs-7 text-uppercase gs-0">
                         <?php
-                        if($salary) {
-                            foreach ($salary as $s) { ?>
+                        if(!empty($salary_list)) {
+                            foreach ($salary_list as $key => $value) { ?>
                               <th 
-                              data-name="<?=$s['id']?>" data-class="text-start text-center bg-success bg-opacity-10" 
-                              class="text-center bg-success bg-opacity-10"><?=$s['name']?></th>
+                              data-name="salaryid<?=$key?>" data-class="text-start text-center bg-success bg-opacity-10" 
+                              class="text-center bg-success bg-opacity-10"><?=$value?></th>
                               
                         <?php }
                         } ?>
                         <th 
-                        data-name="dailySalary" data-class="text-start text-center bg-success bg-opacity-10" 
-                        class="text-center bg-success bg-opacity-10">lương/ngày</th>
+                        data-name="dailySalary" data-class="text-end bg-success bg-opacity-10" 
+                        class="text-center bg-success bg-opacity-10">lương ngày</th>
                         <th 
                         data-name="insurance" data-class="text-start text-center bg-success bg-opacity-10" 
                         class="text-center bg-success bg-opacity-10">Bảo hiểm</th>
@@ -163,16 +163,19 @@
                         data-name="total" data-class="text-center bg-warning bg-opacity-10" 
                         class="text-center bg-warning bg-opacity-10">Tổng</th>
                         <th 
-                        data-name="discipline" data-class="text-center bg-danger bg-opacity-10" 
-                        class="text-center bg-danger bg-opacity-10">Kỉ luật</th>
-                        <th 
-                        data-name="reward" data-class="text-center text-success bg-danger bg-opacity-10" 
+                        data-name="reward" data-class="text-end text-success bg-danger bg-opacity-10" 
                         class="text-center text-primary bg-danger bg-opacity-10">khen Thưởng</th>
                         <th 
-                        data-name="salaryAdvance" data-class="text-center bg-primary bg-opacity-10" 
+                        data-name="discipline" data-class="text-end text-danger bg-danger bg-opacity-10" 
+                        class="text-center bg-danger bg-opacity-10">Kỉ luật</th>   
+                        <th 
+                        data-name="provisionalSalary" data-class="text-end text-success bg-primary bg-opacity-10" 
+                        class="text-center bg-primary bg-opacity-10">Tạm tính</th>
+                        <th 
+                        data-name="salaryAdvance" data-class="text-end text-danger bg-primary bg-opacity-10" 
                         class="text-center bg-primary bg-opacity-10">Ứng lương</th>
                         <th 
-                        data-name="salaryReceived" data-class="text-center bg-primary bg-opacity-10" 
+                        data-name="salaryReceived" data-class="text-end text-primary bg-primary bg-opacity-10" 
                         class="text-center">THỰC LÃNH</th>
                     </tr>
                 </thead>

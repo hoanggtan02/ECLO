@@ -1,77 +1,246 @@
 <?php
+if (!defined('ECLO')) die("Hacking attempt");
+$jatbi = new Jatbi($app);
+$setting = $app->getValueData('setting');
 
-// use Jose\Component\Signature\Algorithm\None;
+$app->router("/salary", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $vars['title'] = $jatbi->lang("Tính lương");
+    $vars['employee'] = $app->select("employee",["name (text)","sn (value)"],[]);
+    $vars['month'] = date('m');
+    $vars['year'] = date('Y');
+    $vars['monthYear'] = 2024;
+    // $monthYear = $app->xss($_POST['my'] ?? "");
+    // $month = $app->xss($_POST['month'] ?? date('m'));
+    // $year = $app->xss($_POST['year'] ?? date('Y'));
+    // $monthYear = $month . "/" . $year;
+    // if($monthYear == "") {
+    //     $vars['title'] = $jatbi->lang("Hôm nay");
+    // } else {
+    //     $vars['title'] = $jatbi->lang("Tính lương");
+    // }
+    // $salary_list = $app->get("salary_list","list",["salary_list.monthYear" => $monthYear]);
+    // $vars['salary_list'] = json_decode($salary_list, true);
 
-    if (!defined('ECLO')) die("Hacking attempt");
-    $jatbi = new Jatbi($app);
-    $setting = $app->getValueData('setting');
+    echo $app->render('templates/salary/salary.html', $vars);
+})->setPermissions(['salary']);
 
-    $app->router("/salary", 'GET', function($vars) use ($app, $jatbi, $setting) {
-        $vars['title'] = $jatbi->lang("Tính lương");
-        $vars['employee'] = $app->select("employee",["name (text)","sn (value)"],[]);
-        $vars['month'] = date('m');
-        $vars['year'] = (int) date('y');
-        $vars['salary'] = $app->select("staff-salary",["id","name","price","priceValue"],["type[<]" => 3,"status" => 'A',]);
-        echo $app->render('templates/salary/salary.html', $vars);
-    })->setPermissions(['salary']);
+$app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+    $draw = isset($_POST['draw']) ? intval($_POST['draw']) : 0;
+    $start = $_POST['start'] ?? 0;
+    $length = $_POST['length'] ?? 10;
+    $searchValue = $_POST['search']['value'] ?? '';
+    $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'numericalOrder';
+    $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
 
-    $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header([
-            'Content-Type' => 'application/json',
-        ]);
-        $draw = isset($_POST['draw']) ? intval($_POST['draw']) : 0;
-        $start = $_POST['start'] ?? 0;
-        $length = $_POST['length'] ?? 10;
-        $searchValue = $_POST['search']['value'] ?? '';
-        $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'numericalOrder';
-        $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
+    // global $monthYear;
 
-        $month = $app->xss($_POST['month'] ?? "");
-        $year = $app->xss($_POST['year'] ?? "");
-        // $MY = sprintf("%02d/%s", $month, $year);
+    $month = $app->xss($_POST['month'] ?? date('m'));
+    $year = $app->xss($_POST['yesr'] ?? date('Y'));
+    $monthYear = $month . "/" . $year;
+    $my = 02/2025;
 
-        $where = [
-            "AND" => [
-                "OR" => [
-                    // "salary.id[~]" => $searchValue,
-                    // "salary.personName[~]" => $searchValue,
-                    "salary.personSn[~]" => $searchValue,
-                ],
+    $where = [
+        "AND" => [
+            "OR" => [
+                // "salary.id[~]" => $searchValue,
+                // "salary.personName[~]" => $searchValue,
+                "salary.personSn[~]" => $searchValue,
             ],
-            "LIMIT" => [$start, $length],
-            // "ORDER" => [$orderName => strtoupper($orderDir)]
-        ];
-        
-        // if(!empty($MY)) {
-        //     $where["AND"]["salary.MY"] = $MY;
-        // }
-        // if(!empty($endTime)) {
-        //     $endTime = date("Y-m-d", strtotime($endTime . " +1 day"));
-        //     $where["AND"]["record.createTime[<=]"] = $endTime;
-        // }
-        // if(!empty($personSn)) {
-        //     $where["AND"]["record.personSn"] = $personSn;
-        // }
-        // if($personType > -1) {
-        //     $where["AND"]["record.personType"] = $personType;
-        // }
-        
-        $count = $app->count("salary",[
-            "AND" => $where['AND'],
-        ]);
+            "salary.monthYear" => $monthYear,
+        ],
 
-        $app->select("salary",  
+        "LIMIT" => [$start, $length],
+        // "ORDER" => [$orderName => strtoupper($orderDir)]
+    ];
+    
+    // if(!empty($MY)) {
+    //     $where["AND"]["salary.MY"] = $MY;
+    // }
+    // if(!empty($endTime)) {
+    //     $endTime = date("Y-m-d", strtotime($endTime . " +1 day"));
+    //     $where["AND"]["record.createTime[<=]"] = $endTime;
+    // }
+    // if(!empty($personSn)) {
+    //     $where["AND"]["record.personSn"] = $personSn;
+    // }
+    // if($personType > -1) {
+    //     $where["AND"]["record.personType"] = $personType;
+    // }
+
+    $count = $app->count("salary",[
+        "AND" => $where['AND'],
+    ]);
+    
+    if($monthYear == date("m/Y")) {
+        addStaff($app, $monthYear);
+
+        $staff = $app->select("salary", [
+            "[>]assignments" => ["personSn" => "employee_id"],
+            "[>]timeperiod" => ["assignments.timeperiod_id" => "acTzNumber"],
+        ], [
+            'salary.id',
+            'salary.monthYear',
+            'timeperiod.monStart',
+            'timeperiod.monEnd',
+            'timeperiod.tueStart',
+            'timeperiod.tueEnd',
+            'timeperiod.wedStart',
+            'timeperiod.wedEnd',
+            'timeperiod.thursStart',
+            'timeperiod.thursEnd',
+            'timeperiod.friStart',
+            'timeperiod.friEnd',
+            'timeperiod.satStart',
+            'timeperiod.satEnd',
+            'timeperiod.sunStart',
+            'timeperiod.sunEnd',
+            'timeperiod.mon_off',
+            'timeperiod.tue_off',
+            'timeperiod.wed_off',
+            'timeperiod.thu_off',
+            'timeperiod.fri_off',
+            'timeperiod.sat_off',
+            'timeperiod.sun_off',
+        ], ["status" => 'A']);
+
+        // foreach ($staff as $s) {// duyệt qua từng staff 
+
+        //     $workDay = 0;// ngày công
+            
+        //     $date = DateTime::createFromFormat('m/Y', $s['monthYear']);
+        //     $month = $date->format('m');
+        //     $year = date('Y');
+
+        //     $date->setDate($year, $month, 1);
+
+        //     while ($date->format('m') == $month) {
+        //         $d = $date->format('l');// lấy thứ hiện tại
+        //         $timeMin = $app->max("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
+        //             "createTime[>=]" => $date->format('d/m/Y 0:0:0'),
+        //             "createTime[>=]" => $date->format('d/m/Y 24:59:59'),
+        //         ]);
+        //         $timeMax = $app->Min("record", "createTime", [
+        //             "createTime[>=]" => $date->format('d/m/Y 0:0:0'),
+        //             "createTime[>=]" => $date->format('d/m/Y 24:59:59'),
+        //         ]);
+
+        //         switch ($d) {
+        //             case 'Monday':
+        //                 if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
+        //                     break;
+        //                 }
+        //                 if($s['monStart']>$timeMin && $s['monEnd']>$timeMax) {// nếu đi làm đúng giờ + 1 ngày công
+        //                     $workDay++;
+        //                     break;
+        //                 }
+        //                 break;
+        //             case 'Tuesday':
+        //                 if($s['tue_off'] == '1') {
+        //                     break;
+        //                 }
+        //                 if($s['tueStart']>$timeMin && $s['tueEnd']>$timeMax) {
+        //                     $workDay++;
+        //                     break;
+        //                 }
+        //                 break;
+        //             case 'Wednesday':
+        //                 if($s['wed_off'] == '1') {
+        //                     break;
+        //                 }
+        //                 if($s['wedStart']>$timeMin && $s['wedEnd']>$timeMax) {
+        //                     $workDay++;
+        //                     break;
+        //                 }
+        //                 break;
+        //             case 'Thursday':
+        //                 if($s['thu_off'] == '1') {
+        //                     break;
+        //                 }
+        //                 if($s['thursStart']>$timeMin && $s['thursEnd']>$timeMax) {
+        //                     $workDay++;
+        //                     break;
+        //                 }
+        //                 break;
+        //             case 'Friday':
+        //                 if($s['fri_off'] == '1') {
+        //                     break;
+        //                 }
+        //                 if($s['friStart']>$timeMin && $s['friEnd']>$timeMax) {
+        //                     $workDay++;
+        //                     break;
+        //                 }
+        //                 break;
+        //             case 'Saturday':
+        //                 if($s['sat_off'] == '1') {
+        //                     break;
+        //                 }
+        //                 if($s['satStart']>$timeMin && $s['satEnd']>$timeMax) {
+        //                     $workDay++;
+        //                     break;
+        //                 }
+        //                 break;
+        //             default:
+        //                 echo "Hôm nay không có gì đặc biệt.";
+        //         }
+
+        //         if($date < date("Y/m/d")) { // nếu bé hơn ngày hiện tại thì tăng thêm 1 ngày còn ko thì dừngdừng
+        //             $date->modify('+1 day');
+        //         } else {
+        //             break;
+        //         }
+                
+        //     }
+
+        //     $insert = [
+        //         "workingDays"       => $workDay,
+        //     ];
+
+
+
+
+
+
+        //     $app->update("salary",$insert,["id"=>$s['id']]);
+
+        // }
+
+
+
+
+
+
+
+
+
+
+
+        $app->select("salary", [
+            "[>]employee_contracts" => ["personSn" => "person_sn"],
+            "[>]staff-salary" => ["employee_contracts.salaryId" => "id"],
+            ],
             [
-            'personSn',
-            'departmentId',
-            'salary',
-            'workingDays',
-            'overtime',
-            'lateArrival',
-            'earlyLeave',
-            'unpaidLeave',
-            'paidLeave',
-            'unauthorizedLeave',
+            'salary.personSn',
+            'salary.departmentId',
+            'salary.dailySalary',
+            'salary.workingDays',
+            'salary.overtime',
+            'salary.lateArrival',
+            'salary.earlyLeave',
+            'salary.unpaidLeave',
+            'salary.paidLeave',
+            'salary.unauthorizedLeave',
+
+
+            'employee_contracts.salaryId ',
+            'staff-salary.price',
+            'staff-salary.priceValue',
+            // "`staff-salary'.'priceValue`",
+            
+            // "`staff-salary`.`id`",
+            // 'staff-salary.priceValue',
             // 'reward',
             // 'discipline',
             // 'salaryAdvance',
@@ -83,8 +252,8 @@
             // 'salary.salaryReceived',
             // 'salary.month',
             ], $where, function ($data) use (&$datas,$jatbi,$app) {
-                $salary = json_decode($data['salary'], true);
-                $datas[] = array_merge([
+                // $salary = json_decode($data['salary'], true);
+                $datas[] = [
                     "numericalOrder"            => 0,
                     "personSn"                  => $data['personSn'],
                     "departmentId"              => $data['departmentId'],
@@ -101,7 +270,7 @@
                     // "leaveWithoutPay" => $data['leaveWithoutPay'],
                     // "paidLeave"       => $data['paidLeave'],
                     // 'total'           => 0,
-                ],$salary);
+                ];
           
             
             // foreach ($salary as $key => $value) {
@@ -109,12 +278,84 @@
             // }
       
         }); 
+     } else {
+        $where["AND"]["salary.monthYear"] = $monthYear;
+        $app->select("salary",
+            [
+            'salary.personSn',
+            'salary.departmentId',
+            'salary.dailySalary',
+            'salary.workingDays',
+            'salary.overtime',
+            'salary.lateArrival',
+            'salary.earlyLeave', 
+            'salary.unpaidLeave',
+            'salary.paidLeave',
+            'salary.unauthorizedLeave',
+            'reward',
+            'discipline',
+            'salaryAdvance',
+            'salaryReceived',
+            ], $where, function ($data) use (&$datas,$jatbi,$app) {
+                $workday = explode("/", $data['workingDays']);
+                $datas[] = [
+                    "numericalOrder"            => 0,
+                    "personSn"                  => $data['personSn'],
+                    "departmentId"              => $data['departmentId'],
+                    "dailySalary"               => number_format($data['dailySalary'], 0, '.', ','), // thêm dấu , vào tiền
+                    "workingDays"               => $data['workingDays'],
+                    "overtime"                  => $data['overtime'],
+                    "lateArrival/earlyLeave"    => $data['lateArrival'] . ' / ' . $data['earlyLeave'],
+                    "unpaidLeave"               => $data['unpaidLeave'],
+                    "paidLeave"                 => $data['paidLeave'],
+                    "unauthorizedLeave"         => $data['unauthorizedLeave'],
+                    "reward"                    => $data['reward'],
+                    "discipline"                => $data['discipline'],
+                    "provisionalSalary"         => number_format($workday[0] * $data['dailySalary'] + $data['reward'] - $data['discipline'], 0, '.', ','),
+                    "salaryAdvance"             => number_format($data['salaryAdvance'], 0, '.', ','),
+                    "salaryReceived"            => number_format($workday[0] * $data['dailySalary'] - $data['salaryAdvance'], 0, '.', ','),
+                ];
+        });
+    }
+
+    echo json_encode([
+        "monthYear" => '2025',
+        'my' => $my,
+        "draw" => $draw,
+        "recordsTotal" => $count,
+        "recordsFiltered" => $count,
+        "data" => $datas ?? [],
+    ]);
+
+})->setPermissions(['salary']);
+
+
+
+
+
+function addStaff($app, $monthYear) {
+    $staff = $app->select("assignments", [
+        "[>]employee" => ["employee_id" => "sn"],
+    ], [// lấy tất cả nhân viên từ bảng assignments (phân công) với apply_date bé hơn hoặc bằng ngày hiện tại 
+        'assignments.employee_id ',
+        'employee.departmentId',
+    ], ["apply_date[<=]" => date("Y/m/d")]);
     
-        echo json_encode([
-            "draw" => $draw,
-            "recordsTotal" => $count,
-            "recordsFiltered" => $count,
-            "data" => $datas ?? [],
+    foreach ($staff as $s) {// duyệt qua từng phần tử lấy được và kiểm tra đã có trong bảng salary với tháng hiện tại
+        $check = $app->has("salary",[
+            "personSn"      => $s["employee_id"],
+            "monthYear"     => $monthYear,
         ]);
 
-    })->setPermissions(['salary']);
+        if (empty($check)) {// tạo các nhân viên chưa có trong bảng lương tháng này
+            $insert = [
+                "personSn"      => $s["employee_id"],
+                "departmentId"  => $s["departmentId"],
+                "monthYear"     => $monthYear,
+                "status"        => 'A',
+            ];
+            $app->insert("salary",$insert);
+        }
+    }
+}
+
