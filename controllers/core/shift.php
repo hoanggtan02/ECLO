@@ -34,7 +34,7 @@
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
     
         // Danh sách cột hợp lệ
-        $validColumns = ["checkbox", "employee", "shift", "shift2", "statu", "dayCreat", "note"];
+        $validColumns = ["checkbox", "employee", "shift", "shift2", "dayCreat", "note"];
         $orderColumn = $validColumns[$orderColumnIndex] ?? "employee";
     
         // Điều kiện lọc dữ liệu
@@ -70,7 +70,6 @@
 
             $temp = $shiftLabels[$data['shift']] ?? $jatbi->lang("Không xác định");
             $temp2 = $shiftLabels[$data['shift2']] ?? $jatbi->lang("Không xác định");
-
 
             $statuLabels = [
                 "1" => $jatbi->lang("Kích hoạt"),
@@ -166,8 +165,8 @@
             return;
         }
         try {
-            $temp = substr($shift, 0, 1);
-            $temp2 = substr($shift2, 0, 1);
+            $temp = substr($shift, 0, strpos($shift, " -"));
+            $temp2 = substr($shift2, 0, strpos($shift2, " -"));
             // Dữ liệu để lưu vào database
             $insert = ["idshift" => $idshift, "employee" => $employee, "shift" => $temp, "day" => $day, "timeStart" => $timeStart, "timeEnd" => $timeEnd, "shift2" => $temp2, "day2" => $day2, "timeStart2" => $timeStart2, "timeEnd2" => $timeEnd2, "statu" => $statu, "note" => $note, "dayCreat" => $dayCreat];
               
@@ -286,8 +285,8 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Giờ bắt đầu không được sau giờ kết thúc")]);
             return;
         }
-        $temp = substr($shift, 0, 1);
-        $temp2 = substr($shift2, 0, 1);
+        $temp = substr($shift, 0, strpos($shift, " -"));
+        $temp2 = substr($shift2, 0, strpos($shift2, " -"));
 
         // Cập nhật dữ liệu trong database
         $update = [
