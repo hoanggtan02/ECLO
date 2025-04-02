@@ -134,7 +134,7 @@
         $vars['title'] = $jatbi->lang("Thêm Tăng ca");
         $vars['nv1'] = array_map(function($employee) {
             return $employee['sn'] . ' - ' . $employee['name'];
-        }, $app->select("employee", ["name", "sn"]));
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
         $vars['tangca'] = array_map(function($type) {
             return $type['id'] . ' - ' . $type['name']. ' , ' . $type['price'];
         }, $app->select("staff-salary", ["id", "name", "price"], ["type" => 3, "status" => "A"]));
@@ -236,7 +236,7 @@
         $vars['title'] = $jatbi->lang("Sửa Overtime");
         $vars['nv1'] = array_map(function($employee) {
             return $employee['sn'] . ' - ' . $employee['name'];
-        }, $app->select("employee", ["name", "sn"]));
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
         $vars['tangca'] = array_map(function($type) {
             return $type['id'] . ' - ' . $type['name']. ' , ' . $type['price'];
         }, $app->select("staff-salary", ["id", "name", "price"], ["type" => 3, "status" => "A"]));

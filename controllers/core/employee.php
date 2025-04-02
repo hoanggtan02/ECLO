@@ -56,7 +56,7 @@
         $count = $app->count("employee", ["AND" => $where["AND"]]);
     
         // Truy vấn danh sách nhân viên
-        $datas = $app->select("employee", ['sn', 'name', 'type', 'acGroupNumber'], $where) ?? [];
+        $datas = $app->select("employee", ['sn', 'name', 'type', 'acGroupNumber','status'], $where) ?? [];
         $datas = $app->select("employee", [
             "[>]department" => ["departmentId" => "departmentId"]
         ], [
@@ -65,6 +65,7 @@
             "employee.name",
             "employee.type",
             "employee.acGroupNumber",
+            "employee.status",
         ], $where) ?? [];
             // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi, $groupMap) {
@@ -85,6 +86,7 @@
                 "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
                 "acGroupNumber" => $groupName,
                 "department" => $data['personName'],
+                "status" => $app->component("status",["url"=>"/employee-status/".$data['sn'],"data"=>$data['status'],"permission"=>['employee.edit']]),
                 "action" => $app->component("action", [
                     "button" => [
                         [
@@ -706,5 +708,31 @@
         echo $app->render('templates/common/view-record.html', $vars, 'global');
     })->setPermissions([]);
     
+    //Cấp phép employee
+    $app->router("/employee-status/{sn}", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
 
+        $data = $app->get("employee","*",["sn"=>$vars['sn']]);
+        if($data>1){
+            if($data>1){
+                if($data['status']==='A'){
+                    $status = "D";
+                } 
+                elseif($data['status']==='D'){
+                    $status = "A";
+                }
+                $app->update("employee",["status"=>$status],["sn"=>$data['sn']]);
+                $jatbi->logs('employee','employee-status',$data);
+                echo json_encode(value: ['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+            }
+            else {
+                echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+            }
+        }
+        else {
+            echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+        }
+    })->setPermissions(['employee.edit']);
 ?>

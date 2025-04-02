@@ -107,8 +107,8 @@
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Trạng Thái") ?> <span class="text-danger">*</span></label>
                             <select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%"  name="statu">
                                 <option value=""><?= $jatbi->lang("Trạng thái") ?></option>
-                                <option value="1" <?= isset($data['statu']) && $data['statu'] == 1 ? 'selected' : '' ?>>Kích hoạt</option>
-                                <option value="2" <?= isset($data['statu']) && $data['statu'] == 2 ? 'selected' : '' ?>>Không kích hoạt</option>
+                                <option value="A" <?= isset($data['statu']) && $data['statu'] === "A" ? 'selected' : '' ?>>Kích hoạt</option>
+								<option value="D" <?= isset($data['statu']) && $data['statu'] === "D" ? 'selected' : '' ?>>Không kích hoạt</option>
                             </select>
                         </div>
 						<div class="mb-3">
