@@ -3,7 +3,7 @@
     $jatbi = new Jatbi($app);
     $setting = $app->getValueData('setting');
 
-// Khung thời gian
+// Nhảy Ca
     $app->router("/shift", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Nhảy Ca");
         $vars['add'] = '/shift-add';
@@ -71,10 +71,10 @@
             $temp = $shiftLabels[$data['shift']] ?? $jatbi->lang("Không xác định");
             $temp2 = $shiftLabels[$data['shift2']] ?? $jatbi->lang("Không xác định");
 
-            $statuLabels = [
-                "1" => $jatbi->lang("Kích hoạt"),
-                "2" => $jatbi->lang("Không kích hoạt"),
-            ];
+            // $statuLabels = [
+            //     "1" => $jatbi->lang("Kích hoạt"),
+            //     "2" => $jatbi->lang("Không kích hoạt"),
+            // ];
 
             return [
                 "checkbox" => $app->component("box", ["data" => $data['idshift']]),
@@ -83,7 +83,7 @@
                 "shift" => "{$temp} : {$data['day']} || {$data['timeStart']} : {$data['timeEnd']}",
                 "shift2" => "{$temp2} : {$data['day2']} || {$data['timeStart2']} : {$data['timeEnd2']}",
                 "note" => $data['note'],
-                "statu" => $statuLabels[$data['statu']] ?? $jatbi->lang("Không xác định"),
+                "statu" => $app->component("status",["url"=>"/shift-status/".$data['idshift'],"data"=>$data['statu'],"permission"=>['shift.edit']]),
                 "dayCreat" => $data['dayCreat'],
                 "action" => $app->component("action", [
                     "button" => [          
@@ -127,7 +127,7 @@
         $vars['title'] = $jatbi->lang("Thêm Nhảy Ca");
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+        }, $app->select("employee", ["name"], ["status" => "A"]));
         $vars['ca'] = array_map(function($employee) {
             return $employee['acTzNumber'] . ' - ' . $employee['name'];
         }, $app->select("timeperiod", ["name", "acTzNumber"], ["status" => "A"]));
@@ -224,7 +224,7 @@
         $vars['title'] = $jatbi->lang("Sửa Nhảy ca");
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+        }, $app->select("employee", ["name"], ["status" => "A"]));
         $vars['ca'] = array_map(function($employee) {
             return $employee['acTzNumber'] . ' - ' . $employee['name'];
         }, $app->select("timeperiod", ["name", "acTzNumber"], ["status" => "A"]));
@@ -313,4 +313,31 @@
 
     })->setPermissions(['shift.edit']);
 
+    //Cấp phép shift
+    $app->router("/shift-status/{idshift}", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+
+        $data = $app->get("shift","*",["idshift"=>$vars['idshift']]);
+        if($data>1){
+            if($data>1){
+                if($data['statu']==='A'){
+                    $status = "D";
+                } 
+                elseif($data['statu']==='D'){
+                    $status = "A";
+                }
+                $app->update("shift",["statu"=>$status],["idshift"=>$data['idshift']]);
+                $jatbi->logs('shift','shift-status',$data);
+                echo json_encode(value: ['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+            }
+            else {
+                echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+            }
+        }
+        else {
+            echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+        }
+    })->setPermissions(['shift.edit']);
 ?>

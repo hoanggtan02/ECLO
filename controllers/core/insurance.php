@@ -127,7 +127,7 @@
         $vars['title'] = $jatbi->lang("Thêm Bảo Hiểm");
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+        }, $app->select("employee", ["name"], ["status" => "A"]));
 
         echo $app->render('templates/employee/insurance-post.html', $vars, 'global');
     })->setPermissions(['insurance.add']);
@@ -226,7 +226,7 @@
         $vars['title'] = $jatbi->lang("Sửa insurance");
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+        }, $app->select("employee", ["name"], ["status" => "A"]));
         $idbh = isset($_GET['idbh']) ? $app->xss($_GET['idbh']) : null;
         if (!$idbh) {
             echo $app->render('templates/common/error-modal.html', $vars, 'global');
