@@ -26,7 +26,8 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
     $where = [
         "AND" => [
             "record.createTime[>=]" => "$year-01-01 00:00:00",
-            "record.createTime[<=]" => "$year-12-31 23:59:59"
+            "record.createTime[<=]" => "$year-12-31 23:59:59",
+            "department.status" => "A",
         ],
         "ORDER" => ["employee.name" => "ASC", "record.createTime" => "ASC"]
     ];
@@ -461,86 +462,7 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
     echo $app->render('templates/employee/attendance.html', $vars);
 })->setPermissions(['attendance']);
 
-// Route để thêm chấm công
-$app->router("/manager/attendance-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
-    $vars['title'] = $jatbi->lang("Thêm chấm công");
-    $vars['data'] = [
-        "employee_sn" => '',
-        "date" => '',
-        "status" => ''
-    ];
-    $vars['employees'] = $app->select("employee", ["sn", "name"], [
-        "ORDER" => ["name" => "ASC"]
-    ]);
-    echo $app->render('templates/employee/attendance-post.html', $vars, 'global');
-})->setPermissions(['attendance.add']);
 
-$app->router("/manager/attendance-add", 'POST', function($vars) use ($app, $jatbi) {
-    $app->header(['Content-Type' => 'application/json']);
-
-    $employee_sn = $app->xss($_POST['employee_sn'] ?? '');
-    $date = $app->xss($_POST['date'] ?? '');
-    $status = $app->xss($_POST['status'] ?? '');
-
-    if (empty($employee_sn) || empty($date) || empty($status)) {
-        echo json_encode(["status" => "error", "content" => "Vui lòng không để trống"]);
-        return;
-    }
-
-    if (!preg_match("/^\d{4}-\d{2}-\d{2}$/", $date) || !strtotime($date)) {
-        echo json_encode(["status" => "error", "content" => "Ngày không hợp lệ"]);
-        return;
-    }
-
-    // Chuyển đổi trạng thái thành thời gian chấm công giả lập
-    $createTime = $date . ' ';
-    if ($status == 'checked') {
-        $createTime .= '08:00:00'; // Giả lập chấm công đúng giờ
-    } elseif ($status == 'late') {
-        $createTime .= '18:00:00'; // Giả lập chấm công trễ
-    } elseif ($status == 'not-checked') {
-        $createTime .= '07:00:00'; // Giả lập chưa chấm công về
-    } else {
-        $createTime .= '00:00:00'; // OFF
-    }
-
-    $app->insert("record", [
-        "personSn" => $employee_sn,
-        "personName" => $app->select("employee", ["name"], ["sn" => $employee_sn])[0]['name'] ?? 'N/A',
-        "personType" => $app->select("employee", ["type"], ["sn" => $employee_sn])[0]['type'] ?? 1,
-        "createTime" => $createTime,
-        "checkImg" => null
-    ]);
-
-    echo json_encode(["status" => "success", "content" => "Thêm thành công"]);
-})->setPermissions(['attendance.add']);
-
-// Route để xóa chấm công
-$app->router("/manager/attendance-deleted", 'GET', function($vars) use ($app, $jatbi) {
-    $vars['title'] = $jatbi->lang("Xóa chấm công");
-    echo $app->render('templates/common/deleted.html', $vars, 'global');
-})->setPermissions(['attendance.deleted']);
-
-$app->router("/manager/attendance-deleted", 'POST', function($vars) use ($app, $jatbi) {
-    $app->header(['Content-Type' => 'application/json']);
-    $idString = $_GET['id'] ?? '';
-    $ids = explode(",", $idString);
-
-    if (empty($ids) || $idString === '') {
-        echo json_encode(["status" => "error", "content" => "Vui lòng chọn ít nhất một bản ghi để xóa!"]);
-        return;
-    }
-
-    $successCount = 0;
-    foreach ($ids as $id) {
-        $id = trim($app->xss($id));
-        if (empty($id)) continue;
-        $app->delete("record", ["id" => $id]);
-        $successCount++;
-    }
-
-    echo json_encode(["status" => "success", "content" => "Đã xóa $successCount bản ghi"]);
-})->setPermissions(['attendance.deleted']);
 
 // Route để xuất Excel (giả lập)
 $app->router("/manager/attendance/excel", 'GET', function($vars) use ($app, $jatbi) {
