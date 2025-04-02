@@ -130,7 +130,7 @@
         }, $app->select("employee", ["name"]));
         $vars['ca'] = array_map(function($employee) {
             return $employee['acTzNumber'] . ' - ' . $employee['name'];
-        }, $app->select("timeperiod", ["name", "acTzNumber"]));
+        }, $app->select("timeperiod", ["name", "acTzNumber"], ["status" => "A"]));
 
         echo $app->render('templates/employee/shift-post.html', $vars, 'global');
     })->setPermissions(['shift.add']);
@@ -156,7 +156,7 @@
         
         // Kiểm tra dữ liệu đầu vào
         if (empty($employee) || empty($shift) || empty($day) || empty($timeStart) || empty($timeEnd) || empty($shift2) || empty($day2) || empty($timeStart2) || empty($timeEnd2)) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống các trường bắt buộc: $employee, $shift, $day, $timeStart, $timeEnd, $shift2, $day2, $timeStart2, $timeEnd2, $statu")]);
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống!")]);
             return;
         }
         // Kiểm tra giờ bắt đầu không lớn hơn giờ kết thúc
@@ -176,7 +176,7 @@
             // Thêm dữ liệu vào database
             $app->insert("shift", $insert);
 
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công")]);
     
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
@@ -186,7 +186,7 @@
 
     //Xóa shift
     $app->router("/shift-deleted", 'GET', function($vars) use ($app, $jatbi) {
-        $vars['title'] = $jatbi->lang("Xóa Khung thời gian");
+        $vars['title'] = $jatbi->lang("Xóa Nhảy ca");
 
         echo $app->render('templates/common/deleted.html', $vars, 'global');
     })->setPermissions(['shift.deleted']);
@@ -227,7 +227,7 @@
         }, $app->select("employee", ["name"]));
         $vars['ca'] = array_map(function($employee) {
             return $employee['acTzNumber'] . ' - ' . $employee['name'];
-        }, $app->select("timeperiod", ["name", "acTzNumber"]));
+        }, $app->select("timeperiod", ["name", "acTzNumber"], ["status" => "A"]));
 
         $idshift = isset($_GET['idshift']) ? $app->xss($_GET['idshift']) : null;
 
@@ -277,7 +277,7 @@
         $dayCreat = date('Y-m-d H:i:s');
         
         if (empty($employee) || empty($shift) || empty($day) || empty($timeStart) || empty($timeEnd) || empty($shift2) || empty($day2) || empty($timeStart2) || empty($timeEnd2)) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống các trường bắt buộc: $employee, $shift, $day, $timeStart, $timeEnd, $shift2, $day2, $timeStart2, $timeEnd2, $statu")]);
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống!")]);
             return;
         }
         // Kiểm tra giờ bắt đầu không lớn hơn giờ kết thúc

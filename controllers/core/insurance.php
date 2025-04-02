@@ -85,7 +85,6 @@
                 "dayyte" => $data['dayyte'],
                 "placeyte" => $data['placeyte'],
                 "statu" => $app->component("status",["url"=>"/insurance-status/".$data['idbh'],"data"=>$data['statu'],"permission"=>['insurance.edit']]),
-
                 "action" => $app->component("action", [
                     "button" => [          
                         [
@@ -181,7 +180,7 @@
             // Thêm dữ liệu vào database
             $app->insert("insurance", $insert);
 
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công")]);
     
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
@@ -215,7 +214,7 @@
             } else {
                 $app->delete("insurance", ["idbh" => $idbh]);
             }
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Xóa thành công")]);
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
@@ -274,7 +273,7 @@
         $note = isset($_POST['note']) ? $app->xss($_POST['note']) : '';
     
         if (empty($employee) || empty($money) || empty($moneybhxh) || empty($numberbhxh) || empty($daybhxh) || empty($placebhxh) || empty($numberyte) || empty($dayyte) || empty($placeyte) || empty($statu)) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống các trường bắt buộc: $idbh")]);
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống!")]);
             return;
         }
         $temp = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
