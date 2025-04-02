@@ -117,7 +117,7 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
         "Code",
         "Name"
     ],[
-        "Status" => 1,
+        "Status" => "A",
     ]);
     $vars['leave_types'] = $leaveTypes;
 

@@ -8,6 +8,7 @@ $setting = $app->getValueData('setting');
 $app->router("/staffConfiguration/department", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
     $vars['title1'] = $jatbi->lang("Phòng ban");
+    $vars['active']= "department";
     // $vars['employee'] = $app->select("employee",["name (text)","sn (value)"],[]);
     echo $app->render('templates/staffConfiguration/department.html', $vars);
 })->setPermissions(['staffConfiguration']);
@@ -196,6 +197,7 @@ $app->router("/staffConfiguration/department-delete", 'POST', function($vars) us
 $app->router("/staffConfiguration/position", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
     $vars['title1'] = $jatbi->lang("Chức vụ");
+    $vars['active']= "position";
     echo $app->render('templates/staffConfiguration/position.html', $vars);
 })->setPermissions(['staffConfiguration-position']);
 
@@ -386,6 +388,8 @@ $app->router("/staffConfiguration/position-delete", 'POST', function($vars) use 
 $app->router("/staffConfiguration/salary", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
     $vars['title1'] = $jatbi->lang("Tiền lương");
+    $vars['active']= "salary";
+
     // $vars['employee'] = $app->select("employee",["name (text)","sn (value)"],[]);
     echo $app->render('templates/staffConfiguration/salary.html', $vars);
 })->setPermissions(['staffConfiguration-salary']);
@@ -599,6 +603,8 @@ $app->router("/staffConfiguration/salary-delete", 'POST', function($vars) use ($
 $app->router("/staffConfiguration/holiday", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Cấu hình nhân sự");
     $vars['title1'] = $jatbi->lang("Ngày lễ");
+    $vars['active']= "holiday";
+
     echo $app->render('templates/staffConfiguration/holiday.html', $vars);
 })->setPermissions(['staffConfiguration-holiday']);
 

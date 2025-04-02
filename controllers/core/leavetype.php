@@ -8,6 +8,8 @@ $app->router("/staffConfiguration/leavetypes", 'GET', function($vars) use ($app,
     $vars['title'] = $jatbi->lang("Loại nghỉ phép");
     $vars['add'] = '/manager/leavetypes-add';
     $vars['deleted'] = '/manager/leavetypes-deleted';
+    $vars['active']= "leavetypes";
+
 
     $data = $app->select("leavetype", [
         "LeaveTypeID",

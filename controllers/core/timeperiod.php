@@ -4,11 +4,13 @@
     $setting = $app->getValueData('setting');
 
     // Khung thời gian
-    $app->router("/manager/timeperiod", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $app->router("/staffConfiguration/timeperiod", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Thời gian làm việc");
         $vars['add'] = '/manager/timeperiod-add';
         $vars['deleted'] = '/manager/timeperiod-deleted';
         $vars['sync'] = '/manager/timeperiod-sync';
+        $vars['active']= "timeperiod";
+
 
         // Lấy dữ liệu từ bảng timeperiod, bao gồm các cột mới
         $data = $app->select("timeperiod", [
@@ -26,7 +28,7 @@
         echo $app->render('templates/employee/timeperiod.html', $vars);
     })->setPermissions(['timeperiod']);
 
-    $app->router("/manager/timeperiod", 'POST', function($vars) use ($app, $jatbi) {
+    $app->router("/staffConfiguration/timeperiod", 'POST', function($vars) use ($app, $jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
         ]);

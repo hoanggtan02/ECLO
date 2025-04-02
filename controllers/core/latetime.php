@@ -12,6 +12,7 @@ $app->router("/staffConfiguration/latetime", 'GET', function($vars) use ($app, $
     $vars['deleted'] = '/staffConfiguration/latetime-deleted';
     $data = $app->select("latetime", ["id", "type", "name", "value", "amount", "apply_date", "content", "status"]);
     $vars['data'] = $data;
+    $vars['active' ]    = 'latetime';
     echo $app->render('templates/staffConfiguration/latetime.html', $vars);
 })->setPermissions(['latetime']);
 
