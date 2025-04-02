@@ -3,7 +3,7 @@
     $jatbi = new Jatbi($app);
     $setting = $app->getValueData('setting');
 
-// Khung thời gian
+// insurance
     $app->router("/insurance", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Bảo Hiểm");
         $vars['add'] = '/insurance-add';
@@ -310,24 +310,6 @@
     })->setPermissions(['insurance.edit']);
 
     //Cấp phép insurance
-    $app->router("/insurance-approved", 'GET', function($vars) use ($app, $jatbi) {
-        if (isset($_GET['idbh']) && isset($_GET['statu'])) {
-            $newStatus = ($_GET['statu'] === "2") ? "1" : "2"; // Toggle status between 1 and 2
-            $update = [
-                "statu" => $newStatus
-            ];
-            $app->update("insurance", $update, ["idbh" => $_GET['idbh']]);
-            echo $app->render('templates/common/restore.html', $vars, 'global');
-        }
-    })->setPermissions(['insurance.approved']);
-
-    $app->router("/insurance-approved", 'POST', function($vars) use ($app, $jatbi) {
-        $app->header([
-            'Content-Type' => 'application/json',
-        ]);
-        echo json_encode(["status" => "success", "content" => $jatbi->lang("Cấp phép thành công")]);
-    })->setPermissions(['insurance.deleted']);
-
     $app->router("/insurance-status/{idbh}", 'POST', function($vars) use ($app, $jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
