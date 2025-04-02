@@ -111,7 +111,6 @@
                 "breakTime" => $data['breakTime'] ?? '',
                 "note" => $data['note'] ?? '',
                 "status" => $app->component("status",["url"=>"/timeperiod-status/".$data['acTzNumber'],"data"=>$data['status'],"permission"=>['timeperiod.edit']]),
-                // "status" => '<label class="switch"><input type="checkbox" class="status-toggle" data-id="' . ($data['acTzNumber'] ?? '') . '" ' . (isset($data['status']) && $data['status'] ? 'checked' : '') . '><span class="slider round"></span></label>',
                 "action" => $app->component("action", [
                     "button" => [          
                         [

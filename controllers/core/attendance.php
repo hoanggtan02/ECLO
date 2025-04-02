@@ -117,7 +117,7 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
         "Code",
         "Name"
     ],[
-        "Status" => "A",
+        "Status" => "1",
     ]);
     $vars['leave_types'] = $leaveTypes;
 
@@ -144,7 +144,8 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
             "employee_id" => $employeeSn,
             "apply_date[<=]" => $createTime,
             "ORDER" => ["apply_date" => "DESC"],
-            "LIMIT" => 1
+            "LIMIT" => 1,
+            
         ]);
 
         // Nếu không tìm thấy assignment, để timeperiod_id là null
