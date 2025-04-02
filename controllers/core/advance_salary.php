@@ -101,8 +101,6 @@
             ];
         });
     
-        // Debug: Kiểm tra dữ liệu trả về
-        error_log("Data for DataTables: " . json_encode($datas));
     
         // Trả về dữ liệu dưới dạng JSON cho DataTables
         $response = json_encode([
@@ -212,11 +210,11 @@ $app->router("/advance-salary/edit/{id}", 'GET', function($vars) use ($app, $jat
 
     // Kiểm tra xem ứng lương có tồn tại không
     $advance = $app->select("salaryadvances", ["AdvanceID", "sn", "TypeID", "Amount", "AppliedDate", "Note"], ["AdvanceID" => $advanceID]);
-    if (empty($advance)) {
-        // Nếu không tìm thấy, trả về lỗi hoặc chuyển hướng
-        $jatbi->error($jatbi->lang("Ứng lương không tồn tại"));
-        return;
-    }
+    // if (empty($advance)) {
+    //     // Nếu không tìm thấy, trả về lỗi hoặc chuyển hướng
+    //     $jatbi->error($jatbi->lang("Ứng lương không tồn tại"));
+    //     return;
+    // }
 
     // Lấy danh sách nhân viên từ bảng employee
     $employees = $app->select("employee", ["sn", "name"], [], ["name" => "ASC"]); // Sắp xếp theo tên
