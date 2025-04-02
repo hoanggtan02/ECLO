@@ -44,7 +44,7 @@
                                                 <select name="shift" data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%">
                                                     <option value=""><?= $jatbi->lang("Ca làm") ?></option>
                                                         <?php foreach ($ca as $name): ?>
-                                                        <?php $temp = substr($name, 0, 1); ?>
+                                                        <?php $temp = substr($name, 0, strpos($name, ' -')); ?>
                                                         <option value="<?= $name ?>" <?= isset($data['shift']) && $data['shift'] == $temp ? 'selected' : '' ?>>
                                                             <?= $name ?>
                                                         </option>
@@ -81,7 +81,7 @@
                                                 <select name="shift2" data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%">
                                                     <option value=""><?= $jatbi->lang("Ca làm") ?></option>
                                                         <?php foreach ($ca as $name): ?>
-                                                        <?php $temp = substr($name, 0, 1); ?>
+                                                        <?php $temp = substr($name, 0, strpos($name, ' -')); ?>
                                                         <option value="<?= $name ?>" <?= isset($data['shift2']) && $data['shift2'] == $temp ? 'selected' : '' ?>>
                                                             <?= $name ?>
                                                         </option>

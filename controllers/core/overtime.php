@@ -168,7 +168,7 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Ngày bắt đầu không được sau ngày kết thúc")]);
             return;
         }
-        $temp = substr($type, 0, 1);
+        $temp = substr($type, 0, strpos($type, " -"));
         $temp2 = substr($employee, strpos($employee, "- ") + 2);
         $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
         try {
@@ -292,7 +292,7 @@
             return;
         }
 
-        $temp = substr($type, 0, 1);
+        $temp = substr($type, 0, strpos($type, " -"));
         $temp2 = substr($employee, strpos($employee, "- ") + 2);
         $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
 

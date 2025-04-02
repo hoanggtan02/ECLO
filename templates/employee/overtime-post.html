@@ -35,7 +35,7 @@
 									<select name="type" class="form-select bg-body-tertiary py-3 rounded-4" data-live-search="true" onchange="updateMoney(this)">
 										<option value=""><?= $jatbi->lang("Chọn loại tăng ca") ?></option>
 											<?php foreach ($tangca as $ca): ?>
-											<?php $temp = substr($ca, 0, 1); ?>
+											<?php $temp = substr($ca, 0, strpos($ca, ' -')); ?>
 											<option value="<?= $ca ?>" <?= isset($data['type']) && $data['type'] == $temp ? 'selected' : '' ?>>
 												<?= substr($ca, 0, strpos($ca, ' ,')) ?>
 											</option>
