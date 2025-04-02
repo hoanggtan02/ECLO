@@ -68,6 +68,8 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
         "thursStart", "thursEnd", "friStart", "friEnd", "satStart", "satEnd",
         "sunStart", "sunEnd",
         "mon_off", "tue_off", "wed_off", "thu_off", "fri_off", "sat_off", "sun_off"
+    ],[
+        "status" => "A",
     ]);
     $timePeriodMap = array_column($timePeriods, null, 'acTzNumber'); // Map theo acTzNumber
 
@@ -117,7 +119,7 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
         "Code",
         "Name"
     ],[
-        "Status" => "1",
+        "Status" => "A",
     ]);
     $vars['leave_types'] = $leaveTypes;
 
