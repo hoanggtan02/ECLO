@@ -66,7 +66,7 @@
           </button>
           <button
             class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
-            data-assigment-action="modal"
+            data-action="modal"
             data-checkbox="input.checker"
             data-url="/manager/assignments-deleted"
           >
@@ -161,64 +161,3 @@
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Xử lý xóa nhiều bản ghi
-    document.addEventListener("click", function (e) {
-      const button = e.target.closest(
-        '[data-checkbox="input.checker"][data-url="/manager/assignments-deleted"][data-assigment-action="modal"]'
-      );
-      if (!button) return;
-
-      e.preventDefault();
-
-      const checkboxes = document.querySelectorAll(
-        "input.form-check-input.checker:checked"
-      );
-      if (checkboxes.length === 0) {
-        return;
-      }
-
-      const ids = Array.from(checkboxes).map((cb) => cb.value);
-      const idString = ids.join(",");
-      const deleteUrl = `/manager/assignments-deleted?id=${idString}`;
-
-      fetch(deleteUrl)
-        .then((response) => response.text())
-        .then((html) => {
-          const modalContainer = document.createElement("div");
-          modalContainer.innerHTML = html;
-          document.body.appendChild(modalContainer);
-          const modalElement = modalContainer.querySelector(".modal");
-          const modal = new bootstrap.Modal(modalElement);
-          modal.show();
-        })
-        .catch((error) => console.error("Error fetching modal:", error));
-    });
-
-    // Xử lý xóa một bản ghi
-    document.addEventListener("click", function (e) {
-      const button = e.target.closest('[data-assigment="modal"][data-id]');
-      if (!button) return;
-
-      e.preventDefault();
-
-      const url = button.getAttribute("data-url");
-      const id = button.getAttribute("data-id");
-      const deleteUrl = `${url}?id=${id}`;
-
-      fetch(deleteUrl)
-        .then((response) => response.text())
-        .then((html) => {
-          const modalContainer = document.createElement("div");
-          modalContainer.innerHTML = html;
-          document.body.appendChild(modalContainer);
-          const modalElement = modalContainer.querySelector(".modal");
-          const modal = new bootstrap.Modal(modalElement);
-          modal.show();
-        })
-        .catch((error) => console.error("Error fetching modal:", error));
-    });
-  });
-</script>

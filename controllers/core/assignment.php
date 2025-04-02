@@ -99,7 +99,7 @@ $app->router("/manager/assignments", 'POST', function($vars) use ($app, $jatbi) 
     // Định dạng dữ liệu trả về cho DataTables
     $formattedData = array_map(function($data) use ($app, $jatbi) {
         return [
-            "checkbox" => "<input class='form-check-input checker' type='checkbox' value='{$data['id']}'>",
+            "checkbox" => $app->component("box", ["data" => $data['id']]),
             "employee_id" => $data['employee_id'] ?? '', // Thêm employee_id
             "employee_name" => $data['employee_name'] ?? '',
             "timeperiod_id" => $data['timeperiod_id'] ?? '', // Sử dụng timeperiod_id
@@ -249,7 +249,7 @@ $app->router("/manager/assignments-deleted", 'GET', function($vars) use ($app, $
 $app->router("/manager/assignments-deleted", 'POST', function($vars) use ($app, $jatbi) {
     $app->header(['Content-Type' => 'application/json']);
 
-    $idString = $_GET['id'] ?? '';
+    $idString = $_GET['box'] ?? '';
     $ids = array_filter(explode(",", $idString));
 
     if (empty($ids)) {
