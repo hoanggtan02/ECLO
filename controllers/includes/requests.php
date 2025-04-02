@@ -206,13 +206,13 @@
                 ],
                 'salary'=>[
                     "menu"=>$jatbi->lang("Tính lương"),
-                    "url"=>'/salaryCalculation',
+                    "url"=>'/salary',
                     "icon"=>'<i class="ti ti-cash"></i>',
-                    "controllers"=>"controllers/core/salaryCalculation.php",
+                    "controllers"=>"controllers/core/salary.php",
                     "main"=>'false',
                     "permission" => [
                         'salary'=>$jatbi->lang("Tính lương"),
-                        'salaryCalculation'=>$jatbi->lang("Tính lương"),
+                        // 'salaryCalculation'=>$jatbi->lang("Tính lương"),
                     ],
                 ],
                 'advance_salary'=>[

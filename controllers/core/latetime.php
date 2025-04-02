@@ -303,7 +303,7 @@ $app->router("/staffConfiguration/latetime-edit/{id}", 'GET', function($vars) us
     // Kiểm tra xem bản ghi có tồn tại không
     $latetime = $app->select("latetime", ["id", "type", "name", "value", "amount", "apply_date", "content", "status"], ["id" => $id]);
     if (empty($latetime)) {
-        $jatbi->error($jatbi->lang("Bản ghi không tồn tại"));
+        // $jatbi->error($jatbi->lang("Bản ghi không tồn tại"));
         return;
     }
 
