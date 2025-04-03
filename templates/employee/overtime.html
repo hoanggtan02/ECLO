@@ -35,6 +35,18 @@
                           </select>
                         </div>
                         <hr class="border-secondary border-opacity-50 my-2" />
+                        <div class="px-3">
+                          <select name="type" class="form-select filter-name mt-2">
+                            <option value="">Loại</option>
+                            <?php foreach ($tangca as $ca): ?>
+                            <?php $temp = strstr($ca, ' -', true); ?>
+                            <option value="<?= $temp ?>">
+                              <?= substr($ca, 0, strpos($ca, ' ,')) ?>
+                            </option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                        <hr class="border-secondary border-opacity-50 my-2" />
                         <div class="px-3 py-2 text-end w-100">
                           <button
                             type="button"

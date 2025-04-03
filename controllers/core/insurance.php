@@ -5,13 +5,7 @@
 
 // insurance
     $app->router("/insurance", 'GET', function($vars) use ($app, $jatbi, $setting) {
-        $vars['title'] = $jatbi->lang("Bảo Hiểm");
-        $vars['add'] = '/insurance-add';
-        $vars['deleted'] = '/insurance-deleted';
-        $vars['edit'] = '/insurance-edit';
-        $vars['approved'] = '/insurance-approved';
-        $data = $app->select("insurance", ["idbh", "employee", "money", "moneybhxh", "numberbhxh", "daybhxh", "placebhxh", "numberyte", "dayyte", "placeyte", "statu", "note"]);
-        $vars['data'] = $data;
+        $vars['title'] = $jatbi->lang("Bảo Hiểm");   
         echo $app->render('templates/employee/insurance.html', $vars);
     })->setPermissions(['insurance']);
 
@@ -31,7 +25,7 @@
         $statu = $_POST['statu'] ?? '';
     
         // Fix lỗi ORDER cột
-        $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
+        $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột 1
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
     
         // Danh sách cột hợp lệ
