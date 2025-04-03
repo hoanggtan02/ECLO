@@ -6,12 +6,9 @@
 // Tăng Ca
     $app->router("/overtime", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Tăng Ca");
-        $vars['add'] = '/overtime-add';
-        $vars['deleted'] = '/overtime-deleted';
-        $vars['edit'] = '/overtime-edit';
-        $vars['approved'] = '/overtime-approved';
-        $data = $app->select("overtime", ["ids","type","employee","money","dayStart","dayEnd","note","statu","day"]);
-        $vars['data'] = $data;
+        $vars['tangca'] = array_map(function($type) {
+            return $type['id'] . ' - ' . $type['name']. ' , ' . $type['price'];
+        }, $app->select("staff-salary", ["id", "name", "price"], ["type" => 3, "status" => "A"]));
         echo $app->render('templates/employee/overtime.html', $vars);
     })->setPermissions(['overtime']);
 
@@ -29,6 +26,7 @@
         $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
         $statu = $_POST['statu'] ?? '';
+        $type = $_POST['type'] ?? '';
     
         // Fix lỗi ORDER cột
         $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
@@ -43,6 +41,10 @@
             "AND" => [
                 "OR" => [
                     "overtime.employee[~]" => $searchValue,
+                    "overtime.money[~]" => $searchValue,
+                    "overtime.dayStart[~]" => $searchValue,
+                    "overtime.dayEnd[~]" => $searchValue,
+                    "overtime.day[~]" => $searchValue,
                     "overtime.note[~]" => $searchValue,
                 ]
             ],
@@ -53,8 +55,11 @@
         if (!empty($statu)) {
             $where["AND"]["overtime.statu"] = $statu;
         }
+        if (!empty($type)) {
+            $where["AND"]["overtime.type"] = $type;
+        }
 
-        // Truy vấn danh sách Khung thời gian
+        // Truy vấn danh sách Tăng ca
         $datas = $app->select("overtime", [
             'ids','type','employee','money','dayStart','dayEnd','note','statu','day'
         ], $where) ?? [];
@@ -76,14 +81,7 @@
             $temp = '<a href="#" class="status-link" style="color: green;" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
             }
 
-            $actionButtons = [
-            [
-                'type' => 'button',
-                'name' => $jatbi->lang("Xóa"),
-                'permission' => ['overtime.deleted'],
-                'action' => ['data-url' => '/overtime-deleted?ids=' . $data['ids'], 'data-action' => 'modal']
-            ],
-            ];
+            $actionButtons = [];
 
             if ($data['statu'] !== 'Approved') {
             $actionButtons[] = [
@@ -93,6 +91,13 @@
                 'action' => ['data-url' => '/overtime-edit?ids=' . $data['ids'], 'data-action' => 'modal']
             ];
             }
+
+            $actionButtons[] = [
+                'type' => 'button',
+                'name' => $jatbi->lang("Xóa"),
+                'permission' => ['overtime.deleted'],
+                'action' => ['data-url' => '/overtime-deleted?ids=' . $data['ids'], 'data-action' => 'modal']
+            ];
 
             return [
             "checkbox" => $app->component("box", ["data" => $data['ids']]),
@@ -257,14 +262,14 @@
     $app->router("/overtime-edit", 'POST', function($vars) use ($app, $jatbi) {
         $app->header(['Content-Type' => 'application/json']);
 
-        // Lấy mã nhân viên từ request
+        // Lấy mã tăng ca từ request
         $ids = isset($_POST['ids']) ? $app->xss($_POST['ids']) : null;
         if (!$ids) {
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Mã tăng ca không hợp lệ")]);
             return;
         }
     
-        // Lấy thông tin nhân viên từ DB
+        // Lấy thông tin tăng ca từ DB
         $data = $app->get("overtime", "*", ["ids" => $ids]);
         if (!$data) {
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Không tìm thấy Tăng ca")]);
