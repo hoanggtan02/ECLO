@@ -77,10 +77,12 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
         checkStaff($app, $month);
 
         $staff = $app->select("salary", [
-            "[>]assignments" => ["personSn" => "employee_id"],
-            "[>]timeperiod" => ["assignments.timeperiod_id" => "acTzNumber"],
+            "[>]assignments"        => ["personSn" => "employee_id"],
+            "[>]timeperiod"         => ["assignments.timeperiod_id" => "acTzNumber"],
+            "[>]salaryadvances"     => ["personSn" => "sn"],
         ], [
             'salary.id',
+            'salary.personSn',
             'salary.month',
             'timeperiod.monStart',
             'timeperiod.monEnd',
@@ -103,12 +105,16 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
             'timeperiod.fri_off',
             'timeperiod.sat_off',
             'timeperiod.sun_off',
+            'salaryadvances.Amount',
+            'salaryadvances.AppliedDate',
         ], ["salary.status" => 'A']);
         
         foreach ($staff as $s) {// duyệt qua từng staff 
 
             $workingDays = 0;// ngày công
             $workingDaysTotal = 0;// ngày công
+            $lateArrival = 0;// tới trễ
+            $earlyLeave = 0;// về sớm
             
             $date = DateTime::createFromFormat('Y-m-d', "{$s['month']}-01");
 
@@ -124,29 +130,57 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                 $timeMin = $app->min("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
                     "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
                     "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
+                    "personSn"       => $s["personSn"],
                 ]);
-                $timeMax = $app->max("record", "createTime", [
+                if(!empty($timeMin)) { $timeMin = new DateTime($timeMin); }
+                $timeMax = new DateTime($app->max("record", "createTime", [
                     "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
                     "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
-                ]);
+                ]));
                 
                 switch ($d) {
                     case 'Monday':
                         if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
                             break;
                         } else $workingDaysTotal++;
-                        if(!empty($timeMin)) {// nếu đi làm + 1 ngày công
+                        if($timeMin) {// nếu đi làm + 1 ngày công
                             $workingDays++;
-                            break;
+                            // list($h1, $m1) = explode(":", $timeMin->format('H:i'));
+                            list($h2, $m2) = explode(":", $s["monStart"]);
+    
+                            // // // Chuyển thành tổng số phút
+                            // $totalMinutes1 = $h1 * 60 + $m1;
+                            $totalMinutes2 = 8 * 60 + 30;
+    
+                            // // Trừ hai thời gian
+                            // $resultMinutes = $totalMinutes2 - $totalMinutes1;
+    
+                            // if($resultMinutes>0) {
+                                $lateArrival = 150;
+                            // }
                         }
+                        // $abc++;
+                        // $lateArrival = 150;
+                        // $lateArrival = 10;
                         break;
                     case 'Tuesday':
                         if($s['tue_off'] == '1') {
                             break;
                         } else $workingDaysTotal++;
-                        if(!empty($timeMin)) {
+                        if($timeMin) {
                             $workingDays++;
-                            break;
+
+                            list($h1, $m1) = explode(":", $timeMin->format('H:i'));
+                            list($h2, $m2) = explode(":", $s["tueStart"]);
+
+                            $totalMinutes1 = $h1 * 60 + $m1;// Chuyển thành tổng số phút
+                            $totalMinutes2 = $h2 * 60 + $m2;
+
+                            $resultMinutes = $totalMinutes1 - $totalMinutes2;// Trừ hai thời gian
+
+                            if($resultMinutes>0) {
+                                $lateArrival += $resultMinutes;
+                            }
                         }
                         break;
                     case 'Wednesday':
@@ -204,7 +238,16 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
 
             $insert = [
                 "workingDays"       => $workingDays . " / ". $workingDaysTotal,
+                "lateArrival"       => $lateArrival,
             ];
+
+            if($s["AppliedDate"] >= ($month . "-01") && $s["AppliedDate"] <= date('Y-m-d')) {
+                $insert = array_merge($insert, [
+                    "salaryAdvance"     => $s["Amount"],
+                ]);
+            }
+
+            
             $app->update("salary",$insert,["id"=>$s['id']]);
         }
 
@@ -225,6 +268,10 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
             'salary.unpaidLeave',
             'salary.paidLeave',
             'salary.unauthorizedLeave',
+            'salary.reward',
+            'salary.discipline',
+            'salary.salaryAdvance',
+
             'employee.name (employeeName)',
 
 
@@ -240,23 +287,31 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
             // 'salaryAdvance',
             // 'salaryReceived',
             // 'salary.attendanceTracking',
-            // 'salary.reward',
-            // 'salary.discipline',
+
             // 'salary.salaryAdvance',
             // 'salary.salaryReceived',
             // 'salary.month',
             ], $where, function ($data) use (&$datas,$jatbi,$app) {
                 // $salary = json_decode($data['salary'], true);
+                $workingdays = explode(" / ", $data['workingDays']);
                 $datas[] = [
                     "numericalOrder"            => 0,
                     "personSn"                  => $data['personSn'] . " - " . $data['employeeName'],
                     "departmentId"              => $data['departmentId'],
                     "workingDays"               => $data['workingDays'],
+                    "insurance"                 => 0,
+                    "dailySalary"               => $data['price'],
                     "overtime"                  => $data['overtime'],
                     "lateArrival/earlyLeave"    => $data['lateArrival'] . ' / ' . $data['earlyLeave'],
                     "unpaidLeave"               => $data['unpaidLeave'],
                     "paidLeave"                 => $data['paidLeave'],
                     "unauthorizedLeave"         => $data['unauthorizedLeave'],
+                    "total"                     => 0,
+                    "reward"                    => $data['reward'],
+                    "discipline"                => $data['discipline'],
+                    "provisionalSalary"         => number_format($workingdays[0] * $data['price'] + $data['reward'] - $data['discipline'], 0, '.', ','),
+                    "salaryAdvance"             => number_format($data['salaryAdvance'], 0, '.', ','),
+                    "salaryReceived"            => number_format($workingdays[0] * $data['price'] - $data['salaryAdvance'], 0, '.', ','),
                 ];
         }); 
      } else {
@@ -364,6 +419,15 @@ function checkStaff($app, $month) {
                 "status"        => 'A',
             ];
             $app->insert("salary",$insert);
+        } else {
+            $insert = [
+                "departmentId"  => $s["departmentId"],
+                "status"        => 'A',
+            ];
+            $app->update("salary",$insert,[
+                "personSn"      => $s["employee_id"],
+                "month"         => $month,
+            ]);
         }
     }
 }
