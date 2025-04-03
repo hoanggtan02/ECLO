@@ -104,7 +104,7 @@
                 "3" => $jatbi->lang("Danh sách đen"),
             ];
             return [
-                "checkbox" => "<input class= 'form-check-input checker' type='checkbox' value='{$data['employee_sn']}'>",
+                "checkbox" => $app->component("box", ["data" => $data['employee_sn']]),
                 "employee_sn" => $data['employee_sn'],
                 "name" => $data['name'] ?? 'N/A',
                 "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"), // Hiển thị nhãn văn bản
@@ -345,7 +345,7 @@
     
     $app->router("/manager/face_employee-deleted", 'POST', function($vars) use ($app, $jatbi) {
         $app->header(['Content-Type' => 'application/json']);
-        $idString = $_GET['id'] ?? '';
+        $idString = $_GET['box'] ?? '';
         $employeeSnList = explode(",", $idString);
     
         try {

@@ -53,12 +53,6 @@
         if (!empty($statu)) {
             $where["AND"]["overtime.statu"] = $statu;
         }
-    
-        // Lọc dữ liệu để loại bỏ các hàng có type D
-        $excludedIds = array_column($app->select("staff-salary", ["id"], ["status" => "A"]), "id");
-
-        // Thêm điều kiện để loại trừ các type nằm trong excludedIds
-        $where["AND"]["overtime.type"] = $excludedIds;
 
         // Truy vấn danh sách Khung thời gian
         $datas = $app->select("overtime", [
@@ -75,40 +69,45 @@
         $formattedData = array_map(function($data) use ($app, $jatbi) {
             
             $typeLabels = array_column($app->select("staff-salary", ["id", "name"]), "name", "id");
-
+            $moneylabel = number_format($data['money'], 0, '.', ',');
             if ($data['statu'] === 'Approved') {
-                $temp = '<a href="#" class="status-link" " data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            $temp = '<a href="#" class="status-link" " data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
             } elseif ($data['statu'] === 'Pending') {                   
-                $temp = '<a href="#" class="status-link" style="color: green;" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            $temp = '<a href="#" class="status-link" style="color: green;" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            }
+
+            $actionButtons = [
+            [
+                'type' => 'button',
+                'name' => $jatbi->lang("Xóa"),
+                'permission' => ['overtime.deleted'],
+                'action' => ['data-url' => '/overtime-deleted?ids=' . $data['ids'], 'data-action' => 'modal']
+            ],
+            ];
+
+            if ($data['statu'] !== 'Approved') {
+            $actionButtons[] = [
+                'type' => 'button',
+                'name' => $jatbi->lang("Sửa"),
+                'permission' => ['overtime.edit'],
+                'action' => ['data-url' => '/overtime-edit?ids=' . $data['ids'], 'data-action' => 'modal']
+            ];
             }
 
             return [
-                "checkbox" => $app->component("box", ["data" => $data['ids']]),
-                "ids" => $data['ids'],
-                "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
-                "employee" => $data['employee'],
-                "money" => $data['money'],
-                "dayStart" => $data['dayStart'],
-                "dayEnd" => $data['dayEnd'],
-                "note" => $data['note'],
-                "statu" => $temp,
-                "day" => $data['day'],
-                "action" => $app->component("action", [
-                    "button" => [          
-                        [
-                            'type' => 'button',
-                            'name' => $jatbi->lang("Sửa"),
-                            'permission' => ['overtime.edit'],
-                            'action' => ['data-url' => '/overtime-edit?ids=' . $data['ids'], 'data-action' => 'modal']
-                        ],
-                        [
-                            'type' => 'button',
-                            'name' => $jatbi->lang("Xóa"),
-                            'permission' => ['overtime.deleted'],
-                            'action' => ['data-url' => '/overtime-deleted?ids=' . $data['ids'], 'data-action' => 'modal']
-                        ],
-                    ]
-                ]),                         
+            "checkbox" => $app->component("box", ["data" => $data['ids']]),
+            "ids" => $data['ids'],
+            "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
+            "employee" => $data['employee'],
+            "money" => $moneylabel,
+            "dayStart" => $data['dayStart'],
+            "dayEnd" => $data['dayEnd'],
+            "note" => $data['note'],
+            "statu" => $temp,
+            "day" => $data['day'],
+            "action" => $app->component("action", [
+                "button" => $actionButtons
+            ]),                         
             ];
         }, $datas);
     
@@ -135,7 +134,7 @@
         $vars['title'] = $jatbi->lang("Thêm Tăng ca");
         $vars['nv1'] = array_map(function($employee) {
             return $employee['sn'] . ' - ' . $employee['name'];
-        }, $app->select("employee", ["name", "sn"]));
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
         $vars['tangca'] = array_map(function($type) {
             return $type['id'] . ' - ' . $type['name']. ' , ' . $type['price'];
         }, $app->select("staff-salary", ["id", "name", "price"], ["type" => 3, "status" => "A"]));
@@ -168,15 +167,16 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Ngày bắt đầu không được sau ngày kết thúc")]);
             return;
         }
-        $temp = substr($type, 0, 1);
+        $temp = substr($type, 0, strpos($type, " -"));
         $temp2 = substr($employee, strpos($employee, "- ") + 2);
+        $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
         try {
             // Dữ liệu để lưu vào database
             $insert = [
                 "ids" => $ids,
                 "employee" => $temp2,
                 "type" => $temp,
-                "money" => $app->xss($_POST['money'] ?? ''),
+                "money" => $temp3,
                 "dayStart" => $app->xss($_POST['dayStart'] ?? ''),
                 "dayEnd" => $app->xss($_POST['dayEnd'] ?? ''),
                 "note" => $note,
@@ -190,7 +190,7 @@
             // Thêm dữ liệu vào database
             $app->insert("overtime", $insert);
 
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công")]);
     
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
@@ -224,7 +224,7 @@
             } else {
                 $app->delete("overtime", ["ids" => $ids]);
             }
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Xóa thành công")]);
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
@@ -236,7 +236,7 @@
         $vars['title'] = $jatbi->lang("Sửa Overtime");
         $vars['nv1'] = array_map(function($employee) {
             return $employee['sn'] . ' - ' . $employee['name'];
-        }, $app->select("employee", ["name", "sn"]));
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
         $vars['tangca'] = array_map(function($type) {
             return $type['id'] . ' - ' . $type['name']. ' , ' . $type['price'];
         }, $app->select("staff-salary", ["id", "name", "price"], ["type" => 3, "status" => "A"]));
@@ -282,7 +282,7 @@
         $day = date('Y-m-d H:i:s');
     
         if ($employee === '' || $type === '' || $money === '' || $dayStart === '' || $dayEnd === '') {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống") . ": " . $type . ", " . $employee . ", " . $money . ", " . $dayStart . ", " . $dayEnd]);    
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);    
             return;
         }
         // Kiểm tra ngày bắt đầu không lớn hơn ngày kết thúc
@@ -291,13 +291,15 @@
             return;
         }
 
-        $temp = substr($type, 0, 1);
+        $temp = substr($type, 0, strpos($type, " -"));
         $temp2 = substr($employee, strpos($employee, "- ") + 2);
+        $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
+
         // Cập nhật dữ liệu trong database
         $update = [
             "employee"  => $temp2,
             "type"    => $temp,
-            "money" => $money,
+            "money" => $temp3,
             "dayStart"  => $dayStart,
             "dayEnd"    => $dayEnd,
             "note" => $note,

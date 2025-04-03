@@ -35,7 +35,7 @@
 									<select name="type" class="form-select bg-body-tertiary py-3 rounded-4" data-live-search="true" onchange="updateMoney(this)">
 										<option value=""><?= $jatbi->lang("Chọn loại tăng ca") ?></option>
 											<?php foreach ($tangca as $ca): ?>
-											<?php $temp = substr($ca, 0, 1); ?>
+											<?php $temp = substr($ca, 0, strpos($ca, ' -')); ?>
 											<option value="<?= $ca ?>" <?= isset($data['type']) && $data['type'] == $temp ? 'selected' : '' ?>>
 												<?= substr($ca, 0, strpos($ca, ' ,')) ?>
 											</option>
@@ -44,7 +44,7 @@
 								</div>
 								<div class="w-50">
 									<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Số tiền") ?></label>
-									<input type="text" id="currency" oninput="formatCurrency(this)" name="money" class="form-control py-3 rounded-4 bg-body-tertiary" 
+									<input type="text" name="money" class="form-control py-3 rounded-4 bg-body-tertiary" 
 										placeholder="<?= $jatbi->lang("Số tiền") ?>" value="<?= $data['money'] ?? '' ?>" min="0" step="0.01">
 								</div>
 							</div>
@@ -79,22 +79,3 @@
 	</div>
 </div>
 
-<script>
-	function updateMoney(selectElement) {
-		const selectedOption = selectElement.options[selectElement.selectedIndex].value;
-		const moneyInput = selectElement.closest('.d-flex').querySelector('input[name="money"]');
-		const match = selectedOption.match(/, (.*)/);
-		if (match) {
-			moneyInput.value = match[1].split(' -')[0];
-		} else {
-			moneyInput.value = '';
-		}
-	}
-	function formatCurrency(input) {
-		// Xóa tất cả các ký tự không phải số
-		let value = input.value.replace(/\D/g, '');
-		// Định dạng lại với dấu phẩy mỗi 3 số
-		value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-		input.value = value;
-	}
-</script>

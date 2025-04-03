@@ -6,57 +6,57 @@
       <ul class="nav flex-wrap border-transparent fw-bold">
         <li class="nav-item my-0">
           <a
-            class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+            class="btn fw-bold border-0 <?=$active=='department'?'text-primary':''?>"
             href="/staffConfiguration/department"
-            data-pjax-state=""
+            data-pjax
             >Phòng ban</a
           >
         </li>
         <li class="nav-item my-0">
           <a
-            class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
-            href="/staffConfiguration/position"
-            data-pjax-state=""
+            class="btn fw-bold border-0 <?=$active=='position'?'text-primary':''?>"
+            href="/staffConfiguration/position "
+            data-pjax
             >Chức vụ</a
           >
         </li>
         <li class="nav-item my-0">
           <a
-            class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
+            class="btn fw-bold border-0 <?=$active=='salary'?'text-primary':''?>"
             href="/staffConfiguration/salary"
-            data-pjax-state=""
+            data-pjax
             >Tiền lương</a
           >
         </li>
         <li class="nav-item my-0">
           <a
-            class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
-            href="/staffConfiguration/latetime"
-            data-pjax-state=""
+            class="btn fw-bold border-0 <?=$active=='latetime'?'text-primary':''?>"
+            href="/staffConfiguration/latetime "
+            data-pjax
             >Đi trễ về sớm</a
           >
         </li>
         <li class="nav-item my-0">
           <a
-            class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
-            href="/manager/timeperiod"
-            data-pjax-state=""
+            class="btn fw-bold border-0 <?=$active=='timeperiod'?'text-primary':''?>"
+            href="/staffConfiguration/timeperiod "
+            data-pjax
             >Thời gian làm việc</a
           >
         </li>
         <li class="nav-item my-0">
           <a
-            class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
-            href="/staffConfiguration/leavetypes"
-            data-pjax-state=""
+            class="btn fw-bold border-0 <?=$active=='leavetypes'?'text-primary':''?>"
+            href="/staffConfiguration/leavetypes "
+            data-pjax
             >Nghỉ phép</a
           >
         </li>
         <li class="nav-item my-0">
           <a
-            class="pjax-load btn btn-color-gray-600 btn-active-secondary btn-active-color-primary fw-bolder fs-8 fs-lg-base nav-link px-3 px-lg-8 mx-1 text-uppercase"
-            href="/staffConfiguration/holiday"
-            data-pjax-state=""
+            class="btn fw-bold border-0 <?=$active=='holiday'?'text-primary':''?>"
+            href="/staffConfiguration/holiday "
+            data-pjax
             >Ngày lễ</a
           >
         </li>
@@ -64,3 +64,9 @@
     </div>
   </div>
 </div>
+<style>
+  .active {
+    background-color: #e4e6ef !important;
+    color: #000 !important;
+  }
+</style>

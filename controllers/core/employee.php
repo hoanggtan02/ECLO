@@ -56,9 +56,18 @@
         $count = $app->count("employee", ["AND" => $where["AND"]]);
     
         // Truy vấn danh sách nhân viên
-        $datas = $app->select("employee", ['sn', 'name', 'type', 'acGroupNumber'], $where) ?? [];
-    
-        // Xử lý dữ liệu đầu ra
+        $datas = $app->select("employee", ['sn', 'name', 'type', 'acGroupNumber','status'], $where) ?? [];
+        $datas = $app->select("employee", [
+            "[>]department" => ["departmentId" => "departmentId"]
+        ], [
+            "department.personName",
+            "employee.sn",
+            "employee.name",
+            "employee.type",
+            "employee.acGroupNumber",
+            "employee.status",
+        ], $where) ?? [];
+            // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi, $groupMap) {
             // Chuyển đổi giá trị type thành văn bản
             $typeLabels = [
@@ -76,6 +85,8 @@
                 "name" => $data['name'],
                 "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
                 "acGroupNumber" => $groupName,
+                "department" => $data['personName'],
+                "status" => $app->component("status",["url"=>"/employee-status/".$data['sn'],"data"=>$data['status'],"permission"=>['employee.edit']]),
                 "action" => $app->component("action", [
                     "button" => [
                         [
@@ -125,6 +136,7 @@
     
     $app->router("/manager/employee-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Nhân viên");
+        $vars['departments'] = $app->select("department", ['departmentId', 'personName'], ["ORDER" => ["personName" => "ASC"]]);
         echo $app->render('templates/employee/employee-post.html', $vars,'global');
     })->setPermissions(['employee.add']);
     
@@ -136,7 +148,8 @@
         $sn            = $app->xss($_POST['sn'] ?? '');
         $name          = $app->xss($_POST['name'] ?? '');
         $type          = (int) ($app->xss($_POST['type'] ?? ''));
-        $acGroupNumber = (int) $app->xss($_POST['acGroupNumber'] ?? '');    
+        $acGroupNumber = (int) $app->xss($_POST['acGroupNumber'] ?? ''); 
+        $departmentId   = $app->xss($_POST['departmentId'] ?? '');
     
         // Kiểm tra dữ liệu đầu vào
         if (empty($sn) || empty($name) || empty($type)) {
@@ -151,6 +164,7 @@
                 "name"          => $name,
                 "type"          => $type,
                 "acGroupNumber" => $acGroupNumber,
+                "departmentId"  => $departmentId,
             ];
             
             // Thêm dữ liệu vào database
@@ -292,6 +306,10 @@
         }
     
         $vars['data'] = $app->get("employee", "*", ["sn" => $sn]);
+        $vars['departments'] = $app->select("department", ['departmentId', 'personName'], [
+            "ORDER" => ["personName" => "ASC"]
+        ]);   
+            
         $vars ['data']['edit'] = true;
         if ($vars['data']) {
             echo $app->render('templates/employee/employee-post.html', $vars, 'global');
@@ -324,6 +342,7 @@
         $name          = isset($_POST['name']) ? $app->xss($_POST['name']) : '';
         $type          = isset($_POST['type']) ? $app->xss($_POST['type']) : '';
         $acGroupNumber = isset($_POST['acGroupNumber']) ? $app->xss($_POST['acGroupNumber']) : '';
+        $departmentId   = isset($_POST['departmentId']) ? $app->xss($_POST['departmentId']) : '';
     
         if ($name === '' || $type === '' || $acGroupNumber === '') {
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
@@ -335,6 +354,7 @@
             "name"          => $name,
             "type"          => $type,
             "acGroupNumber" => $acGroupNumber,
+            "departmentId"  => $departmentId,
         ];
     
         $app->update("employee", $update, ["sn" => $sn]);
@@ -688,5 +708,31 @@
         echo $app->render('templates/common/view-record.html', $vars, 'global');
     })->setPermissions([]);
     
+    //Cấp phép employee
+    $app->router("/employee-status/{sn}", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
 
+        $data = $app->get("employee","*",["sn"=>$vars['sn']]);
+        if($data>1){
+            if($data>1){
+                if($data['status']==='A'){
+                    $status = "D";
+                } 
+                elseif($data['status']==='D'){
+                    $status = "A";
+                }
+                $app->update("employee",["status"=>$status],["sn"=>$data['sn']]);
+                $jatbi->logs('employee','employee-status',$data);
+                echo json_encode(value: ['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+            }
+            else {
+                echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+            }
+        }
+        else {
+            echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+        }
+    })->setPermissions(['employee.edit']);
 ?>

@@ -4,11 +4,13 @@
     $setting = $app->getValueData('setting');
 
     // Khung thời gian
-    $app->router("/manager/timeperiod", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $app->router("/staffConfiguration/timeperiod", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Thời gian làm việc");
         $vars['add'] = '/manager/timeperiod-add';
         $vars['deleted'] = '/manager/timeperiod-deleted';
         $vars['sync'] = '/manager/timeperiod-sync';
+        $vars['active']= "timeperiod";
+
 
         // Lấy dữ liệu từ bảng timeperiod, bao gồm các cột mới
         $data = $app->select("timeperiod", [
@@ -26,7 +28,7 @@
         echo $app->render('templates/employee/timeperiod.html', $vars);
     })->setPermissions(['timeperiod']);
 
-    $app->router("/manager/timeperiod", 'POST', function($vars) use ($app, $jatbi) {
+    $app->router("/staffConfiguration/timeperiod", 'POST', function($vars) use ($app, $jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
         ]);
@@ -108,7 +110,7 @@
                 "timeperiod" => $timeperiodHtml, // Cột thời gian gộp
                 "breakTime" => $data['breakTime'] ?? '',
                 "note" => $data['note'] ?? '',
-                "status" => '<label class="switch"><input type="checkbox" class="status-toggle" data-id="' . ($data['acTzNumber'] ?? '') . '" ' . (isset($data['status']) && $data['status'] ? 'checked' : '') . '><span class="slider round"></span></label>',
+                "status" => $app->component("status",["url"=>"/timeperiod-status/".$data['acTzNumber'],"data"=>$data['status'],"permission"=>['timeperiod.edit']]),
                 "action" => $app->component("action", [
                     "button" => [          
                         [
@@ -565,35 +567,62 @@
         }
     })->setPermissions(['timeperiod.sync']);
     
-
-    $app->router("/manager/timeperiod-update-status", 'POST', function($vars) use ($app, $jatbi) {
+    //Cấp phép stattus
+    $app->router("/timeperiod-status/{acTzNumber}", 'POST', function($vars) use ($app, $jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
         ]);
-    
-        // Lấy dữ liệu từ yêu cầu AJAX
-        $input = json_decode(file_get_contents('php://input'), true);
-        $acTzNumber = $input['acTzNumber'] ?? '';
-        $status = $input['status'] ?? 0;
-    
-        // Kiểm tra dữ liệu đầu vào
-        if (empty($acTzNumber)) {
-            $app->responseJson([
-                "status" => "error",
-                "message" => $jatbi->lang("Không tìm thấy mã khung thời gian")
-            ]);
-            return;
+
+        $data = $app->get("timeperiod","*",["acTzNumber"=>$vars['acTzNumber']]);
+        if($data>1){
+            if($data>1){
+                if($data['status']==='A'){
+                    $status = "D";
+                } 
+                elseif($data['status']==='D'){
+                    $status = "A";
+                }
+                $app->update("timeperiod",["status"=>$status],["acTzNumber"=>$data['acTzNumber']]);
+                $jatbi->logs('timeperiod','timeperiod-status',$data);
+                echo json_encode(value: ['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+            }
+            else {
+                echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+            }
         }
-    
-        // Cập nhật trạng thái
-        $app->update("timeperiod", [
-            "status" => $status
-        ], ["acTzNumber" => $acTzNumber]);
-    
-        $app->responseJson([
-            "status" => "success",
-            "message" => $jatbi->lang("Cập nhật trạng thái thành công")
-        ]);
+        else {
+            echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+        }
     })->setPermissions(['timeperiod.edit']);
+
+    // $app->router("/manager/timeperiod-update-status", 'POST', function($vars) use ($app, $jatbi) {
+    //     $app->header([
+    //         'Content-Type' => 'application/json',
+    //     ]);
+    
+    //     // Lấy dữ liệu từ yêu cầu AJAX
+    //     $input = json_decode(file_get_contents('php://input'), true);
+    //     $acTzNumber = $input['acTzNumber'] ?? '';
+    //     $status = $input['status'] ?? 0;
+    
+    //     // Kiểm tra dữ liệu đầu vào
+    //     if (empty($acTzNumber)) {
+    //         $app->responseJson([
+    //             "status" => "error",
+    //             "message" => $jatbi->lang("Không tìm thấy mã khung thời gian")
+    //         ]);
+    //         return;
+    //     }
+    
+    //     // Cập nhật trạng thái
+    //     $app->update("timeperiod", [
+    //         "status" => $status
+    //     ], ["acTzNumber" => $acTzNumber]);
+    
+    //     $app->responseJson([
+    //         "status" => "success",
+    //         "message" => $jatbi->lang("Cập nhật trạng thái thành công")
+    //     ]);
+    // })->setPermissions(['timeperiod.edit']);
 
 ?>

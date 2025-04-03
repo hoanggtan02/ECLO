@@ -3,7 +3,7 @@
     $jatbi = new Jatbi($app);
     $setting = $app->getValueData('setting');
 
-// Khung thời gian
+// insurance
     $app->router("/insurance", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Bảo Hiểm");
         $vars['add'] = '/insurance-add';
@@ -69,28 +69,22 @@
     
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
-            $typeLabels = [
-                "1" => $jatbi->lang("Kích Hoạt"),
-                "2" => $jatbi->lang("Không Kích Hoạt"),
-            ];
-
-            $temp = isset($typeLabels[$data['statu']]) 
-                ? '<a href="#" class="status-link" style="color: ' . ($data['statu'] === '1' ? 'green' : 'red') . ';" data-url="/insurance-approved?idbh=' . $data['idbh'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $typeLabels[$data['statu']] . '</a>'
-                : $data['statu'];
+            $moneylabel = number_format($data['money'], 0, '.', ',');
+            $moneylabel2 = number_format($data['moneybhxh'], 0, '.', ',');
 
             return [
                 "checkbox" => $app->component("box", ["data" => $data['idbh']]),
                 "idbh" => $data['idbh'],
                 "employee" => $data['employee'],
-                "money" => $data['money'],
-                "moneybhxh" => $data['moneybhxh'],
+                "money" => $moneylabel,
+                "moneybhxh" => $moneylabel2,
                 "numberbhxh" => $data['numberbhxh'],
                 "daybhxh" => $data['daybhxh'],
                 "placebhxh" => $data['placebhxh'],
                 "numberyte" => $data['numberyte'],
                 "dayyte" => $data['dayyte'],
                 "placeyte" => $data['placeyte'],
-                "statu" => $temp,
+                "statu" => $app->component("status",["url"=>"/insurance-status/".$data['idbh'],"data"=>$data['statu'],"permission"=>['insurance.edit']]),
                 "action" => $app->component("action", [
                     "button" => [          
                         [
@@ -133,7 +127,7 @@
         $vars['title'] = $jatbi->lang("Thêm Bảo Hiểm");
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+        }, $app->select("employee", ["name"], ["status" => "A"]));
 
         echo $app->render('templates/employee/insurance-post.html', $vars, 'global');
     })->setPermissions(['insurance.add']);
@@ -160,14 +154,16 @@
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống các trường bắt buộc")]);
             return;
         }
+        $temp = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
+        $temp2 = str_replace(',', '', $app->xss($_POST['moneybhxh'] ?? ''));
 
         try {
             // Dữ liệu để lưu vào database
             $insert = [
                 "idbh" => $idbh,
                 "employee" => $employee,
-                "money" => $money,
-                "moneybhxh" => $moneybhxh,
+                "money" => $temp,
+                "moneybhxh" => $temp2,
                 "numberbhxh" => $numberbhxh,
                 "daybhxh" => $daybhxh,
                 "placebhxh" => $placebhxh,
@@ -184,7 +180,7 @@
             // Thêm dữ liệu vào database
             $app->insert("insurance", $insert);
 
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công")]);
     
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
@@ -218,7 +214,7 @@
             } else {
                 $app->delete("insurance", ["idbh" => $idbh]);
             }
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Xóa thành công")]);
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
@@ -230,7 +226,7 @@
         $vars['title'] = $jatbi->lang("Sửa insurance");
         $vars['nv1'] = array_map(function($employee) {
             return implode(' - ', $employee);
-        }, $app->select("employee", ["name"]));
+        }, $app->select("employee", ["name"], ["status" => "A"]));
         $idbh = isset($_GET['idbh']) ? $app->xss($_GET['idbh']) : null;
         if (!$idbh) {
             echo $app->render('templates/common/error-modal.html', $vars, 'global');
@@ -277,15 +273,17 @@
         $note = isset($_POST['note']) ? $app->xss($_POST['note']) : '';
     
         if (empty($employee) || empty($money) || empty($moneybhxh) || empty($numberbhxh) || empty($daybhxh) || empty($placebhxh) || empty($numberyte) || empty($dayyte) || empty($placeyte) || empty($statu)) {
-            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống các trường bắt buộc: $idbh")]);
+            echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống!")]);
             return;
         }
-    
+        $temp = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
+        $temp2 = str_replace(',', '', $app->xss($_POST['moneybhxh'] ?? ''));
+
         // Cập nhật dữ liệu trong database
         $update = [
             "employee" => $employee,
-            "money" => $money,
-            "moneybhxh" => $moneybhxh,
+            "money" => $temp,
+            "moneybhxh" => $temp2,
             "numberbhxh" => $numberbhxh,
             "daybhxh" => $daybhxh,
             "placebhxh" => $placebhxh,
@@ -302,7 +300,7 @@
             // Ghi log cập nhật
             $jatbi->logs('insurance', 'insurance-edit', $update);
         
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật tăng ca thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Cập nhật bảo hiểm thành công")]);
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
             echo json_encode(["status" => "error", "content" => "Lỗi: " . $e->getMessage()]);
@@ -311,21 +309,30 @@
     })->setPermissions(['insurance.edit']);
 
     //Cấp phép insurance
-    $app->router("/insurance-approved", 'GET', function($vars) use ($app, $jatbi) {
-        if (isset($_GET['idbh']) && isset($_GET['statu'])) {
-            $newStatus = ($_GET['statu'] === "2") ? "1" : "2"; // Toggle status between 1 and 2
-            $update = [
-                "statu" => $newStatus
-            ];
-            $app->update("insurance", $update, ["idbh" => $_GET['idbh']]);
-            echo $app->render('templates/common/restore.html', $vars, 'global');
-        }
-    })->setPermissions(['insurance.approved']);
-
-    $app->router("/insurance-approved", 'POST', function($vars) use ($app, $jatbi) {
+    $app->router("/insurance-status/{idbh}", 'POST', function($vars) use ($app, $jatbi) {
         $app->header([
             'Content-Type' => 'application/json',
         ]);
-        echo json_encode(["status" => "success", "content" => $jatbi->lang("Cấp phép thành công")]);
-    })->setPermissions(['insurance.deleted']);
+
+        $data = $app->get("insurance","*",["idbh"=>$vars['idbh']]);
+        if($data>1){
+            if($data>1){
+                if($data['statu']==='A'){
+                    $status = "D";
+                } 
+                elseif($data['statu']==='D'){
+                    $status = "A";
+                }
+                $app->update("insurance",["statu"=>$status],["idbh"=>$data['idbh']]);
+                $jatbi->logs('insurance','insurance-status',$data);
+                echo json_encode(value: ['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
+            }
+            else {
+                echo json_encode(['status'=>'error','content'=>$jatbi->lang("Cập nhật thất bại"),]);
+            }
+        }
+        else {
+            echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
+        }
+    })->setPermissions(['insurance.edit']);
 ?>

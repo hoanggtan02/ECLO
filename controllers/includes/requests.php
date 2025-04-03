@@ -57,11 +57,11 @@
                     "url"=>'/employee',
                     "icon"=>'<i class="ti ti-layout-dashboard "></i>',
                     "sub"=>[
-                        'employee'      =>[
-                            "name"  => $jatbi->lang("Nhân viên"),
-                            "router"=> '/manager/employee',
-                            "icon"  => '<i class="ti ti-user"></i>',
-                        ],
+                        // 'employee'      =>[
+                        //     "name"  => $jatbi->lang("Nhân viên"),
+                        //     "router"=> '/manager/employee',
+                        //     "icon"  => '<i class="ti ti-user"></i>',
+                        // ],
                         'face_employee'    =>[
                             "name"  => $jatbi->lang("Khuôn mặt"),
                             "router"=> '/manager/face_employee',
@@ -75,12 +75,12 @@
                             "controllers" => 'controllers/core/checkinout.php',
 
                         ],
-                        'timeperiod'      =>[
-                            "name"  => $jatbi->lang("Khung thời gian"),
-                            "router"=> '/manager/timeperiod',
-                            "icon"  => '<i class="fas fa-universal-access"></i>',
-                            "controllers" => 'controllers/core/timeperiod.php',
-                        ],
+                        // 'timeperiod'      =>[
+                        //     "name"  => $jatbi->lang("Khung thời gian"),
+                        //     "router"=> '/manager/timeperiod',
+                        //     "icon"  => '<i class="fas fa-universal-access"></i>',
+                        //     "controllers" => 'controllers/core/timeperiod.php',
+                        // ],
                     ],
                     "controllers"=>"controllers/core/employee.php",
                     "main"=>'false',
@@ -211,7 +211,8 @@
                     "controllers"=>"controllers/core/salary.php",
                     "main"=>'false',
                     "permission" => [
-                        'salary'=>$jatbi->lang("Tính lương") 
+                        'salary'=>$jatbi->lang("Tính lương"),
+                        // 'salaryCalculation'=>$jatbi->lang("Tính lương"),
                     ],
                 ],
                 'advance_salary'=>[
@@ -243,11 +244,16 @@
                 ],
                 'labor_contract'=>[
                     "menu"=>$jatbi->lang("Hợp đồng lao động"),
-                    "url"=>'/labor-contract',
+                    "url"=>'/labor_contract',
                     "icon"=>'<i class="ti ti-file"></i>',
-                    "controllers"=>"controllers/core/admin.php",
+                    "controllers"=>"controllers/core/labor_contract.php",
                     "main"=>'false',
-                    "permission" => "",
+                    "permission" => [
+                        'labor_contract'          => $jatbi->lang("Hợp đồng lao động"),
+                        'labor_contract.add'      => $jatbi->lang("Thêm Hợp đồng lao động"),
+                        'labor_contract.edit'     => $jatbi->lang("Sửa Hợp đồng lao động"),
+                        'labor_contract.deleted'  => $jatbi->lang("Xóa Hợp đồng lao động"),
+                    ]
                 ],
                 'insurance'=>[
                     "menu"=>$jatbi->lang("Bảo hiểm"),
