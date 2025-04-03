@@ -39,8 +39,7 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
 
     $month = $app->xss($_POST['month'] ?? date('m'));
     $year = $app->xss($_POST['yesr'] ?? date('Y'));
-    $monthYear = $month . "/" . $year;
-    $my = 02/2025;
+    $month = $year . "-" . $month;
 
     $where = [
         "AND" => [
@@ -49,7 +48,7 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                 // "salary.personName[~]" => $searchValue,
                 "salary.personSn[~]" => $searchValue,
             ],
-            "salary.monthYear" => $monthYear,
+            "salary.month" => $month,
         ],
 
         "LIMIT" => [$start, $length],
@@ -74,15 +73,15 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
         "AND" => $where['AND'],
     ]);
     
-    if($monthYear == date("m/Y")) {
-        addStaff($app, $monthYear);
+    if($month == date("Y-m")) {
+        checkStaff($app, $month);
 
         $staff = $app->select("salary", [
             "[>]assignments" => ["personSn" => "employee_id"],
             "[>]timeperiod" => ["assignments.timeperiod_id" => "acTzNumber"],
         ], [
             'salary.id',
-            'salary.monthYear',
+            'salary.month',
             'timeperiod.monStart',
             'timeperiod.monEnd',
             'timeperiod.tueStart',
@@ -104,120 +103,114 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
             'timeperiod.fri_off',
             'timeperiod.sat_off',
             'timeperiod.sun_off',
-        ], ["status" => 'A']);
+        ], ["salary.status" => 'A']);
+        
+        foreach ($staff as $s) {// duyệt qua từng staff 
 
-        // foreach ($staff as $s) {// duyệt qua từng staff 
-
-        //     $workDay = 0;// ngày công
+            $workingDays = 0;// ngày công
+            $workingDaysTotal = 0;// ngày công
             
-        //     $date = DateTime::createFromFormat('m/Y', $s['monthYear']);
-        //     $month = $date->format('m');
-        //     $year = date('Y');
+            $date = DateTime::createFromFormat('Y-m-d', "{$s['month']}-01");
 
-        //     $date->setDate($year, $month, 1);
+            while ($date->format('Y-m') == $month) {// duyệt từng ngày trong tháng
 
-        //     while ($date->format('m') == $month) {
-        //         $d = $date->format('l');// lấy thứ hiện tại
-        //         $timeMin = $app->max("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
-        //             "createTime[>=]" => $date->format('d/m/Y 0:0:0'),
-        //             "createTime[>=]" => $date->format('d/m/Y 24:59:59'),
-        //         ]);
-        //         $timeMax = $app->Min("record", "createTime", [
-        //             "createTime[>=]" => $date->format('d/m/Y 0:0:0'),
-        //             "createTime[>=]" => $date->format('d/m/Y 24:59:59'),
-        //         ]);
-
-        //         switch ($d) {
-        //             case 'Monday':
-        //                 if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
-        //                     break;
-        //                 }
-        //                 if($s['monStart']>$timeMin && $s['monEnd']>$timeMax) {// nếu đi làm đúng giờ + 1 ngày công
-        //                     $workDay++;
-        //                     break;
-        //                 }
-        //                 break;
-        //             case 'Tuesday':
-        //                 if($s['tue_off'] == '1') {
-        //                     break;
-        //                 }
-        //                 if($s['tueStart']>$timeMin && $s['tueEnd']>$timeMax) {
-        //                     $workDay++;
-        //                     break;
-        //                 }
-        //                 break;
-        //             case 'Wednesday':
-        //                 if($s['wed_off'] == '1') {
-        //                     break;
-        //                 }
-        //                 if($s['wedStart']>$timeMin && $s['wedEnd']>$timeMax) {
-        //                     $workDay++;
-        //                     break;
-        //                 }
-        //                 break;
-        //             case 'Thursday':
-        //                 if($s['thu_off'] == '1') {
-        //                     break;
-        //                 }
-        //                 if($s['thursStart']>$timeMin && $s['thursEnd']>$timeMax) {
-        //                     $workDay++;
-        //                     break;
-        //                 }
-        //                 break;
-        //             case 'Friday':
-        //                 if($s['fri_off'] == '1') {
-        //                     break;
-        //                 }
-        //                 if($s['friStart']>$timeMin && $s['friEnd']>$timeMax) {
-        //                     $workDay++;
-        //                     break;
-        //                 }
-        //                 break;
-        //             case 'Saturday':
-        //                 if($s['sat_off'] == '1') {
-        //                     break;
-        //                 }
-        //                 if($s['satStart']>$timeMin && $s['satEnd']>$timeMax) {
-        //                     $workDay++;
-        //                     break;
-        //                 }
-        //                 break;
-        //             default:
-        //                 echo "Hôm nay không có gì đặc biệt.";
-        //         }
-
-        //         if($date < date("Y/m/d")) { // nếu bé hơn ngày hiện tại thì tăng thêm 1 ngày còn ko thì dừngdừng
-        //             $date->modify('+1 day');
-        //         } else {
-        //             break;
-        //         }
+                $holiday = $app->has("staff-holiday", [// kiểm tra ngày lễ
+                    "startDate[<=]" => $date->format('Y-m-d'),
+                    "endDate[>=]"   => $date->format('Y-m-d'),
+                    "status"        => 'A',
+                ]); 
+                if(empty($holiday)) {
+                    $d = $date->format('l');// lấy thứ hiện tại
+                $timeMin = $app->min("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
+                    "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
+                    "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
+                ]);
+                $timeMax = $app->max("record", "createTime", [
+                    "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
+                    "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
+                ]);
                 
-        //     }
+                switch ($d) {
+                    case 'Monday':
+                        if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
+                            break;
+                        } else $workingDaysTotal++;
+                        if(!empty($timeMin)) {// nếu đi làm + 1 ngày công
+                            $workingDays++;
+                            break;
+                        }
+                        break;
+                    case 'Tuesday':
+                        if($s['tue_off'] == '1') {
+                            break;
+                        } else $workingDaysTotal++;
+                        if(!empty($timeMin)) {
+                            $workingDays++;
+                            break;
+                        }
+                        break;
+                    case 'Wednesday':
+                        if($s['wed_off'] == '1') {
+                            break;
+                        } else $workingDaysTotal++;
+                        if(!empty($timeMin)) {
+                            $workingDays++;
+                            break;
+                        }
+                        break;
+                    case 'Thursday':
+                        if($s['thu_off'] == '1') {
+                            break;
+                        } else $workingDaysTotal++;
+                        if(!empty($timeMin)) {
+                            $workingDays++;
+                            break;
+                        }
+                        break;
+                    case 'Friday':
+                        if($s['fri_off'] == '1') {
+                            break;
+                        } else $workingDaysTotal++;
+                        if(!empty($timeMin)) {
+                            $workingDays++;
+                            break;
+                        }
+                        break;
+                    case 'Saturday':
+                        if($s['sat_off'] == '1') {
+                            break;
+                        } else $workingDaysTotal++;
+                        if(!empty($timeMin)) {
+                            $workingDays++;
+                            break;
+                        }
+                        break;
+                    case 'Sunday':
+                        if($s['sun_off'] == '1') {
+                            break;
+                        } else $workingDaysTotal++;
+                        if(!empty($timeMin)) {
+                            $workingDays++;
+                            break;
+                        } else $workingDaysTotal++;
+                        break;
+                    default:
+                        break;
+                        // echo "Hôm nay không có gì đặc biệt.";
+                    }
+                }
+                $date->modify('+1 day');  
+            }
 
-        //     $insert = [
-        //         "workingDays"       => $workDay,
-        //     ];
-
-
-
-
-
-
-        //     $app->update("salary",$insert,["id"=>$s['id']]);
-
-        // }
-
-
-
-
-
-
-
-
-
+            $insert = [
+                "workingDays"       => $workingDays . " / ". $workingDaysTotal,
+            ];
+            $app->update("salary",$insert,["id"=>$s['id']]);
+        }
 
 
         $app->select("salary", [
+            "[>]employee" => ["personSn" => "sn"],
             "[>]employee_contracts" => ["personSn" => "person_sn"],
             "[>]staff-salary" => ["employee_contracts.salaryId" => "id"],
             ],
@@ -232,6 +225,7 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
             'salary.unpaidLeave',
             'salary.paidLeave',
             'salary.unauthorizedLeave',
+            'employee.name (employeeName)',
 
 
             'employee_contracts.salaryId ',
@@ -255,7 +249,7 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                 // $salary = json_decode($data['salary'], true);
                 $datas[] = [
                     "numericalOrder"            => 0,
-                    "personSn"                  => $data['personSn'],
+                    "personSn"                  => $data['personSn'] . " - " . $data['employeeName'],
                     "departmentId"              => $data['departmentId'],
                     "workingDays"               => $data['workingDays'],
                     "overtime"                  => $data['overtime'],
@@ -263,23 +257,9 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                     "unpaidLeave"               => $data['unpaidLeave'],
                     "paidLeave"                 => $data['paidLeave'],
                     "unauthorizedLeave"         => $data['unauthorizedLeave'],
-                    // "dailySalary"     => $data['dailySalary'],
-                    // "insurance"       => $data['insurance'],
-                    // "workday"         => $data['workday'], 
-                    // "overtime"        => $data['overtime'],
-                    // "leaveWithoutPay" => $data['leaveWithoutPay'],
-                    // "paidLeave"       => $data['paidLeave'],
-                    // 'total'           => 0,
                 ];
-          
-            
-            // foreach ($salary as $key => $value) {
-            //     $entry[$key] = $value;
-            // }
-      
         }); 
      } else {
-        $where["AND"]["salary.monthYear"] = $monthYear;
         $app->select("salary",
             [
             'salary.personSn',
@@ -319,8 +299,6 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
     }
 
     echo json_encode([
-        "monthYear" => '2025',
-        'my' => $my,
         "draw" => $draw,
         "recordsTotal" => $count,
         "recordsFiltered" => $count,
@@ -329,29 +307,60 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
 
 })->setPermissions(['salary']);
 
+function addAllStaff($app, $month) { // thêm toàn bộ nhân viên vào bảng tính lương trong tháng mới
+    $month = DateTime::createFromFormat('Y-m-d', "$month-01");
+    $check = $app->has("logs", ["date[>=]" => $month->format('Y-m-d') . " 00:00:00"]); // kiểm tra logs xem đã được thêm chưa trong tháng mới
+    if(!empty($check)) {
+        $staff = $app->select("assignments", [
+            "[>]employee" => ["employee_id" => "sn"],
+        ], [// lấy tất cả nhân viên từ bảng assignments (phân công) với apply_date bé hơn hoặc bằng ngày hiện tại 
+            'assignments.employee_id ',
+            'employee.departmentId',
+        ], [
+            "apply_date[<=]" => $month->format('Y-m-d'),
+            "apply_date[>=]" => $month->format("Y-m-" . $month->format('t')), // lấy ngày cuối của tháng
+        ]);
+        foreach ($staff as $s) {// duyệt qua từng phần tử lấy được và kiểm tra đã có trong bảng salary với tháng hiện tại
+            $check = $app->has("salary",[
+                "personSn"      => $s["employee_id"],
+                "month"         => $month,
+            ]);
+    
+            if (empty($check)) {// tạo các nhân viên chưa có trong bảng lương tháng này
+                $insert = [
+                    "personSn"      => $s["employee_id"],
+                    "departmentId"  => $s["departmentId"],
+                    "month"         => $month,
+                    "status"        => 'A',
+                ];
+                $app->insert("salary",$insert);
+            }
+        }
+    }
+}
 
 
 
 
-function addStaff($app, $monthYear) {
+function checkStaff($app, $month) {
     $staff = $app->select("assignments", [
         "[>]employee" => ["employee_id" => "sn"],
     ], [// lấy tất cả nhân viên từ bảng assignments (phân công) với apply_date bé hơn hoặc bằng ngày hiện tại 
         'assignments.employee_id ',
         'employee.departmentId',
-    ], ["apply_date[<=]" => date("Y/m/d")]);
+    ], ["apply_date[<=]" => date("Y-m-d")]);
     
     foreach ($staff as $s) {// duyệt qua từng phần tử lấy được và kiểm tra đã có trong bảng salary với tháng hiện tại
         $check = $app->has("salary",[
             "personSn"      => $s["employee_id"],
-            "monthYear"     => $monthYear,
+            "month"         => $month,
         ]);
 
         if (empty($check)) {// tạo các nhân viên chưa có trong bảng lương tháng này
             $insert = [
                 "personSn"      => $s["employee_id"],
                 "departmentId"  => $s["departmentId"],
-                "monthYear"     => $monthYear,
+                "month"         => $month,
                 "status"        => 'A',
             ];
             $app->insert("salary",$insert);
