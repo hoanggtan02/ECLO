@@ -14,15 +14,15 @@
                     <div class="row g-3">
                         <!-- Nhân viên -->
                         <div class="col-lg-6">
-                            <input type="hidden" name="id" value="<?= $data['id'] ?>">
+                            <input type="hidden" name="id" value="<?= $data[0]['id'] ?? '' ?>">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Mã nhân viên") ?> <span class="text-danger">*</span></label>
                             <select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" 
-                                data-live-search="true" data-width="100%" name="personSN">
+                                data-live-search="true" data-width="100%" name="person_sn">
                                 <option value=""><?= $jatbi->lang("Chọn nhân viên") ?></option>
                                 <?php 
                                     $employees = $app->select("employee", ['sn', 'name']);
                                     foreach ($employees as $employee): 
-                                        $selected = isset($data['personSN']) && $data['personSN'] == $employee['sn'] ? 'selected' : '';
+                                        $selected = isset($data[0]['person_sn']) && $data[0]['person_sn'] == $employee['sn'] ? 'selected' : '';
                                 ?>
                                     <option value="<?= $employee['sn'] ?>" <?= $selected ?>><?= $employee['name'] ?> (<?= $employee['sn'] ?>)</option>
                                 <?php endforeach; ?>
@@ -31,13 +31,13 @@
                         <!-- Ngày hợp đồng -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Ngày hợp đồng") ?> <span class="text-danger">*</span></label>
-                            <input type="date" name="contract_date" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                            <input type="date" name="contract_date" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['contract_date'] ?? date('Y-m-d') ?>" required>
                         </div>
 
                         <!-- Ngày phỏng vấn -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Ngày phỏng vấn") ?> <span class="text-danger">*</span></label>
-                            <input type="date" name="interview_date" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                            <input type="date" name="interview_date" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['interview_date'] ?? date('Y-m-d') ?>" required>
                         </div>
 
                         <!-- Loại hợp đồng -->
@@ -45,8 +45,10 @@
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Loại hợp đồng") ?> <span class="text-danger">*</span></label>
                             <select name="contract_type" class="form-control py-3 rounded-4 bg-body-tertiary" required>
                                 <option value=""><?= $jatbi->lang("Chọn loại hợp đồng") ?></option>
-                                <?php foreach ($contract_type as $key => $value): ?>
-                                    <option value="<?= $key ?>" <?= isset($data['contract_type']) && $data['contract_type'] == $key ? 'selected' : '' ?>><?= $value ?></option>
+                                <?php foreach ($contract_type as $key => $value): 
+                                    $selected = isset($data[0]['contract_type']) && $data[0]['contract_type'] == $value ? 'selected' : '';
+                                ?>
+                                    <option value="<?= $key ?>" <?= $selected ?>><?= $value ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -54,73 +56,131 @@
                         <!-- Ngày làm việc -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Ngày làm việc") ?> <span class="text-danger">*</span></label>
-                            <input type="date" name="working_date" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                            <input type="date" name="working_date" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['working_date'] ?? date('Y-m-d') ?>" required>
                         </div>
 
                         <!-- Số hợp đồng -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Số hợp đồng") ?></label>
-                            <input type="text" name="contract_number" class="form-control py-3 rounded-4 bg-body-tertiary">
+                            <input type="text" name="contract_number" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['contract_number'] ?? '' ?>" placeholder="Nhập số hợp đồng">
                         </div>
 
                         <!-- Thời hạn hợp đồng -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Thời hạn hợp đồng") ?></label>
-                            <input type="number" name="contract_duration" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="Nhập số tháng">
+                            <input type="number" name="contract_duration" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['contract_duration'] ?? '' ?>" placeholder="Nhập số tháng">
                         </div>
 
                         <!-- Trình độ -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Trình độ") ?></label>
-                            <input type="text" class="form-control py-3 rounded-4 bg-body-tertiary"  placeholder="<?= $jatbi->lang("Trình độ") ?>">
+                            <input name="education_level" type="text" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['education_level'] ?? '' ?>" placeholder="<?= $jatbi->lang("Trình độ") ?>">
                         </div>
 
                         <!-- Bằng cấp -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Bằng cấp") ?></label>
-                            <input type="text" class="form-control py-3 rounded-4 bg-body-tertiary"  placeholder="<?= $jatbi->lang("Bằng cấp") ?>">
+                            <input name="degree" type="text" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['degree'] ?? '' ?>" placeholder="<?= $jatbi->lang("Bằng cấp") ?>">
                         </div>
 
                         <!-- Công việc -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Công việc") ?> <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control py-3 rounded-4 bg-body-tertiary"  placeholder="<?= $jatbi->lang("Công việc") ?>">
+                            <select name="department" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                                <option value=""><?= $jatbi->lang("Chọn công việc") ?></option>
+                                <?php foreach ($department as $departmentId => $personName): 
+                                    $selected = isset($data[0]['department']) && $data[0]['department'] == $departmentId ? 'selected' : '';
+                                ?>
+                                    <option value="<?= $departmentId ?>" <?= $selected ?>>
+                                        <?= $personName ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
 
                         <!-- Chức vụ -->
                         <div class="col-lg-6">
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Chức vụ") ?> <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control py-3 rounded-4 bg-body-tertiary"  placeholder="<?= $jatbi->lang("Chức vụ") ?>">
+                            <select name="position_id" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                                <option value=""><?= $jatbi->lang("Chọn chức vụ") ?></option>
+                                <?php foreach ($position as $id => $name): 
+                                    $selected = isset($data[0]['position_id']) && $data[0]['position_id'] == $id ? 'selected' : '';
+                                ?>
+                                    <option value="<?= $id ?>" <?= $selected ?>>
+                                        <?= $name ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
-
                         <!-- Ngày tính lương -->
                         <div class="col-lg-12">
                             <h5 class="fw-bold text-body mt-4"><?= $jatbi->lang("Tiền lương") ?></h5>
                             <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Ngày tính lương") ?></label>
-                            <input type="date" name="salary_date" class="form-control py-3 rounded-4 bg-body-tertiary">
+                            <input type="date" name="salary_date" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data['salary_date'] ?? date('Y-m-d') ?>">
                         </div>
 
-                        <!-- Bảng tiền lương -->
+                        <!-- Tiền lương -->
                         <div class="col-lg-12">
+                            <h5 class="fw-bold text-body mt-4"><?= $jatbi->lang("Tiền lương") ?></h5>
+                            <p class="text-danger">* <?= $jatbi->lang("Tiền lương sẽ được tính bình quân cho các ngày công trong tháng") ?></p>
                             <table class="table table-bordered mt-3">
                                 <thead>
                                     <tr>
-                                        <th><?= $jatbi->lang("Nội dung") ?></th>
-                                        <th><?= $jatbi->lang("Số tiền") ?></th>
-                                        <th><?= $jatbi->lang("Ghi chú") ?></th>
-                                        <th></th>
+                                        <th><?= $jatbi->lang("Nội dung và Số tiền") ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><input type="text" name="salary_content[]" class="form-control"></td>
-                                        <td><input type="text" name="salary_amount[]" class="form-control"></td>
-                                        <td><input type="text" name="salary_note[]" class="form-control"></td>
-                                        <td><button type="button" class="btn btn-danger">🗑</button></td>
+                                        <td>
+                                            <select name="salary_content" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                                                <option value=""><?= $jatbi->lang("Chọn nội dung") ?></option>
+                                                <?php foreach ($salaries as $salary): 
+                                                    $selected = isset($data[0]['salary_content']) && $data[0]['salary_content'] == $salary['id'] ? 'selected' : '';
+                                                ?>
+                                                    <option value="<?= $salary['id'] ?>" <?= $selected ?>>
+                                                        <?= $salary['name'] ?> - <?= number_format($salary['price']) ?> VNĐ
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>                                                                                        
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
-                            <button type="button" class="btn btn-success">➕</button>
+                        </div>
+
+                        <!-- Tiền trợ cấp -->
+                        <div class="col-lg-12">
+                            <h5 class="fw-bold text-body mt-4"><?= $jatbi->lang("Tiền trợ cấp") ?></h5>
+                            <p class="text-danger">* <?= $jatbi->lang("Tiền trợ cấp sẽ được tính tổng trên 1 tháng") ?></p>
+                            <table class="table table-bordered mt-3">
+                                <thead>
+                                    <tr>
+                                        <th><?= $jatbi->lang("Nội dung và Số tiền") ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <select name="allowance_content" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                                                <option value=""><?= $jatbi->lang("Chọn trợ cấp") ?></option>
+                                                <?php foreach ($allowances as $allowance): 
+                                                    $selected = isset($data[0]['allowance_content']) && $data[0]['allowance_content'] == $allowance['id'] ? 'selected' : '';
+                                                ?>
+                                                    <option value="<?= $allowance['id'] ?>" <?= $selected ?>>
+                                                        <?= $allowance['name'] ?> - <?= number_format($allowance['price']) ?> VNĐ
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>                                                                                        
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Ghi Chú -->
+                        <div class="col-lg-12">
+                            <label class="fw-bold text-body mb-2"><?= $jatbi->lang("Ghi chú") ?></label>
+                            <input name="note" type="text" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?= $data[0]['note'] ?? '' ?>" placeholder="<?= $jatbi->lang("Ghi chú") ?>">
                         </div>
 
                         <!-- Gửi đơn -->
@@ -130,6 +190,7 @@
                                 <?= $jatbi->lang("Gửi đơn") ?>
                             </button>
                         </div>
+
                     </div>
                 </form>
             </div>
