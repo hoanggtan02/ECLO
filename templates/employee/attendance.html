@@ -1,325 +1,310 @@
 <div class="container">
-    <!-- Breadcrumb và tiêu đề -->
     <div class="mb-3 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
-            <ul class="breadcrumb small mb-0">
-                <li class="breadcrumb-item small">
-                    <a href="/" class="pjax-load link-secondary"><?=$jatbi->lang("Trang chủ")?></a>
-                </li>
-                <li class="breadcrumb-item small text-body" aria-current="page"><?=$title?></li>
-            </ul>
+      <div>
+        <h4 class="mb-0 fw-bold text-body"><?=$jatbi->lang("Chấm công")?></h4>
+        <ul class="breadcrumb small mb-0">
+          <li class="breadcrumb-item small">
+            <a href="/" class="pjax-load link-secondary">Trang chủ</a>
+          </li>
+          <li class="breadcrumb-item small text-body" aria-current="page">
+            <?=$title?>
+          </li>
+        </ul>
+      </div>
+      <div class="filter-search">
+        <div class="d-flex align-items-center justify-content-end">
+          <div class="dropdown">
+            <button
+              class="btn btn-primary-light fw-semibold border-0 rounded-pill small d-flex align-items-center"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i class="ti ti-filter fs-5 me-2"></i> <?=$jatbi->lang("Điều kiện lọc")?>
+            </button>
+            <div
+              class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width"
+              style="--min-width: 300px"
+            >
+              <div class="fw-semibold py-2 px-3"><?=$jatbi->lang("Điều kiện lọc")?></div>
+              <hr class="border-secondary border-opacity-50 my-2" />
+              <div class="px-3">
+                <select name="personnels" class="form-select filter-name mt-2">
+                  <option value=""><?=$jatbi->lang("Nhân viên")?></option>
+                  <?php foreach ($employees as $emp): ?>
+                    <option value="<?=$emp['sn']?>" <?= (isset($_GET['personnels']) && $_GET['personnels'] == $emp['sn']) ? 'selected' : '' ?>><?=$emp['name']?></option>
+                  <?php endforeach; ?>
+                </select>
+                <select name="month" class="form-select filter-name mt-2">
+                  <option value=""><?=$jatbi->lang("Tháng")?></option>
+                  <?php for ($i = 1; $i <= 12; $i++): ?>
+                    <option value="<?=$i?>" <?= ($month == $i) ? 'selected' : '' ?>><?=$i?></option>
+                  <?php endfor; ?>
+                </select>
+                <select name="year" class="form-select filter-name mt-2">
+                  <option value=""><?=$jatbi->lang("Năm")?></option>
+                  <?php for ($i = date('Y') - 5; $i <= date('Y') + 5; $i++): ?>
+                    <option value="<?=$i?>" <?= ($year == $i) ? 'selected' : '' ?>><?=$i?></option>
+                  <?php endfor; ?>
+                </select>
+              </div>
+              <hr class="border-secondary border-opacity-50 my-2" />
+              <div class="px-3 py-2 text-end">
+                <button
+                  type="button"
+                  class="btn btn-light px-3 py-2 rounded-pill reset-filter"
+                >
+                  <?=$jatbi->lang("Làm mới")?>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary px-3 py-2 rounded-pill button-filter"
+                >
+                  <?=$jatbi->lang("Tìm")?>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-
-    <!-- Thanh công cụ -->
-    <div class="card-header border-0 pb-0 pt-6">
-        <form method="GET" action="/manager/attendance" class="pjax-load search-form w-100" data-pjax-state="">
-            <div class="row g-4 align-items-center">
-                <div class="col-sm-3">
-                    <div class="d-flex align-items-center position-relative my-1">
-                        <span class="svg-icon svg-icon-1 position-absolute ms-6">
-                            <i class="ti ti-search"></i>
-                        </span>
-                        <input type="text" name="name" class="form-control form-control-solid w-100 ps-14 search" value="<?=$_GET['name'] ?? ''?>" placeholder="<?=$jatbi->lang("Tìm kiếm")?>">
-                    </div>
-                </div>
-                <div class="col-sm-auto ms-auto">
-                    <div class="d-flex">
-                        <a href="/manager/attendance/excel" class="btn btn-primary me-3"><?=$jatbi->lang("Xuất Excel")?></a>
-                        <a href="/manager/attendance/excel_pro" class="btn btn-primary me-3"><?=$jatbi->lang("Xuất Excel theo công")?></a>
-                        <div class="hstack gap-2">
-                            <button type="button" class="btn btn-light-primary" data-bs-toggle="offcanvas" href="#offcanvasExample">
-                                <i class="ti ti-filter"></i> <?=$jatbi->lang("Thêm điều kiện lọc")?>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+  
+    <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+      <div class="card-body">
+        <table
+          id="datatable"
+          data-table
+          class="table align-middle"
+          data-type="POST"
+          data-server="true"
+          data-processing="true"
+          data-page-length="10"
+          data-searching="true"
+          data-paging="true"
+          data-state-save="true"
+          style="width: 100%"
+        >
+          <thead>
+            <tr>
+              <th
+                data-name="name"
+                data-orderable="true"
+                class="text-nowrap"
+                data-visible="true"
+                data-class=""
+              >
+                <?=$jatbi->lang("Họ và Tên")?>
+              </th>
+              <th
+                data-name="department"
+                data-orderable="true"
+                class="text-nowrap"
+                data-visible="true"
+                data-class="text-nowrap"
+              >
+                <?=$jatbi->lang("Phòng ban")?>
+              </th>
+              <th
+                data-name="attendance"
+                data-orderable="false"
+                class="text-nowrap"
+                data-visible="true"
+                data-class="text-center"
+              >
+                <?=$jatbi->lang("Chấm công")?>
+              </th>
+            </tr>
+          </thead>
+        </table>
+  
+        <!-- Legend Section -->
+        <div class="mt-4">
+          <div class="row">
+            <div class="col-lg-3">
+              <div class="d-flex justify-content-start align-items-center mb-2">
+                <div class="p-3 me-2 border status-not-checked"></div>
+                <span><?=$jatbi->lang("Chưa chấm công về")?></span>
+              </div>
+              <div class="d-flex justify-content-start align-items-center mb-2">
+                <div class="p-3 me-2 border status-late"></div>
+                <span><?=$jatbi->lang("Không chấm công trễ ngày")?></span>
+              </div>
+              <div class="d-flex justify-content-start align-items-center mb-2">
+                <div class="p-3 me-2 border status-checked"></div>
+                <span><?=$jatbi->lang("Chấm công đủ")?></span>
+              </div>
+              <div class="d-flex justify-content-start align-items-center mb-2">
+                <div class="p-3 me-2 border status-late-not-checked"></div>
+                <span><?=$jatbi->lang("Trễ + Chưa chấm công về")?></span>
+              </div>
+              <div class="d-flex justify-content-start align-items-center mb-2">
+                <div class="p-3 me-2 border status-day-off"></div>
+                <span><?=$jatbi->lang("OFF theo ca làm việc")?></span>
+              </div>
+              <div class="d-flex justify-content-start align-items-center mb-2">
+                <div class="p-3 me-2 border status-off-permitted"></div>
+                <span><?=$jatbi->lang("OFF có xin phép")?></span>
+              </div>
             </div>
-            <br>
-            <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
-                <div class="offcanvas-header bg-light">
-                    <h5 class="offcanvas-title" id="offcanvasExampleLabel"><?=$jatbi->lang("Thêm điều kiện lọc")?></h5>
-                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                </div>
-                <div class="offcanvas-body">
-                    <div class="filer-item month mb-3">
-                        <label class="form-label"><?=$jatbi->lang("Tháng")?></label>
-                        <select name="month" class="form-control" style="width: 100%">
-                            <option value=""><?=$jatbi->lang("Tháng")?></option>
-                            <?php for ($i = 1; $i <= 12; $i++): ?>
-                                <option value="<?=$i?>" <?= ($month == $i) ? 'selected' : '' ?>><?=$i?></option>
-                            <?php endfor; ?>
-                        </select>
-                    </div>
-                    <div class="filer-item year mb-3">
-                        <label class="form-label"><?=$jatbi->lang("Năm")?></label>
-                        <select name="year" class="form-control" style="width: 100%">
-                            <option value=""><?=$jatbi->lang("Năm")?></option>
-                            <?php for ($i = date('Y') - 5; $i <= date('Y') + 5; $i++): ?>
-                                <option value="<?=$i?>" <?= ($year == $i) ? 'selected' : '' ?>><?=$i?></option>
-                            <?php endfor; ?>
-                        </select>
-                    </div>
-                    <div class="filer-item personnels mb-3">
-                        <label class="form-label"><?=$jatbi->lang("Nhân viên")?></label>
-                        <select name="personnels" class="form-control" style="width: 100%">
-                            <option value=""><?=$jatbi->lang("Nhân viên")?></option>
-                            <?php foreach ($employees as $emp): ?>
-                                <option value="<?=$emp['sn']?>" <?= (isset($_GET['personnels']) && $_GET['personnels'] == $emp['sn']) ? 'selected' : '' ?>><?=$emp['name']?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                <div class="offcanvas-footer border-top p-3 text-center hstack gap-2">
-                    <button type="button" class="btn btn-light w-100" data-bs-dismiss="offcanvas"><?=$jatbi->lang("Hủy")?></button>
-                    <button type="submit" class="btn btn-success w-100" data-bs-dismiss="offcanvas"><?=$jatbi->lang("Thêm điều kiện")?></button>
-                </div>
+            <div class="col-lg-9">
+              <div class="row">
+                <?php 
+                if(isset($leave_types)){
+                  $count = 0;
+                  foreach ($leave_types as $leaveType): 
+                    if ($count % 6 == 0):
+                ?>
+                  <div class="col-lg-3">
+                <?php endif; ?>
+                  <div class="d-flex justify-content-start align-items-center mb-2">
+                    <div class="p-3 me-2 border status-off-permitted"><?=$leaveType['Code']?></div>
+                    <span><?=$leaveType['Name']?></span>
+                  </div>
+                <?php 
+                  $count++;
+                  if ($count % 6 == 0):
+                ?>
+                  </div>
+                <?php endif; ?>
+                <?php endforeach; ?>
+                <?php if ($count % 6 != 0): ?>
+                  </div>
+                <?php endif; } ?>
+              </div>
             </div>
-        </form>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <!-- Bảng chấm công -->
-    <div class="card-body">
-        <div class="pjax-content-load">
-            <div class="table-responsive">
-                <table class="table table-bordered align-top small" id="attendanceTable">
-                    <thead>
-                        <tr>
-                            <td class="fw-bold align-middle text-center p-1" rowspan="2"><?=$jatbi->lang("Ngày")?></td>
-                            <?php
-                            $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
-                            $daysOfWeek = [
-                                1 => 'T2',
-                                2 => 'T3',
-                                3 => 'T4',
-                                4 => 'T5',
-                                5 => 'T6',
-                                6 => 'T7',
-                                7 => 'CN'
-                            ];
-                            for ($day = 1; $day <= $daysInMonth; $day++):
-                                $date = "$year-$month-$day";
-                                $dayOfWeek = date('N', strtotime($date));
-                                $dayLabel = $daysOfWeek[$dayOfWeek];
-                                $background = '';
-                                if ($dayOfWeek == 6) {
-                                    $background = 'background: #ffe7ca';
-                                } elseif ($dayOfWeek == 7) {
-                                    $background = 'background: #e1ffca';
-                                }
-                            ?>
-                                <td class="text-center align-middle fw-bold small p-1" style="<?=$background?>"><?=$dayLabel?></td>
-                            <?php endfor; ?>
-                        </tr>
-                        <tr>
-                            <?php
-                            for ($day = 1; $day <= $daysInMonth; $day++):
-                                $date = "$year-$month-$day";
-                                $dayOfWeek = date('N', strtotime($date));
-                                $background = '';
-                                if ($dayOfWeek == 6) {
-                                    $background = 'background: #ffe7ca';
-                                } elseif ($dayOfWeek == 7) {
-                                    $background = 'background: #e1ffca';
-                                }
-                            ?>
-                                <td class="text-center align-middle fw-bold small p-1" style="<?=$background?>"><?=str_pad($day, 2, '0', STR_PAD_LEFT)?></td>
-                            <?php endfor; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($data)): ?>
-                            <tr>
-                                <td colspan="<?=($daysInMonth + 1)?>" class="text-center"><?=$jatbi->lang("Không có dữ liệu")?></td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($data as $department): ?>
-                                <!-- Tiêu đề phòng ban -->
-                                <tr>
-                                    <td colspan="<?=($daysInMonth + 1)?>" class="fw-bold bg-light">
-                                        <?php
-                                        // Debug: Kiểm tra giá trị department_name
-                                        echo htmlspecialchars($department['department_name'] ?? 'Không có tên phòng ban');
-                                        ?>
-                                    </td>
-                                </tr>
-                                <?php if (empty($department['employees'])): ?>
-                                    <tr>
-                                        <td colspan="<?=($daysInMonth + 1)?>" class="text-center"><?=$jatbi->lang("Không có nhân viên trong phòng ban này")?></td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($department['employees'] as $row): ?>
-                                        <tr>
-                                            <td class="text-center"><?=$row['name']?></td>
-                                            <?php for ($day = 1; $day <= $daysInMonth; $day++): ?>
-                                                <td class="text-center">
-                                                    <?php
-                                                    // Debug: Kiểm tra nếu day_$day không tồn tại
-                                                    if (!isset($row["day_$day"])) {
-                                                        error_log("Missing day_$day for employee: " . json_encode($row));
-                                                    }
-                                                    $dayData = $row["day_$day"] ?? ["check_in" => null, "check_out" => null, "status" => []];
-                                                    $checkIn = $dayData['check_in'];
-                                                    $checkOut = $dayData['check_out'];
-                                                    $statuses = $dayData['status'] ?? [];
-                                                    $leaveTypeId = $dayData['leave_type_id'] ?? null;
-                                                    $leaveCode = $dayData['leave_code'] ?? null;
-                                                    $leaveName = $dayData['leave_name'] ?? null;
-                                                    $style = '';
-                                                    if (!empty($statuses)) {
-                                                        if (count($statuses) == 1) {
-                                                            if ($statuses[0] == 'off-permitted') {
-                                                                $style = 'status-off-permitted';
-                                                            } else {
-                                                                $style = 'status-' . $statuses[0];
-                                                            }
-                                                        } elseif (count($statuses) == 2 && in_array('late', $statuses) && in_array('not-checked', $statuses)) {
-                                                            $style = 'status-late-not-checked';
-                                                        }
-                                                    }
-                                                    ?>
-                                                    <div class="<?=$style?>">
-                                                        <?php if ($checkIn || $checkOut): ?>
-                                                            <?=$checkIn ? $checkIn : ''?>  <?=$checkOut ? $checkOut : ''?>
-                                                        <?php elseif (in_array('day-off', $statuses)): ?>
-                                                            <?=$jatbi->lang("OFF")?>
-                                                        <?php elseif (in_array('off-permitted', $statuses)): ?>
-                                                            <?php if ($leaveCode): ?>
-                                                                <?=$leaveCode?>
-                                                            <?php else: ?>
-                                                                <?=$jatbi->lang("OFF")?>
-                                                            <?php endif; ?>
-                                                        <?php else: ?>
-                                                            <!-- Để trống nếu là no-record -->
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </td>
-                                            <?php endfor; ?>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-            <div class="mt-4">
-                <div class="row">
-                    <!-- Cột trạng thái cố định -->
-                    <div class="col-lg-3">
-                        <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border status-not-checked"></div>
-                            <span><?=$jatbi->lang("Chưa chấm công về")?></span>
-                        </div>
-                        <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border status-late"></div>
-                            <span><?=$jatbi->lang("Không chấm công trễ ngày")?></span>
-                        </div>
-                        <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border status-checked"></div>
-                            <span><?=$jatbi->lang("Chấm công đủ")?></span>
-                        </div>
-                        <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border status-late-not-checked"></div>
-                            <span><?=$jatbi->lang("Trễ + Chưa chấm công về")?></span>
-                        </div>
-                        <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border status-day-off"></div>
-                            <span><?=$jatbi->lang("OFF theo ca làm việc")?></span>
-                        </div>
-                        <div class="d-flex justify-content-start align-items-center mb-2">
-                            <div class="p-3 me-2 border status-off-permitted"></div>
-                            <span><?=$jatbi->lang("OFF có xin phép")?></span>
-                        </div>
-                    </div>
-            
-                    <!-- Cột trạng thái động từ $leave_types -->
-                    <div class="col-lg-9">
-                        <div class="row">
-                            <?php 
-                            $count = 0;
-                            foreach ($leave_types as $leaveType): 
-                                if ($count % 6 == 0): // Mỗi 6 phần tử sẽ tạo cột mới
-                            ?>
-                                <div class="col-lg-3">
-                            <?php endif; ?>
-                                    <div class="d-flex justify-content-start align-items-center mb-2">
-                                        <div class="p-3 me-2 border status-off-permitted">
-                                            <?=$leaveType['Code']?>
-                                        </div>
-                                        <span><?=$leaveType['Name']?></span>
-                                    </div>
-                            <?php 
-                                $count++;
-                                if ($count % 6 == 0): // Đóng cột sau mỗi 6 phần tử
-                            ?>
-                                </div>
-                            <?php endif; ?>
-                            <?php endforeach; ?>
-                            
-                            <!-- Đóng cột nếu chưa đủ 6 phần tử cuối cùng -->
-                            <?php if ($count % 6 != 0): ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-
-    <!-- Nút hành động -->
-    <!-- <div class="action-buttons">
-        <button class="btn btn-danger" data-url="/manager/attendance-deleted" data-action="modal"><i class="ti ti-trash"></i></button>
-        <button class="btn btn-primary" data-url="/manager/attendance-add" data-action="modal"><i class="ti ti-plus"></i></button>
-        <button class="btn btn-info"><i class="ti ti-menu-2"></i></button>
-    </div> -->
 </div>
 
 <style>
-    .action-buttons {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        display: flex;
-        gap: 10px;
-    }
-    .action-buttons .btn {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    /* Định dạng cho ô màu trong phần chú thích */
-    .p-3.me-2.border {
-        height: 30px; /* Đặt chiều cao cố định */
-        padding: 0; /* Xóa padding mặc định của p-3 */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0; /* Ngăn ô màu bị co lại */
-    }
-    /* Các trạng thái cơ bản */
-    .status-not-checked { background-color: #FF9999; }
-    .status-late { background-color: #FFFF99; }
-    .status-checked { background-color: #99FF99; }
-    .status-late-not-checked {
-        background: linear-gradient(to bottom, #FFFF99 50%, #FF9999 50%);
-    }
-    .status-no-record { /* Không tô màu */ }
-    .status-day-off { background-color: #e6f3ff; }
-    
-    /* Trạng thái off-permitted với màu cố định giống "OFF có xin phép" */
-    .status-off-permitted { background-color: #ca9363; }
-    #attendanceTable th, #attendanceTable td {
-        text-align: center;
-        vertical-align: middle;
-    }
-    #attendanceTable td div {
-        padding: 5px;
-        min-height: 30px;
-    }
+
+/* Table styling */
+table th, table td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 2px; /* Giảm padding để ô nhỏ hơn */
+}
+
+/* Đảm bảo các ô trong bảng chấm công có kích thước nhỏ gọn */
+table td div {
+    min-height: 20px; /* Giảm chiều cao tối thiểu */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: 10px; /* Giảm kích thước chữ */
+    line-height: 1.1; /* Giảm khoảng cách dòng để chữ không bị tràn */
+}
+
+/* Background colors */
+.bg-info { background-color: #e7f1ff !important; }
+.bg-success { background-color: #e6ffed !important; }
+.bg-warning { background-color: #fff3cd !important; }
+.bg-danger { background-color: #f8d7da !important; }
+.bg-primary { background-color: #d1e7dd !important; }
+
+/* Status indicators */
+.p-3.me-2.border {
+    height: 20px; /* Giảm kích thước ô chỉ báo */
+    width: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px; /* Giảm kích thước chữ trong ô chỉ báo */
+}
+.status-not-checked { background-color: #FF9999; }
+.status-late { background-color: #FFFF99; }
+.status-checked { background-color: #99FF99; }
+.status-late-not-checked { background: linear-gradient(to bottom, #FFFF99 50%, #FF9999 50%); }
+.status-no-record { background-color: #FFFFFF; }
+.status-day-off { background-color: #e6f3ff; }
+.status-off-permitted { background-color: #ca9363; }
+
+/* Text color */
+.text-danger { color: #dc3545 !important; }
+
+/* Attendance details table */
+.attendance-details {
+    width: 100%;
+    border-collapse: collapse;
+}
+.attendance-details th, .attendance-details td {
+    border: 1px solid #ddd;
+    padding: 2px; /* Giảm padding */
+    text-align: center;
+    font-size: 10px; /* Giảm kích thước chữ */
+}
+
+/* Attendance table (bảng chấm công trong cột "Chấm công") */
+.attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.attendance-table th, .attendance-table td {
+    border: 1px solid #ddd;
+    padding: 2px; /* Giảm padding để ô nhỏ hơn */
+    text-align: center;
+    font-size: 10px; /* Giảm kích thước chữ */
+    line-height: 1.1; /* Giảm khoảng cách dòng */
+    width: 40px; /* Đặt chiều rộng cố định cho các ô */
+    height: 40px; /* Đặt chiều cao cố định cho các ô */
+}
+
+/* Header của bảng chấm công (ngày và thứ) */
+.attendance-table thead th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+/* Định dạng cho các ô dữ liệu trong bảng chấm công */
+.attendance-table tbody td {
+
+}
+
+/* Weekend header and cell styling */
+.attendance-table thead th.saturday {
+    background-color: #ffe7ca; /* Light orange for Saturday */
+}
+.attendance-table thead th.sunday{
+    background-color: #e1ffca; /* Light pink for Sunday */
+}
+
+/* Attendance grid (nếu sử dụng) */
+.attendance-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow-x: auto;
+}
+.attendance-grid-header {
+    display: flex;
+    flex-wrap: nowrap;
+}
+.attendance-grid-data {
+    display: flex;
+    flex-wrap: nowrap;
+}
+.attendance-grid-cell {
+    flex: 0 0 40px; /* Giảm chiều rộng ô */
+    height: 40px; /* Giảm chiều cao ô */
+    border: 1px solid #ddd;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px; /* Giảm kích thước chữ */
+    line-height: 1.1;
+    background-color: #fff;
+}
+.attendance-grid-header .attendance-grid-cell {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
 </style>
