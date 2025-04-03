@@ -95,12 +95,7 @@
                             'permission' => ['face_employee'],
                             'action' => ['data-url' => '/manager/face-viewimage?box='.$data['sn'], 'data-record-action' => 'modal']
                         ],
-                        [
-                            'type' => 'button',
-                            'name' => $jatbi->lang("Xem chấm công"), // Nút mới
-                            'permission' => [''], // Quyền mới, cần định nghĩa trong hệ thống
-                            'action' => ['data-url' => '/manager/timekeeping-view?box='.$data['sn'], 'data-action' => 'modal']
-                        ],
+                    
                         [
                             'type' => 'button',
                             'name' => $jatbi->lang("Sửa"),

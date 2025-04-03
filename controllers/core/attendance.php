@@ -12,9 +12,10 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
         "ORDER" => ["name" => "ASC"],
         "status" => "A",
     ]);
+    error_log("Employees for filter: " . print_r($vars['employees'], true));
 
     // Lấy tháng và năm từ query string (mặc định là tháng hiện tại)
-    $month = $app->xss($_GET['month'] ?? date('m'));
+    $month = sprintf("%02d", $app->xss($_GET['month'] ?? date('m')));
     $year = $app->xss($_GET['year'] ?? date('Y'));
     $vars['month'] = $month;
     $vars['year'] = $year;
@@ -22,7 +23,7 @@ $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $s
     // Tính số ngày trong tháng
     $firstDayOfMonth = new DateTime("$year-$month-01");
     $totalDays = (int)$firstDayOfMonth->format('t');
-    $vars['total_days'] = $totalDays;
+    $vars['totalDays'] = $totalDays;
 
     // Tạo mảng ngày và thứ trong tuần
     $daysOfWeek = [];
@@ -83,7 +84,6 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
         "LIMIT" => [$start, $length],
         "ORDER" => ["employee.name" => "ASC"],
         "employee.status" => "A",
-        
     ];
     if ($personnel) {
         $employeeConditions["AND"]["employee.sn"] = $personnel;
@@ -95,6 +95,7 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
             "department.personName[~]" => $searchValue,
         ];
     }
+
     // Build conditions for counting filtered employees
     $filteredConditions = [
         "employee.status" => "A"
@@ -118,6 +119,11 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
         "employee.sn"
     ], $filteredConditions);
     $filteredEmployees = count($filteredRecords);
+
+    // Log để kiểm tra
+    error_log("Total Employees (status=A): " . $totalEmployees);
+    error_log("Filtered Employees: " . $filteredEmployees);
+
     // Fetch employees with their departments
     $employees = $app->select("employee", [
         "[>]department" => ["departmentId" => "departmentId"]
@@ -127,6 +133,9 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
         "employee.departmentId",
         "department.personName(department_name)"
     ], $employeeConditions);
+
+    // Log danh sách nhân viên
+    error_log("Fetched Employees: " . print_r($employees, true));
 
     // Fetch attendance records for the month
     $recordConditions = [
@@ -158,11 +167,9 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
     ]) ?? [];
     $assignmentMap = [];
     foreach ($assignments as $assignment) {
-        // Chỉ lấy phân công gần nhất cho mỗi nhân viên
-        if (!isset($assignmentMap[$assignment['employee_id']])) {
-            $assignmentMap[$assignment['employee_id']] = $assignment;
-        }
+        $assignmentMap[$assignment['employee_id']][] = $assignment;
     }
+    error_log("Assignment Map: " . print_r($assignmentMap, true));
 
     // Fetch leave requests
     $leaveRequests = $app->select("leave_requests", [
@@ -171,6 +178,8 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
         "leave_requests.personSN",
         "leave_requests.start_date",
         "leave_requests.end_date",
+        "leave_requests.leave_days",
+        "leave_requests.note",
         "leavetype.Code",
         "leavetype.Name",
         "leavetype.LeaveTypeID"
@@ -178,13 +187,14 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
         "AND" => [
             "leave_requests.start_date[<=]" => "$year-$month-$totalDays 23:59:59",
             "leave_requests.end_date[>=]" => "$year-$month-01 00:00:00",
-            "leave_requests.Status" => 1 // Chỉ lấy các yêu cầu nghỉ phép đã được phê duyệt
+            "leavetype.Status" => "A"
         ]
     ]) ?? [];
     $leaveData = [];
     foreach ($leaveRequests as $request) {
         $leaveData[$request['personSN']][] = $request;
     }
+    error_log("Leave Data: " . print_r($leaveData, true));
 
     // Organize attendance records by employee and date
     $attendanceData = [];
@@ -220,11 +230,6 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
             "attendance" => ''
         ];
 
-        // Determine the time period for this employee
-        $assignment = $assignmentMap[$sn] ?? null;
-        $timeperiodId = $assignment ? $assignment['timeperiod_id'] : '1'; // Default to '1' if no assignment
-        $timePeriod = $timePeriodMap[$timeperiodId] ?? [];
-
         // Build attendance table for the month
         $attendanceTable = '<table class="attendance-table">';
         
@@ -249,6 +254,23 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
         for ($day = 1; $day <= $totalDays; $day++) {
             $date = "$year-$month-" . sprintf("%02d", $day);
             $dayOfWeek = (int)date('w', strtotime($date));
+
+            // Determine the time period for this employee on this specific day
+            $timeperiodId = '1'; // Default to '1' if no assignment
+            $currentDateTime = strtotime("$date 23:59:59");
+            if (isset($assignmentMap[$sn])) {
+                $employeeAssignments = $assignmentMap[$sn];
+                foreach ($employeeAssignments as $assignment) {
+                    $applyDateTime = strtotime($assignment['apply_date']);
+                    if ($applyDateTime <= $currentDateTime) {
+                        $timeperiodId = $assignment['timeperiod_id'];
+                    } else {
+                        break; // Since assignments are sorted by apply_date ASC, we can break once we pass the current date
+                    }
+                }
+            }
+            $timePeriod = $timePeriodMap[$timeperiodId] ?? [];
+
             $offKey = $dayMap[$dayOfWeek]['off'];
             $isDayOff = isset($timePeriod[$offKey]) && $timePeriod[$offKey] == 1;
 
@@ -257,15 +279,20 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
             $leaveTypeId = null;
             $leaveCode = null;
             $leaveName = null;
+            $leaveDays = 1; // Mặc định là 1 ngày
+            $leaveNote = null;
+
             foreach ($leaveData[$sn] ?? [] as $leave) {
-                $start = strtotime($leave['start_date']);
-                $end = strtotime($leave['end_date']);
-                $current = strtotime($date);
-                if ($current >= $start && $current <= $end) {
+                // Chuyển start_date và end_date thành ngày (bỏ giờ phút)
+                $startDate = date('Y-m-d', strtotime($leave['start_date']));
+                $endDate = date('Y-m-d', strtotime($leave['end_date']));
+                if ($date >= $startDate && $date <= $endDate) {
                     $isOffPermitted = true;
                     $leaveTypeId = $leave['LeaveTypeID'];
                     $leaveCode = $leave['Code'];
                     $leaveName = $leave['Name'];
+                    $leaveDays = $leave['leave_days'] ?? 1;
+                    $leaveNote = $leave['note'];
                     break;
                 }
             }
@@ -295,9 +322,8 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
                 $checkIn = date('H:i', min($times));
                 $checkOut = count($records) > 1 ? date('H:i', max($times)) : null;
 
-                // Determine status based on check-in/check-out times
-                $startTime = $timePeriod[$dayMap[$dayOfWeek]['start']] ?? '08:00'; // Default to 08:00
-                $endTime = $timePeriod[$dayMap[$dayOfWeek]['end']] ?? '17:00'; // Default to 17:00
+                $startTime = $timePeriod[$dayMap[$dayOfWeek]['start']] ?? '08:30';
+                $endTime = $timePeriod[$dayMap[$dayOfWeek]['end']] ?? '17:00';
                 $checkInStd = strtotime("$date $startTime");
                 $checkOutStd = strtotime("$date $endTime");
 
@@ -317,11 +343,21 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
             // Format the status
             $statusClass = '';
             $statusText = '';
+            $tooltip = '';
+
             if (!empty($status)) {
                 if (count($status) == 1) {
                     if ($status[0] == 'off-permitted') {
                         $statusClass = 'status-off-permitted';
                         $statusText = $leaveCode ? $leaveCode : $jatbi->lang("OFF");
+                        if ($leaveDays < 1) {
+                            $statusText .= ' (' . $jatbi->lang("Nửa ngày") . ')';
+                        }
+                        // Tạo tooltip với thông tin chi tiết
+                        $tooltip = 'Loại nghỉ: ' . htmlspecialchars($leaveName) . ', Số ngày: ' . $leaveDays;
+                        if (!empty($leaveNote)) {
+                            $tooltip .= ', Ghi chú: ' . htmlspecialchars($leaveNote);
+                        }
                     } else {
                         $statusClass = 'status-' . $status[0];
                         $statusText = $status[0] == 'day-off' ? $jatbi->lang("OFF") : '-';
@@ -332,12 +368,10 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
                 }
             }
 
-            // Thêm class saturday hoặc sunday cho ô dữ liệu
             $cellClass = $statusClass;
-            
 
             // Add cell to attendance table
-            $attendanceTable .= '<td class="' . $cellClass . '">';
+            $attendanceTable .= '<td class="' . $cellClass . '" title="' . $tooltip . '">';
             if ($checkIn && $checkOut) {
                 $attendanceTable .= $checkIn . '<br>' . $checkOut;
             } elseif ($checkIn && !$checkOut) {
