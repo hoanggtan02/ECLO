@@ -10,193 +10,252 @@
                 <h5 class="fw-bold text-body mb-3"><?=$title?></h5>
                 <form method="POST" action="<?=$_SERVER['REQUEST_URI']?>" onsubmit="handleSubmit(event)">
                     <div class="row g-3">
-                        <div class="col-lg-12">
-                            <div class="mb-3">
-                                <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Mã Khung thời gian")?> <span class="text-danger">*</span></label>
-                                <input type="text" name="acTzNumber" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Mã Khung thời gian")?>" value="<?=$data['acTzNumber'] ?? ''?>">
-                            </div> 
-                            <div class="mb-3">
-                                <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Tên Khung thời gian")?> <span class="text-danger">*</span></label>
-                                <input type="text" name="acTzname" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Tên Khung Thời gian")?>" value="<?=$data['acTzname'] ?? ''?>">
+                        <div class="col-lg-12"><br>
+                            <div class="mb-3 d-flex align-items-center gap-3">
+                                <div class="flex-grow-1">
+                                    <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Mã Thời Gian Làm việc")?> <span class="text-danger">*</span></label>
+                                    <input type="text" name="acTzNumber" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Mã Thời Gian Làm việc")?>" value="<?=$data['acTzNumber'] ?? ''?>">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Tên Thời Gian Làm Việc")?> <span class="text-danger">*</span></label>
+                                    <input type="text" name="acTzname" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Tên Thời Gian Làm việc")?>" value="<?=$data['acTzname'] ?? ''?>">
+                                </div>
                             </div>
                             <!-- Thứ 2 -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thứ 2")?></label>
-                                <div class="row timeperiod-row">
-                                    <div class="col-auto day-label">T2:</div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="monStart" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("00:00")?>" value="<?=$data['monStart'] ?? '00:00'?>">
-                                    </div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="monEnd" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("23:59")?>" value="<?=$data['monEnd'] ?? '23:59'?>">
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="mon_off" value="1" class="form-check-input off-checkbox" <?=isset($data['mon_off']) && $data['mon_off'] ? 'checked' : ''?>>
-                                        <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
-                                    </label>
-                                    <div class="mt-2">
-                                        <label class="fw-bold text-body"><?=$jatbi->lang("Số công")?></label>
-                                        <input type="number" step="0.1" name="mon_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['mon_work_credit'] ?? '1'?>">
-                                    </div>
-                                </div>
+                                <table class="table table-bordered bg-body-tertiary rounded-4">
+                                    <thead>
+                                        <tr>
+                                            <th><?= $jatbi->lang("Giờ bắt đầu") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Giờ kết thúc") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Số Công") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Ngày Nghỉ") ?><span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="monStart" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['monStart'] ?? '00:00'?>">
+                                            </td>
+                                            <td>
+                                                <input type="time" name="monEnd" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['monEnd'] ?? '23:59'?>">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="mon_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['mon_work_credit'] ?? '1'?>">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="mon_off" value="1" class="form-check-input off-checkbox" <?=isset($data['mon_off']) && $data['mon_off'] ? 'checked' : ''?>>
+                                                <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                             <!-- Thứ 3 -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thứ 3")?></label>
-                                <div class="row timeperiod-row">
-                                    <div class="col-auto day-label">T3:</div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="tueStart" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("00:00")?>" value="<?=$data['tueStart'] ?? '00:00'?>">
-                                    </div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="tueEnd" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("23:59")?>" value="<?=$data['tueEnd'] ?? '23:59'?>">
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="tue_off" value="1" class="form-check-input off-checkbox" <?=isset($data['tue_off']) && $data['tue_off'] ? 'checked' : ''?>>
-                                        <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
-                                    </label>
-                                    <div class="mt-2">
-                                        <label class="fw-bold text-body"><?=$jatbi->lang("Số công")?></label>
-                                        <input type="number" step="0.1" name="tue_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['tue_work_credit'] ?? '1'?>">
-                                    </div>
-                                </div>
+                                <table class="table table-bordered bg-body-tertiary rounded-4">
+                                    <thead>
+                                        <tr>
+                                            <th><?= $jatbi->lang("Giờ bắt đầu") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Giờ kết thúc") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Số Công") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Ngày Nghỉ") ?><span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="tueStart" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['tueStart'] ?? '00:00'?>">
+                                            </td>
+                                            <td>
+                                                <input type="time" name="tueEnd" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['tueEnd'] ?? '23:59'?>">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="tue_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['tue_work_credit'] ?? '1'?>">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="tue_off" value="1" class="form-check-input off-checkbox" <?=isset($data['tue_off']) && $data['tue_off'] ? 'checked' : ''?>>
+                                                <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                             <!-- Thứ 4 -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thứ 4")?></label>
-                                <div class="row timeperiod-row">
-                                    <div class="col-auto day-label">T4:</div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="wedStart" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("00:00")?>" value="<?=$data['wedStart'] ?? '00:00'?>">
-                                    </div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="wedEnd" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("23:59")?>" value="<?=$data['wedEnd'] ?? '23:59'?>">
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="wed_off" value="1" class="form-check-input off-checkbox" <?=isset($data['wed_off']) && $data['wed_off'] ? 'checked' : ''?>>
-                                        <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
-                                    </label>
-                                    <div class="mt-2">
-                                        <label class="fw-bold text-body"><?=$jatbi->lang("Số công")?></label>
-                                        <input type="number" step="0.1" name="wed_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['wed_work_credit'] ?? '1'?>">
-                                    </div>
-                                </div>
+                                <table class="table table-bordered bg-body-tertiary rounded-4">
+                                    <thead>
+                                        <tr>
+                                            <th><?= $jatbi->lang("Giờ bắt đầu") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Giờ kết thúc") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Số Công") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Ngày Nghỉ") ?><span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="wedStart" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['wedStart'] ?? '00:00'?>">
+                                            </td>
+                                            <td>
+                                                <input type="time" name="wedEnd" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['wedEnd'] ?? '23:59'?>">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="wed_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['wed_work_credit'] ?? '1'?>">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="wed_off" value="1" class="form-check-input off-checkbox" <?=isset($data['wed_off']) && $data['wed_off'] ? 'checked' : ''?>>
+                                                <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                             <!-- Thứ 5 -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thứ 5")?></label>
-                                <div class="row timeperiod-row">
-                                    <div class="col-auto day-label">T5:</div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="thursStart" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("00:00")?>" value="<?=$data['thursStart'] ?? '00:00'?>">
-                                    </div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="thursEnd" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("23:59")?>" value="<?=$data['thursEnd'] ?? '23:59'?>">
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="thu_off" value="1" class="form-check-input off-checkbox" <?=isset($data['thu_off']) && $data['thu_off'] ? 'checked' : ''?>>
-                                        <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
-                                    </label>
-                                    <div class="mt-2">
-                                        <label class="fw-bold text-body"><?=$jatbi->lang("Số công")?></label>
-                                        <input type="number" step="0.1" name="thu_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['thu_work_credit'] ?? '1'?>">
-                                    </div>
-                                </div>
+                                <table class="table table-bordered bg-body-tertiary rounded-4">
+                                    <thead>
+                                        <tr>
+                                            <th><?= $jatbi->lang("Giờ bắt đầu") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Giờ kết thúc") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Số Công") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Ngày Nghỉ") ?><span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="thursStart" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['thursStart'] ?? '00:00'?>">
+                                            </td>
+                                            <td>
+                                                <input type="time" name="thursEnd" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['thursEnd'] ?? '23:59'?>">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="thu_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['thu_work_credit'] ?? '1'?>">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="thu_off" value="1" class="form-check-input off-checkbox" <?=isset($data['thu_off']) && $data['thu_off'] ? 'checked' : ''?>>
+                                                <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                             <!-- Thứ 6 -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thứ 6")?></label>
-                                <div class="row timeperiod-row">
-                                    <div class="col-auto day-label">T6:</div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="friStart" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("00:00")?>" value="<?=$data['friStart'] ?? '00:00'?>">
-                                    </div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="friEnd" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("23:59")?>" value="<?=$data['friEnd'] ?? '23:59'?>">
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="fri_off" value="1" class="form-check-input off-checkbox" <?=isset($data['fri_off']) && $data['fri_off'] ? 'checked' : ''?>>
-                                        <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
-                                    </label>
-                                    <div class="mt-2">
-                                        <label class="fw-bold text-body"><?=$jatbi->lang("Số công")?></label>
-                                        <input type="number" step="0.1" name="fri_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['fri_work_credit'] ?? '1'?>">
-                                    </div>
-                                </div>
+                                <table class="table table-bordered bg-body-tertiary rounded-4">
+                                    <thead>
+                                        <tr>
+                                            <th><?= $jatbi->lang("Giờ bắt đầu") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Giờ kết thúc") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Số Công") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Ngày Nghỉ") ?><span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="friStart" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['friStart'] ?? '00:00'?>">
+                                            </td>
+                                            <td>
+                                                <input type="time" name="friEnd" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['friEnd'] ?? '23:59'?>">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="fri_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['fri_work_credit'] ?? '1'?>">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="fri_off" value="1" class="form-check-input off-checkbox" <?=isset($data['fri_off']) && $data['fri_off'] ? 'checked' : ''?>>
+                                                <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                             <!-- Thứ 7 -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thứ 7")?></label>
-                                <div class="row timeperiod-row">
-                                    <div class="col-auto day-label">T7:</div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="satStart" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("00:00")?>" value="<?=$data['satStart'] ?? '00:00'?>">
-                                    </div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="satEnd" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("23:59")?>" value="<?=$data['satEnd'] ?? '23:59'?>">
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="sat_off" value="1" class="form-check-input off-checkbox" <?=isset($data['sat_off']) && $data['sat_off'] ? 'checked' : ''?>>
-                                        <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
-                                    </label>
-                                    <div class="mt-2">
-                                        <label class="fw-bold text-body"><?=$jatbi->lang("Số công")?></label>
-                                        <input type="number" step="0.1" name="sat_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['sat_work_credit'] ?? '1'?>">
-                                    </div>
-                                </div>
+                                <table class="table table-bordered bg-body-tertiary rounded-4">
+                                    <thead>
+                                        <tr>
+                                            <th><?= $jatbi->lang("Giờ bắt đầu") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Giờ kết thúc") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Số Công") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Ngày Nghỉ") ?><span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="satStart" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['satStart'] ?? '00:00'?>">
+                                            </td>
+                                            <td>
+                                                <input type="time" name="satEnd" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['satEnd'] ?? '23:59'?>">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="sat_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['sat_work_credit'] ?? '1'?>">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="sat_off" value="1" class="form-check-input off-checkbox" <?=isset($data['sat_off']) && $data['sat_off'] ? 'checked' : ''?>>
+                                                <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                             <!-- Chủ nhật -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Chủ nhật")?></label>
-                                <div class="row timeperiod-row">
-                                    <div class="col-auto day-label">CN:</div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="sunStart" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("00:00")?>" value="<?=$data['sunStart'] ?? '00:00'?>">
-                                    </div>
-                                    <div class="col time-input-wrapper">
-                                        <input type="time" name="sunEnd" class="form-control py-3 rounded-4 bg-body-tertiary time-input" placeholder="<?=$jatbi->lang("23:59")?>" value="<?=$data['sunEnd'] ?? '23:59'?>">
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="sun_off" value="1" class="form-check-input off-checkbox" <?=isset($data['sun_off']) && $data['sun_off'] ? 'checked' : ''?>>
-                                        <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
-                                    </label>
-                                    <div class="mt-2">
-                                        <label class="fw-bold text-body"><?=$jatbi->lang("Số công")?></label>
-                                        <input type="number" step="0.1" name="sun_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['sun_work_credit'] ?? '1'?>">
-                                    </div>
-                                </div>
+                                <table class="table table-bordered bg-body-tertiary rounded-4">
+                                    <thead>
+                                        <tr>
+                                            <th><?= $jatbi->lang("Giờ bắt đầu") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Giờ kết thúc") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Số Công") ?><span class="text-danger">*</span></th>
+                                            <th><?= $jatbi->lang("Ngày Nghỉ") ?><span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="sunStart" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['sunStart'] ?? '00:00'?>">
+                                            </td>
+                                            <td>
+                                                <input type="time" name="sunEnd" class="form-control py-3 rounded-4 bg-body-tertiary" value="<?=$data['sunEnd'] ?? '23:59'?>">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="sun_work_credit" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="0.0" value="<?=$data['sun_work_credit'] ?? '1'?>">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="sun_off" value="1" class="form-check-input off-checkbox" <?=isset($data['sun_off']) && $data['sun_off'] ? 'checked' : ''?>>
+                                                <span class="off-label"><?=$jatbi->lang("Ngày nghỉ")?></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <!-- Thời gian nghỉ -->
-                            <div class="mb-3">
-                                <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thời gian nghỉ")?></label>
-                                <input type="text" name="breakTime" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="VD: 12:00-13:00" value="<?=$data['breakTime'] ?? ''?>">
+                            <!-- Thời gian nghỉ và Trạng thái -->
+                            <div class="mb-3 d-flex align-items-center gap-3">
+                                <div class="flex-grow-1">
+                                    <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Thời gian nghỉ")?></label>
+                                    <input type="text" name="breakTime" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="VD: 12:00-13:00" value="<?=$data['breakTime'] ?? ''?>">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Trạng thái")?></label>
+                                    <select name="status" class="form-control py-3 rounded-4 bg-body-tertiary">
+                                        <option value="A" <?=isset($data['status']) && $data['status'] == "A" ? 'selected' : ''?>><?=$jatbi->lang("Hoạt động")?></option>
+                                        <option value="D" <?=isset($data['status']) && $data['status'] == "D" ? 'selected' : ''?>><?=$jatbi->lang("Không hoạt động")?></option>
+                                    </select>
+                                </div>
                             </div>
                             <!-- Ghi chú -->
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Ghi chú")?></label>
                                 <textarea name="note" class="form-control py-3 rounded-4 bg-body-tertiary" placeholder="<?=$jatbi->lang("Ghi chú")?>"><?=$data['note'] ?? ''?></textarea>
-                            </div>
-                            <!-- Trạng thái -->
-                            <div class="mb-3">
-                                <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Trạng thái")?></label>
-                                <select name="status" class="form-control py-3 rounded-4 bg-body-tertiary">
-                                    <option value="A" <?=isset($data['status']) && $data['status'] == "A" ? 'selected' : ''?>><?=$jatbi->lang("Hoạt động")?></option>
-                                    <option value="D" <?=isset($data['status']) && $data['status'] == "D" ? 'selected' : ''?>><?=$jatbi->lang("Không hoạt động")?></option>
-                                </select>
                             </div>
                         </div>
                         <div class="col-lg-12">
@@ -209,47 +268,3 @@
     </div>
 </div>
 
-<style>
-/* CSS cho form timeperiod */
-.timeperiod-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.day-label {
-    font-weight: bold;
-    color: #007bff; /* Màu xanh dương giống trong ảnh */
-    width: 40px; /* Đặt chiều rộng cố định để căn chỉnh thẳng hàng */
-    text-align: left;
-    line-height: 48px; /* Căn giữa theo chiều dọc */
-}
-
-.time-input-wrapper {
-    flex: 1; /* Chia đều không gian cho các ô nhập */
-    padding: 0 5px; /* Khoảng cách giữa các ô nhập */
-}
-
-.time-input {
-    width: 100%; /* Đảm bảo ô nhập chiếm toàn bộ chiều rộng của wrapper */
-    height: 48px; /* Đặt chiều cao cố định để các ô nhập thẳng hàng */
-}
-
-/* CSS cho phần checkbox "Ngày nghỉ" */
-.form-check-label {
-    display: inline-flex; /* Sử dụng inline-flex để căn chỉnh trên cùng một dòng */
-    align-items: center; /* Căn giữa theo chiều dọc */
-    margin-left: 40px; /* Căn chỉnh thụt lề để thẳng hàng với các ô nhập thời gian */
-}
-
-.off-checkbox:checked + .off-label {
-    color: #007bff; /* Màu xanh dương khi checkbox được chọn */
-    font-weight: bold; /* Bôi đậm khi checkbox được chọn */
-}
-
-.off-label {
-    margin-left: 8px; /* Khoảng cách giữa checkbox và nhãn */
-    color: #000; /* Màu mặc định khi checkbox không được chọn */
-    line-height: 1; /* Đảm bảo không bị lệch chiều cao */
-}
-</style>
