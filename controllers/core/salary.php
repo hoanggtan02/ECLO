@@ -223,7 +223,7 @@ function attendanceTracking($app) {
     $staff = $app->select("salary", [
         "[>]assignments"        => ["personSn" => "employee_id"],
         "[>]timeperiod"         => ["assignments.timeperiod_id" => "acTzNumber"],
-        // "[>]salaryadvances"     => ["personSn" => "sn"],
+        "[>]salaryadvances"     => ["personSn" => "sn"],
     ], [
         'salary.id',
         'salary.personSn',
@@ -249,8 +249,8 @@ function attendanceTracking($app) {
         'timeperiod.fri_off',
         'timeperiod.sat_off',
         'timeperiod.sun_off',
-        // 'salaryadvances.Amount',
-        // 'salaryadvances.AppliedDate',
+        'salaryadvances.Amount',
+        'salaryadvances.AppliedDate',
     ], ["salary.status" => 'A']);
     
     foreach ($staff as $s) {// duyệt qua từng staff 
@@ -427,22 +427,11 @@ function attendanceTracking($app) {
             "dailySalary"       => $dailySalary["price"]??0,
         ];
 
-        $salaryAdvance = $app->get("salaryadvances", [
-            "[>]staff-salary" => ["salaryId" => "id"],
-        ], [
-            "staff-salary.price",
-        ], [
-            "employee_contracts.person_sn"          => $s["personSn"],
-            "AppliedDate[<]"    => $date->format('Y-m-d'),
-            "ORDER"             => ["employee_contracts.working_date" => "DESC"],
-            "LIMIT"             => 1
-        ]);
-
-        // if($s["AppliedDate"] >= ($s["month"] . "-01") && $s["AppliedDate"] < $date->format('Y-m-d')) {
-        //     $insert = array_merge($insert, [
-        //         "salaryAdvance"     => $s["Amount"],
-        //     ]);
-        // }
+        if($s["AppliedDate"] >= ($s["month"] . "-01") && $s["AppliedDate"] < $date->format('Y-m-d')) {
+            $insert = array_merge($insert, [
+                "salaryAdvance"     => $s["Amount"],
+            ]);
+        }
 
         if($s["month"] != date("Y-m")) {
             $insert = array_merge($insert, [
