@@ -418,6 +418,13 @@ function attendanceTracking($app) {
             "LIMIT"             => 1
         ]);
 
+        $salaryAdvance = $app->sum("salaryadvances", "Amount", [
+            "sn"                => $s["personSn"],
+            "TypeID"            => '1',
+            "AppliedDate[>=]"   => $s["month"] . "-01",
+            "AppliedDate[<]"    => $date->format('Y-m-d'),
+        ]);
+
         $insert = [
             "workingDays"       => $workingDays,
             "totalWorkingDays"  => $totalWorkingDays,
@@ -425,13 +432,8 @@ function attendanceTracking($app) {
             "earlyLeave"        => $earlyLeave,
             "discipline"        => $discipline,
             "dailySalary"       => $dailySalary["price"]??0,
+            "salaryAdvance"     => $salaryAdvance,
         ];
-
-        if($s["AppliedDate"] >= ($s["month"] . "-01") && $s["AppliedDate"] < $date->format('Y-m-d')) {
-            $insert = array_merge($insert, [
-                "salaryAdvance"     => $s["Amount"],
-            ]);
-        }
 
         if($s["month"] != date("Y-m")) {
             $insert = array_merge($insert, [
