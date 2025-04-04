@@ -238,7 +238,7 @@
 
     //Sửa overtime
     $app->router("/overtime-edit", 'GET', function($vars) use ($app, $jatbi) {
-        $vars['title'] = $jatbi->lang("Sửa Overtime");
+        $vars['title'] = $jatbi->lang("Sửa Tăng Ca");
         $vars['nv1'] = array_map(function($employee) {
             return $employee['sn'] . ' - ' . $employee['name'];
         }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
