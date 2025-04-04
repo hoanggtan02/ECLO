@@ -17,7 +17,7 @@
 							<select name="employee" class="form-select bg-body-tertiary py-3 rounded-4" data-live-search="true">
 								<option value=""><?= $jatbi->lang("Chọn Nhân Viên") ?></option>
 								<?php foreach ($nv1 as $name): ?>
-								<?php $temp = substr($name, strpos($name, '- ') + 2); ?>
+								<?php $temp = strstr($name, ' -', true); ?>
 									<option value="<?= $name ?>" <?= isset($data['employee']) && $data['employee'] == $temp ? 'selected' : '' ?>>
 										<?= $name ?>
 									</option>
