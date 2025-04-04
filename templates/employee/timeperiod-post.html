@@ -194,8 +194,8 @@
                             <div class="mb-3">
                                 <label class="fw-bold text-body mb-2"><?=$jatbi->lang("Trạng thái")?></label>
                                 <select name="status" class="form-control py-3 rounded-4 bg-body-tertiary">
-                                    <option value="1" <?=isset($data['status']) && $data['status'] == 1 ? 'selected' : ''?>><?=$jatbi->lang("Hoạt động")?></option>
-                                    <option value="0" <?=isset($data['status']) && $data['status'] == 0 ? 'selected' : ''?>><?=$jatbi->lang("Không hoạt động")?></option>
+                                    <option value="A" <?=isset($data['status']) && $data['status'] == "A" ? 'selected' : ''?>><?=$jatbi->lang("Hoạt động")?></option>
+                                    <option value="D" <?=isset($data['status']) && $data['status'] == "D" ? 'selected' : ''?>><?=$jatbi->lang("Không hoạt động")?></option>
                                 </select>
                             </div>
                         </div>
