@@ -95,15 +95,7 @@
               >
                 <?=$jatbi->lang("Họ và Tên")?>
               </th>
-              <th
-                data-name="department"
-                data-orderable="true"
-                class="text-nowrap"
-                data-visible="true"
-                data-class="text-nowrap"
-              >
-                <?=$jatbi->lang("Phòng ban")?>
-              </th>
+              
               <th
                 data-name="attendance"
                 data-orderable="false"
@@ -185,6 +177,20 @@ table th, table td {
     text-align: center;
     vertical-align: middle;
     padding: 2px; /* Giảm padding để ô nhỏ hơn */
+}
+
+
+
+/* Định dạng cho hàng tiêu đề phòng ban */
+table tr.department-row td[data-name="name"] {
+    background-color: #f0f0f0; /* Màu nền xám nhạt cho tiêu đề phòng ban */
+    font-weight: bold; /* In đậm */
+    padding: 5px 8px; /* Khoảng cách hợp lý */
+}
+
+/* Định dạng cho hàng nhân viên */
+table tr.employee-row td[data-name="name"] {
+    padding-left: 20px; /* Thụt lề để phân biệt với tiêu đề phòng ban */
 }
 
 /* Đảm bảo các ô trong bảng chấm công có kích thước nhỏ gọn */
