@@ -150,7 +150,7 @@
 
    // Thêm timeperiod
     $app->router("/manager/timeperiod-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
-        $vars['title'] = $jatbi->lang("Khung thời gian");
+        $vars['title'] = $jatbi->lang("Thời gian làm việc");
         echo $app->render('templates/employee/timeperiod-post.html', $vars, 'global');
     })->setPermissions(['timeperiod.add']);
 
@@ -293,7 +293,7 @@
 
     // Sửa timeperiod
     $app->router("/manager/timeperiod-edit", 'GET', function($vars) use ($app, $jatbi) {
-        $vars['title'] = $jatbi->lang("Chỉnh sửa Khung thời gian");
+        $vars['title'] = $jatbi->lang("Chỉnh sửa thời gian làm việc");
         
         $acTzNumber = $app->xss($_GET['box'] ?? '');
         if (empty($acTzNumber)) {

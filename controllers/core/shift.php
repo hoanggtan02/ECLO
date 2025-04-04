@@ -6,11 +6,9 @@
 // Nhảy Ca
     $app->router("/shift", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Nhảy Ca");
-        $vars['add'] = '/shift-add';
-        $vars['deleted'] = '/shift-deleted';
-        $vars['edit'] = '/shift-edit';
-        $data = $app->select("shift", ["idshift", "employee","shift","day","timeStart", "timeEnd", "shift2", "day2", "timeStart2", "timeEnd2","statu", "dayCreat", "note"]);
-        $vars['data'] = $data;
+        $vars['tangca'] = array_map(function($employee) {
+            return $employee['acTzNumber'] . ' - ' . $employee['name'];
+        }, $app->select("timeperiod", ["name", "acTzNumber"], ["status" => "A"]));
         echo $app->render('templates/employee/shift.html', $vars);
     })->setPermissions(['shift']);
 
@@ -28,6 +26,8 @@
         $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
         $statu = $_POST['statu'] ?? ''; // Lọc theo trạng thái
+        $shift = $_POST['shift'] ?? ''; // Lọc theo trạng thái
+        $shift2 = $_POST['shift2'] ?? ''; // Lọc theo trạng thái
     
         // Fix lỗi ORDER cột
         $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
@@ -43,6 +43,9 @@
                 "OR" => [
                     "shift.employee[~]" => $searchValue,
                     "shift.note[~]" => $searchValue,
+                    "shift.shift[~]" => $searchValue,
+                    "shift.shift2[~]" => $searchValue,
+                    "shift.dayCreat[~]" => $searchValue,
                 ]
             ],
             "LIMIT" => [$start, $length],
@@ -51,6 +54,12 @@
     
         if (!empty($statu)) {
             $where["AND"]["shift.statu"] = $statu;
+        }
+        if (!empty($shift)) {
+            $where["AND"]["shift.shift"] = $shift;
+        }
+        if (!empty($shift2)) {
+            $where["AND"]["shift.shift2"] = $shift2;
         }
     
         // Đếm số bản ghi
@@ -70,11 +79,6 @@
 
             $temp = $shiftLabels[$data['shift']] ?? $jatbi->lang("Không xác định");
             $temp2 = $shiftLabels[$data['shift2']] ?? $jatbi->lang("Không xác định");
-
-            // $statuLabels = [
-            //     "1" => $jatbi->lang("Kích hoạt"),
-            //     "2" => $jatbi->lang("Không kích hoạt"),
-            // ];
 
             return [
                 "checkbox" => $app->component("box", ["data" => $data['idshift']]),

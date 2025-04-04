@@ -144,7 +144,7 @@
                 foreach ($apiResponse['data'] as $data) {
                     $check = $app->select("record","*",["id"=>$data['id']]);
                     if(count($check) == 0){
-                        $adjustedCreateTime = $data['createTime'] + (7 * 3600 * 1000);//Điều chỉnh thời gian: trừ 6 tiếng từ timestamp của API
+                        $adjustedCreateTime = $data['createTime'] + (6 * 3600 * 1000);//Điều chỉnh thời gian: trừ 6 tiếng từ timestamp của API
                         $insert = [
                             "id"   => $data['id'],
                             "personName" => $data['personName'] ?? "Không rõ",

@@ -1,477 +1,427 @@
-
 <?php
 if (!defined('ECLO')) die("Hacking attempt");
 $jatbi = new Jatbi($app);
 $setting = $app->getValueData('setting');
 
+// GET Route: Display the attendance page
 $app->router("/manager/attendance", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Chấm công");
-    $vars['add'] = '/manager/attendance-add';
-    $vars['deleted'] = '/manager/attendance-deleted';
 
     // Lấy danh sách nhân viên để hiển thị trong bộ lọc
     $vars['employees'] = $app->select("employee", ["sn", "name"], [
-        "ORDER" => ["name" => "ASC"]
+        "ORDER" => ["name" => "ASC"],
+        "status" => "A",
     ]);
+    error_log("Employees for filter: " . print_r($vars['employees'], true));
 
     // Lấy tháng và năm từ query string (mặc định là tháng hiện tại)
-    $month = $_GET['month'] ?? date('n');
-    $year = $_GET['year'] ?? date('Y');
+    $month = sprintf("%02d", $app->xss($_GET['month'] ?? date('m')));
+    $year = $app->xss($_GET['year'] ?? date('Y'));
     $vars['month'] = $month;
     $vars['year'] = $year;
-    $personnels = $_GET['personnels'] ?? '';
-    $searchValue = $_GET['name'] ?? '';
 
-    // Điều kiện lọc dữ liệu
-    $where = [
-        "AND" => [
-            "record.createTime[>=]" => "$year-01-01 00:00:00",
-            "record.createTime[<=]" => "$year-12-31 23:59:59",
-            "department.status" => "A",
-        ],
-        "ORDER" => ["employee.name" => "ASC", "record.createTime" => "ASC"]
+    // Tính số ngày trong tháng
+    $firstDayOfMonth = new DateTime("$year-$month-01");
+    $totalDays = (int)$firstDayOfMonth->format('t');
+    $vars['totalDays'] = $totalDays;
+
+    // Tạo mảng ngày và thứ trong tuần
+    $daysOfWeek = [];
+    for ($day = 1; $day <= $totalDays; $day++) {
+        $date = new DateTime("$year-$month-$day");
+        $daysOfWeek[$day] = $date->format('w'); // 0 (Chủ nhật) đến 6 (Thứ 7)
+    }
+    $vars['days_of_week'] = $daysOfWeek;
+
+    // Lấy danh sách loại nghỉ phép để hiển thị trong phần chú thích
+    $leaveTypes = $app->select("leavetype", [
+        "LeaveTypeID",
+        "Code",
+        "Name"
+    ], [
+        "Status" => "A",
+    ]);
+    $vars['leave_types'] = $leaveTypes;
+
+    echo $app->render('templates/employee/attendance.html', $vars);
+})->setPermissions(['attendance']);
+
+// POST Route: Handle DataTables server-side processing
+$app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+
+    // Log received POST data for debugging
+    error_log("Received POST Data: " . print_r($_POST, true));
+
+    // DataTables parameters
+    $draw = $_POST['draw'] ?? 0;
+    $start = $_POST['start'] ?? 0;
+    $length = $_POST['length'] ?? 10;
+    $searchValue = $_POST['search']['value'] ?? '';
+    $month = sprintf("%02d", $_POST['month'] ?? date('m'));
+    $year = $_POST['year'] ?? date('Y');
+    $personnel = $_POST['personnels'] ?? '';
+
+    // Tính số ngày trong tháng
+    $firstDayOfMonth = new DateTime("$year-$month-01");
+    $totalDays = (int)$firstDayOfMonth->format('t');
+
+    // Tạo mảng nhãn thứ trong tuần
+    $daysOfWeekLabels = [
+        1 => 'T2',
+        2 => 'T3',
+        3 => 'T4',
+        4 => 'T5',
+        5 => 'T6',
+        6 => 'T7',
+        0 => 'CN'
     ];
 
-    if (!empty($searchValue)) {
-        $where["AND"]["OR"] = [
-            "record.personSn[~]" => $searchValue,
+    // Build conditions for fetching employees
+    $employeeConditions = [
+        "LIMIT" => [$start, $length],
+        "ORDER" => ["employee.name" => "ASC"],
+        "employee.status" => "A",
+    ];
+    if ($personnel) {
+        $employeeConditions["AND"]["employee.sn"] = $personnel;
+    }
+    if ($searchValue) {
+        $employeeConditions["AND"]["OR"] = [
+            "employee.sn[~]" => $searchValue,
             "employee.name[~]" => $searchValue,
+            "department.personName[~]" => $searchValue,
         ];
     }
 
-    if (!empty($personnels)) {
-        $where["AND"]["record.personSn"] = $personnels;
+    // Build conditions for counting filtered employees
+    $filteredConditions = [
+        "employee.status" => "A"
+    ];
+    if ($personnel) {
+        $filteredConditions["employee.sn"] = $personnel;
+    }
+    if ($searchValue) {
+        $filteredConditions["OR"] = [
+            "employee.sn[~]" => $searchValue,
+            "employee.name[~]" => $searchValue,
+            "department.personName[~]" => $searchValue,
+        ];
     }
 
-    // Join bảng record, employee, department
-    $recordEmployeeData = $app->select("record", [
-        "[><]employee" => ["personSn" => "sn"],
-        "[>]department" => ["employee.departmentId" => "departmentId"]
+    // Count total and filtered employees
+    $totalEmployees = $app->count("employee", ["status" => "A"]);
+    $filteredRecords = $app->select("employee", [
+        "[>]department" => ["departmentId" => "departmentId"]
     ], [
-        "record.personSn(employee_sn)",
+        "employee.sn"
+    ], $filteredConditions);
+    $filteredEmployees = count($filteredRecords);
+
+    // Log để kiểm tra
+    error_log("Total Employees (status=A): " . $totalEmployees);
+    error_log("Filtered Employees: " . $filteredEmployees);
+
+    // Fetch employees with their departments
+    $employees = $app->select("employee", [
+        "[>]department" => ["departmentId" => "departmentId"]
+    ], [
+        "employee.sn",
         "employee.name",
         "employee.departmentId",
-        "department.personName(department_name)",
-        "record.createTime"
-    ], $where) ?? [];
+        "department.personName(department_name)"
+    ], $employeeConditions);
 
-    // Debug: Ghi log dữ liệu sau khi join
-    if (empty($recordEmployeeData)) {
-        error_log("No data found after joining record with employee and department for year: $year");
-    } else {
-        error_log("Found " . count($recordEmployeeData) . " records after joining: " . json_encode($recordEmployeeData));
+    // Nhóm nhân viên theo phòng ban
+    $groupedEmployees = [];
+    foreach ($employees as $employee) {
+        $departmentName = $employee['department_name'] ?? 'N/A';
+        if (!isset($groupedEmployees[$departmentName])) {
+            $groupedEmployees[$departmentName] = [];
+        }
+        $groupedEmployees[$departmentName][] = $employee;
     }
 
-    // Lấy tất cả dữ liệu từ timeperiod để sử dụng sau
+    // Log danh sách nhân viên
+    error_log("Fetched Employees: " . print_r($employees, true));
+
+    // Fetch attendance records for the month
+    $recordConditions = [
+        "AND" => [
+            "record.createTime[>=]" => "$year-$month-01 00:00:00",
+            "record.createTime[<=]" => "$year-$month-$totalDays 23:59:59"
+        ]
+    ];
+    if ($personnel) {
+        $recordConditions["AND"]["record.personSn"] = $personnel;
+    }
+    $records = $app->select("record", [
+        "personSn",
+        "createTime"
+    ], $recordConditions) ?? [];
+
+    // Fetch time periods
     $timePeriods = $app->select("timeperiod", [
-        "acTzNumber",
-        "monStart", "monEnd", "tueStart", "tueEnd", "wedStart", "wedEnd",
-        "thursStart", "thursEnd", "friStart", "friEnd", "satStart", "satEnd",
-        "sunStart", "sunEnd",
+        "acTzNumber", "monStart", "monEnd", "tueStart", "tueEnd", "wedStart", "wedEnd",
+        "thursStart", "thursEnd", "friStart", "friEnd", "satStart", "satEnd", "sunStart", "sunEnd",
         "mon_off", "tue_off", "wed_off", "thu_off", "fri_off", "sat_off", "sun_off"
-    ],[
-        "status" => "A",
-    ]);
-    $timePeriodMap = array_column($timePeriods, null, 'acTzNumber'); // Map theo acTzNumber
+    ], ["status" => "A"]) ?? [];
+    $timePeriodMap = array_column($timePeriods, null, 'acTzNumber');
 
-    // Debug: Ghi log dữ liệu timeperiod
-    error_log("Time period data: " . json_encode($timePeriodMap));
+    // Fetch assignments to map employees to time periods
+    $assignments = $app->select("assignments", ["employee_id", "timeperiod_id", "apply_date"], [
+        "apply_date[<=]" => "$year-$month-$totalDays 23:59:59",
+        "ORDER" => ["employee_id" => "ASC", "apply_date" => "ASC"]
+    ]) ?? [];
+    $assignmentMap = [];
+    foreach ($assignments as $assignment) {
+        $assignmentMap[$assignment['employee_id']][] = $assignment;
+    }
+    error_log("Assignment Map: " . print_r($assignmentMap, true));
 
-    // Lấy dữ liệu từ bảng leave_requests và join với leavetype
+    // Fetch leave requests
     $leaveRequests = $app->select("leave_requests", [
         "[>]leavetype" => ["LeaveId" => "LeaveTypeID"]
     ], [
         "leave_requests.personSN",
         "leave_requests.start_date",
         "leave_requests.end_date",
-        "leave_requests.LeaveId",
+        "leave_requests.leave_days",
+        "leave_requests.note",
         "leavetype.Code",
-        "leavetype.Name"
+        "leavetype.Name",
+        "leavetype.LeaveTypeID"
     ], [
         "AND" => [
-            "leave_requests.start_date[<=]" => "$year-$month-31 23:59:59",
+            "leave_requests.start_date[<=]" => "$year-$month-$totalDays 23:59:59",
             "leave_requests.end_date[>=]" => "$year-$month-01 00:00:00",
-            "Status" => 1 // Chỉ lấy những yêu cầu đã được phê duyệt
+            "leavetype.Status" => "A"
         ]
     ]) ?? [];
-
-    // Nhóm leave_requests theo personSN và lưu thông tin loại nghỉ phép
-    $leaveRequestsByEmployee = [];
+    $leaveData = [];
     foreach ($leaveRequests as $request) {
-        $personSN = $request['personSN'];
-        if (!isset($leaveRequestsByEmployee[$personSN])) {
-            $leaveRequestsByEmployee[$personSN] = [];
+        $leaveData[$request['personSN']][] = $request;
+    }
+    error_log("Leave Data: " . print_r($leaveData, true));
+
+    // Organize attendance records by employee and date
+    $attendanceData = [];
+    foreach ($records as $record) {
+        $sn = $record['personSn'];
+        $date = date('Y-m-d', strtotime($record['createTime']));
+        if (!isset($attendanceData[$sn])) {
+            $attendanceData[$sn] = [];
         }
-        $leaveRequestsByEmployee[$personSN][] = [
-            'start_date' => $request['start_date'],
-            'end_date' => $request['end_date'],
-            'leave_type_id' => $request['LeaveId'],
-            'leave_code' => $request['Code'],
-            'leave_name' => $request['Name']
-        ];
-    }
-
-    // Debug: Ghi log dữ liệu leave_requests
-    error_log("Leave requests data: " . json_encode($leaveRequestsByEmployee));
-
-    // Lấy tất cả loại nghỉ phép để tạo màu sắc động
-    $leaveTypes = $app->select("leavetype", [
-        "LeaveTypeID",
-        "Code",
-        "Name"
-    ],[
-        "Status" => "A",
-    ]);
-    $vars['leave_types'] = $leaveTypes;
-
-    // Tạo mảng màu sắc cho từng loại nghỉ phép
-    $leaveTypeColors = [];
-    $colors = [
-        '#f4a261', '#e76f51', '#2a9d8f', '#264653', '#e9c46a', '#f4e4bc', '#d4a5a5', '#a3bffa'
-    ]; // Danh sách màu sắc
-    foreach ($leaveTypes as $index => $leaveType) {
-        $leaveTypeColors[$leaveType['LeaveTypeID']] = $colors[$index % count($colors)];
-    }
-    $vars['leave_type_colors'] = $leaveTypeColors;
-
-    // Thêm timeperiod_id vào dữ liệu chấm công
-    $datas = [];
-    foreach ($recordEmployeeData as $record) {
-        $employeeSn = $record['employee_sn'];
-        $createTime = $record['createTime'];
-
-        // Truy vấn bảng assignments để lấy timeperiod_id dựa trên apply_date
-        $assignment = $app->select("assignments", [
-            "timeperiod_id"
-        ], [
-            "employee_id" => $employeeSn,
-            "apply_date[<=]" => $createTime,
-            "ORDER" => ["apply_date" => "DESC"],
-            "LIMIT" => 1,
-            
-        ]);
-
-        // Nếu không tìm thấy assignment, để timeperiod_id là null
-        $record['timeperiod_id'] = !empty($assignment) ? $assignment[0]['timeperiod_id'] : null;
-
-        // Debug: Ghi log timeperiod_id được chọn
-        error_log("Employee $employeeSn on $createTime: Selected timeperiod_id = " . ($record['timeperiod_id'] ?? 'null'));
-
-        $record['department_name'] = $record['department_name'] ?? 'Không xác định (departmentId: ' . ($record['departmentId'] ?? 'null') . ')';
-        $datas[] = $record;
-    }
-
-    // Lọc và nhóm dữ liệu theo tháng, năm
-    $groupedData = [];
-    if (empty($datas)) {
-        error_log("No data in \$datas to group for month: $month, year: $year");
-    } else {
-        foreach ($datas as $data) {
-            $createTime = $data['createTime'];
-            $recordMonth = (int)date('n', strtotime($createTime));
-            $recordYear = (int)date('Y', strtotime($createTime));
-            $recordDay = (int)date('d', strtotime($createTime));
-
-            if ($recordMonth == $month && $recordYear == $year) {
-                $employeeSn = $data['employee_sn'];
-                $departmentId = $data['departmentId'] ?? 'unknown';
-                $departmentName = $data['department_name'];
-                $employeeName = $data['name'] ?? 'Nhân viên không xác định (employee_sn: ' . $employeeSn . ')';
-                $dateKey = "$year-$month-$recordDay";
-
-                if (!isset($groupedData[$departmentId])) {
-                    $groupedData[$departmentId] = [
-                        "department_name" => $departmentName,
-                        "employees" => []
-                    ];
-                }
-
-                if (!isset($groupedData[$departmentId]['employees'][$employeeSn])) {
-                    $groupedData[$departmentId]['employees'][$employeeSn] = [
-                        "name" => $employeeName,
-                        "days" => [],
-                        "timeperiod_id" => $data['timeperiod_id'] // Lưu timeperiod_id cho nhân viên
-                    ];
-                }
-
-                if (!isset($groupedData[$departmentId]['employees'][$employeeSn]['days'][$dateKey])) {
-                    $groupedData[$departmentId]['employees'][$employeeSn]['days'][$dateKey] = [];
-                }
-
-                $groupedData[$departmentId]['employees'][$employeeSn]['days'][$dateKey][] = [
-                    'time' => $createTime,
-                    'timeperiod_id' => $data['timeperiod_id']
-                ];
-            }
+        if (!isset($attendanceData[$sn][$date])) {
+            $attendanceData[$sn][$date] = [];
         }
+        $attendanceData[$sn][$date][] = $record['createTime'];
     }
 
-    // Xử lý dữ liệu để hiển thị trong bảng
-    $departmentData = [];
-    foreach ($groupedData as $departmentId => $departmentInfo) {
-        $departmentData[$departmentId] = [
-            "department_name" => $departmentInfo['department_name'] ?? 'Không xác định',
-            "employees" => []
+    // Map days of the week to time period fields
+    $dayMap = [
+        1 => ['start' => 'monStart', 'end' => 'monEnd', 'off' => 'mon_off'],
+        2 => ['start' => 'tueStart', 'end' => 'tueEnd', 'off' => 'tue_off'],
+        3 => ['start' => 'wedStart', 'end' => 'wedEnd', 'off' => 'wed_off'],
+        4 => ['start' => 'thursStart', 'end' => 'thursEnd', 'off' => 'thu_off'],
+        5 => ['start' => 'friStart', 'end' => 'friEnd', 'off' => 'fri_off'],
+        6 => ['start' => 'satStart', 'end' => 'satEnd', 'off' => 'sat_off'],
+        0 => ['start' => 'sunStart', 'end' => 'sunEnd', 'off' => 'sun_off']
+    ];
+
+    // Format data for DataTables
+    $formattedData = [];
+    foreach ($groupedEmployees as $departmentName => $employeesInDepartment) {
+        // Thêm hàng tiêu đề cho phòng ban
+        $formattedData[] = [
+            "name" => '<strong>' . htmlspecialchars($departmentName) . '</strong>', // Tiêu đề phòng ban in đậm
+            "attendance" => '', // Không hiển thị chấm công cho hàng tiêu đề
+            "is_department" => true, // Đánh dấu đây là hàng tiêu đề phòng ban
+            "DT_RowClass" => 'department-row' // Thêm class cho hàng
         ];
 
-        foreach ($departmentInfo['employees'] as $employeeSn => $employeeInfo) {
-            $employeeData = [
-                "employee_sn" => $employeeSn,
-                "name" => $employeeInfo['name'] ?? 'Nhân viên không xác định',
+        // Thêm các hàng nhân viên thuộc phòng ban
+        foreach ($employeesInDepartment as $employee) {
+            $sn = $employee['sn'];
+            $row = [
+                "name" => htmlspecialchars($employee['name']), // Chỉ hiển thị tên nhân viên, không kèm phòng ban
+                "attendance" => '',
+                "is_department" => false, // Đánh dấu đây là hàng nhân viên
+                "DT_RowClass" => 'employee-row' // Thêm class cho hàng
             ];
 
-            // $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
-            $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
-
-            // Lấy timeperiod_id của nhân viên cho từng ngày
-            for ($day = 1; $day <= $daysInMonth; $day++) {
-                $dateKey = "$year-$month-" . sprintf("%02d", $day);
-                $currentDate = $dateKey . " 00:00:00";
-
-                // Truy vấn assignments để lấy timeperiod_id cho ngày hiện tại
-                $assignment = $app->select("assignments", [
-                    "timeperiod_id"
-                ], [
-                    "employee_id" => $employeeSn,
-                    "apply_date[<=]" => $currentDate,
-                    "ORDER" => ["apply_date" => "DESC"],
-                    "LIMIT" => 1
-                ]);
-
-                $timeperiodId = !empty($assignment) ? $assignment[0]['timeperiod_id'] : null;
-                $timePeriod = $timePeriodMap[$timeperiodId] ?? null;
-
-                // Nếu không có timeperiod, dùng mặc định
-                if (!$timePeriod) {
-                    $timePeriod = [
-                        "monStart" => "09:00", "monEnd" => "16:30", "tueStart" => "09:00", "tueEnd" => "16:30",
-                        "wedStart" => "09:00", "wedEnd" => "16:30", "thursStart" => "09:00", "thursEnd" => "16:30",
-                        "friStart" => "09:00", "friEnd" => "16:30", "satStart" => "09:00", "satEnd" => "16:30",
-                        "sunStart" => "09:00", "sunEnd" => "16:30",
-                        "mon_off" => 0, "tue_off" => 0, "wed_off" => 0, "thu_off" => 0, "fri_off" => 0, "sat_off" => 0, "sun_off" => 0
-                    ];
-                    error_log("No timeperiod found for employee $employeeSn on date $dateKey, using default");
+            // Build attendance table for the month
+            $attendanceTable = '<table class="attendance-table">';
+            
+            // Add header row for days and weekdays
+            $attendanceTable .= '<thead><tr>';
+            for ($day = 1; $day <= $totalDays; $day++) {
+                $date = "$year-$month-" . sprintf("%02d", $day);
+                $dayOfWeek = (int)date('w', strtotime($date));
+                $dayLabel = $daysOfWeekLabels[$dayOfWeek];
+                $headerClass = '';
+                if ($dayOfWeek == 6) {
+                    $headerClass = 'saturday';
+                } elseif ($dayOfWeek == 0) {
+                    $headerClass = 'sunday';
                 }
+                $attendanceTable .= '<th class="' . $headerClass . '">' . sprintf("%02d", $day) . '<br>(' . $dayLabel . ')</th>';
+            }
+            $attendanceTable .= '</tr></thead>';
 
-                // Ánh xạ ngày trong tuần
-                $dayMap = [
-                    1 => ['start' => 'monStart', 'end' => 'monEnd', 'off' => 'mon_off'],
-                    2 => ['start' => 'tueStart', 'end' => 'tueEnd', 'off' => 'tue_off'],
-                    3 => ['start' => 'wedStart', 'end' => 'wedEnd', 'off' => 'wed_off'],
-                    4 => ['start' => 'thursStart', 'end' => 'thursEnd', 'off' => 'thu_off'],
-                    5 => ['start' => 'friStart', 'end' => 'friEnd', 'off' => 'fri_off'],
-                    6 => ['start' => 'satStart', 'end' => 'satEnd', 'off' => 'sat_off'],
-                    7 => ['start' => 'sunStart', 'end' => 'sunEnd', 'off' => 'sun_off']
-                ];
+            // Add data row for attendance
+            $attendanceTable .= '<tbody><tr>';
+            for ($day = 1; $day <= $totalDays; $day++) {
+                $date = "$year-$month-" . sprintf("%02d", $day);
+                $dayOfWeek = (int)date('w', strtotime($date));
 
-                $dayOfWeek = date('N', strtotime($dateKey));
-                $isDayOff = (bool)$timePeriod[$dayMap[$dayOfWeek]['off']];
+                // Determine the time period for this employee on this specific day
+                $timeperiodId = '1'; // Default to '1' if no assignment
+                $currentDateTime = strtotime("$date 23:59:59");
+                if (isset($assignmentMap[$sn])) {
+                    $employeeAssignments = $assignmentMap[$sn];
+                    foreach ($employeeAssignments as $assignment) {
+                        $applyDateTime = strtotime($assignment['apply_date']);
+                        if ($applyDateTime <= $currentDateTime) {
+                            $timeperiodId = $assignment['timeperiod_id'];
+                        } else {
+                            break; // Since assignments are sorted by apply_date ASC, we can break once we pass the current date
+                        }
+                    }
+                }
+                $timePeriod = $timePeriodMap[$timeperiodId] ?? [];
 
-                // Kiểm tra xem ngày này có nằm trong khoảng thời gian xin nghỉ phép không
+                $offKey = $dayMap[$dayOfWeek]['off'];
+                $isDayOff = isset($timePeriod[$offKey]) && $timePeriod[$offKey] == 1;
+
+                // Check for leave requests (off-permitted)
                 $isOffPermitted = false;
                 $leaveTypeId = null;
                 $leaveCode = null;
                 $leaveName = null;
-                if (isset($leaveRequestsByEmployee[$employeeSn])) {
-                    foreach ($leaveRequestsByEmployee[$employeeSn] as $request) {
-                        $startDate = strtotime(date('Y-m-d', strtotime($request['start_date'])));
-                        $endDate = strtotime(date('Y-m-d', strtotime($request['end_date'])));
-                        $currentDateTimestamp = strtotime($dateKey);
+                $leaveDays = 1; // Mặc định là 1 ngày
+                $leaveNote = null;
 
-                        if ($currentDateTimestamp >= $startDate && $currentDateTimestamp <= $endDate) {
-                            $isOffPermitted = true;
-                            $leaveTypeId = $request['leave_type_id'];
-                            $leaveCode = $request['leave_code'];
-                            $leaveName = $request['leave_name'];
-                            error_log("Employee $employeeSn, Date $dateKey: Marked as off-permitted with LeaveTypeID $leaveTypeId");
-                            break;
-                        }
+                foreach ($leaveData[$sn] ?? [] as $leave) {
+                    $startDate = date('Y-m-d', strtotime($leave['start_date']));
+                    $endDate = date('Y-m-d', strtotime($leave['end_date']));
+                    if ($date >= $startDate && $date <= $endDate) {
+                        $isOffPermitted = true;
+                        $leaveTypeId = $leave['LeaveTypeID'];
+                        $leaveCode = $leave['Code'];
+                        $leaveName = $leave['Name'];
+                        $leaveDays = $leave['leave_days'] ?? 1;
+                        $leaveNote = $leave['note'];
+                        break;
                     }
                 }
 
-                // Gán trạng thái mặc định cho ngày
-                if ($isOffPermitted) {
-                    $status = ['off-permitted'];
-                    $employeeData["day_$day"] = [
-                        "check_in" => null,
-                        "check_out" => null,
-                        "status" => $status,
-                        "leave_type_id" => $leaveTypeId,
-                        "leave_code" => $leaveCode,
-                        "leave_name" => $leaveName
-                    ];
-                } elseif ($isDayOff) {
-                    $status = ['day-off'];
-                    $employeeData["day_$day"] = [
-                        "check_in" => null,
-                        "check_out" => null,
-                        "status" => $status
-                    ];
-                } else {
-                    $status = ['no-record'];
-                    $employeeData["day_$day"] = [
-                        "check_in" => null,
-                        "check_out" => null,
-                        "status" => $status
-                    ];
-                }
-            }
-
-            // Xử lý các ngày có bản ghi chấm công
-            foreach ($employeeInfo['days'] as $dateKey => $checkTimes) {
-                $day = (int)date('d', strtotime($dateKey));
-                $checkTimesSorted = array_column($checkTimes, 'time');
-                sort($checkTimesSorted);
-
+                // Get attendance records for this day
+                $records = $attendanceData[$sn][$date] ?? [];
                 $checkIn = null;
                 $checkOut = null;
                 $status = [];
 
-                // Truy vấn lại timeperiod_id cho ngày chấm công
-                $assignment = $app->select("assignments", [
-                    "timeperiod_id"
-                ], [
-                    "employee_id" => $employeeSn,
-                    "apply_date[<=]" => $dateKey . " 00:00:00",
-                    "ORDER" => ["apply_date" => "DESC"],
-                    "LIMIT" => 1
-                ]);
-
-                $timeperiodId = !empty($assignment) ? $assignment[0]['timeperiod_id'] : null;
-                $timePeriod = $timePeriodMap[$timeperiodId] ?? null;
-
-                if (!$timePeriod) {
-                    $timePeriod = [
-                        "monStart" => "09:00", "monEnd" => "16:30", "tueStart" => "09:00", "tueEnd" => "16:30",
-                        "wedStart" => "09:00", "wedEnd" => "16:30", "thursStart" => "09:00", "thursEnd" => "16:30",
-                        "friStart" => "09:00", "friEnd" => "16:30", "satStart" => "09:00", "satEnd" => "16:30",
-                        "sunStart" => "09:00", "sunEnd" => "16:30",
-                        "mon_off" => 0, "tue_off" => 0, "wed_off" => 0, "thu_off" => 0, "fri_off" => 0, "sat_off" => 0, "sun_off" => 0
-                    ];
-                    error_log("No timeperiod found for employee $employeeSn on date $dateKey (with check-in), using default");
-                }
-
-                $dayOfWeek = date('N', strtotime($dateKey));
-                $isDayOff = (bool)$timePeriod[$dayMap[$dayOfWeek]['off']];
-
-                // Kiểm tra xem ngày này có nằm trong khoảng thời gian xin nghỉ phép không
-                $isOffPermitted = false;
-                $leaveTypeId = null;
-                $leaveCode = null;
-                $leaveName = null;
-                if (isset($leaveRequestsByEmployee[$employeeSn])) {
-                    foreach ($leaveRequestsByEmployee[$employeeSn] as $request) {
-                        $startDate = strtotime(date('Y-m-d', strtotime($request['start_date'])));
-                        $endDate = strtotime(date('Y-m-d', strtotime($request['end_date'])));
-                        $currentDateTimestamp = strtotime($dateKey);
-
-                        if ($currentDateTimestamp >= $startDate && $currentDateTimestamp <= $endDate) {
-                            $isOffPermitted = true;
-                            $leaveTypeId = $request['leave_type_id'];
-                            $leaveCode = $request['leave_code'];
-                            $leaveName = $request['leave_name'];
-                            error_log("Employee $employeeSn, Date $dateKey (with check-in): Marked as off-permitted with LeaveTypeID $leaveTypeId");
-                            break;
-                        }
-                    }
-                }
-
                 if ($isOffPermitted) {
                     $status[] = 'off-permitted';
-                    if (count($checkTimesSorted) >= 2) {
-                        $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
-                        $checkOut = date('H:i', strtotime($checkTimesSorted[count($checkTimesSorted) - 1]));
-                    } elseif (count($checkTimesSorted) == 1) {
-                        $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
+                    if (!empty($records)) {
+                        $times = array_map('strtotime', $records);
+                        $checkIn = date('H:i', min($times));
+                        $checkOut = count($records) > 1 ? date('H:i', max($times)) : null;
                     }
-                    $employeeData["day_$day"] = [
-                        "check_in" => $checkIn,
-                        "check_out" => $checkOut,
-                        "status" => $status,
-                        "leave_type_id" => $leaveTypeId,
-                        "leave_code" => $leaveCode,
-                        "leave_name" => $leaveName
-                    ];
                 } elseif ($isDayOff) {
                     $status[] = 'day-off';
-                    if (count($checkTimesSorted) >= 2) {
-                        $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
-                        $checkOut = date('H:i', strtotime($checkTimesSorted[count($checkTimesSorted) - 1]));
-                    } elseif (count($checkTimesSorted) == 1) {
-                        $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
+                    if (!empty($records)) {
+                        $times = array_map('strtotime', $records);
+                        $checkIn = date('H:i', min($times));
+                        $checkOut = count($records) > 1 ? date('H:i', max($times)) : null;
                     }
-                    $employeeData["day_$day"] = [
-                        "check_in" => $checkIn,
-                        "check_out" => $checkOut,
-                        "status" => $status
-                    ];
+                } elseif (!empty($records)) {
+                    $times = array_map('strtotime', $records);
+                    $checkIn = date('H:i', min($times));
+                    $checkOut = count($records) > 1 ? date('H:i', max($times)) : null;
+
+                    $startTime = $timePeriod[$dayMap[$dayOfWeek]['start']] ?? '08:30';
+                    $endTime = $timePeriod[$dayMap[$dayOfWeek]['end']] ?? '17:00';
+                    $checkInStd = strtotime("$date $startTime");
+                    $checkOutStd = strtotime("$date $endTime");
+
+                    $lateMinutes = (strtotime($records[0]) - $checkInStd) / 60;
+                    $earlyMinutes = ($checkOutStd - strtotime(end($records))) / 60;
+
+                    if ($checkIn && $checkOut && $lateMinutes <= 30 && $earlyMinutes <= 30) {
+                        $status[] = 'checked';
+                    } else {
+                        if ($lateMinutes > 30) $status[] = 'late';
+                        if (!$checkOut || $earlyMinutes > 30) $status[] = 'not-checked';
+                    }
                 } else {
-                    $checkInStandard = $timePeriod[$dayMap[$dayOfWeek]['start']] ?? '09:00';
-                    $checkOutStandard = $timePeriod[$dayMap[$dayOfWeek]['end']] ?? '16:30';
-
-                    if (count($checkTimesSorted) >= 2) {
-                        $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
-                        $checkOut = date('H:i', strtotime($checkTimesSorted[count($checkTimesSorted) - 1]));
-
-                        $checkInTime = strtotime($checkTimesSorted[0]);
-                        $checkOutTime = strtotime($checkTimesSorted[count($checkTimesSorted) - 1]);
-                        $checkInHour = (int)date('H', $checkInTime);
-                        $checkInMinute = (int)date('i', $checkInTime);
-                        $checkOutHour = (int)date('H', $checkOutTime);
-                        $checkOutMinute = (int)date('i', $checkOutTime);
-
-                        $checkInStandardHour = (int)date('H', strtotime($checkInStandard));
-                        $checkInStandardMinute = (int)date('i', strtotime($checkInStandard));
-                        $checkOutStandardHour = (int)date('H', strtotime($checkOutStandard));
-                        $checkOutStandardMinute = (int)date('i', strtotime($checkOutStandard));
-
-                        $lateMinutes = ($checkInHour * 60 + $checkInMinute) - ($checkInStandardHour * 60 + $checkInStandardMinute);
-                        $earlyMinutes = ($checkOutStandardHour * 60 + $checkOutStandardMinute) - ($checkOutHour * 60 + $checkOutMinute);
-
-                        $isCheckInOnTime = ($lateMinutes <= 30);
-                        $isCheckOutOnTime = ($earlyMinutes <= 30);
-
-                        if ($isCheckInOnTime && $isCheckOutOnTime) {
-                            $status[] = 'checked';
-                        } else {
-                            if (!$isCheckInOnTime) {
-                                $status[] = 'late';
-                            }
-                            if (!$isCheckOutOnTime) {
-                                $status[] = 'not-checked';
-                            }
-                        }
-                    } elseif (count($checkTimesSorted) == 1) {
-                        $checkIn = date('H:i', strtotime($checkTimesSorted[0]));
-                        $status[] = 'not-checked';
-                    }
-                    $employeeData["day_$day"] = [
-                        "check_in" => $checkIn,
-                        "check_out" => $checkOut,
-                        "status" => $status
-                    ];
+                    $status[] = 'no-record';
                 }
-            }
 
-            $departmentData[$departmentId]['employees'][] = $employeeData;
+                // Format the status
+                $statusClass = '';
+                $statusText = '';
+                $tooltip = '';
+
+                if (!empty($status)) {
+                    if (count($status) == 1) {
+                        if ($status[0] == 'off-permitted') {
+                            $statusClass = 'status-off-permitted';
+                            $statusText = $leaveCode ? $leaveCode : $jatbi->lang("OFF");
+                            if ($leaveDays < 1) {
+                                $statusText .= ' (' . $jatbi->lang("Nửa ngày") . ')';
+                            }
+                            $tooltip = 'Loại nghỉ: ' . htmlspecialchars($leaveName) . ', Số ngày: ' . $leaveDays;
+                            if (!empty($leaveNote)) {
+                                $tooltip .= ', Ghi chú: ' . htmlspecialchars($leaveNote);
+                            }
+                        } else {
+                            $statusClass = 'status-' . $status[0];
+                            $statusText = $status[0] == 'day-off' ? $jatbi->lang("OFF") : '-';
+                        }
+                    } elseif (count($status) == 2 && in_array('late', $status) && in_array('not-checked', $status)) {
+                        $statusClass = 'status-late-not-checked';
+                        $statusText = '-';
+                    }
+                }
+
+                $cellClass = $statusClass;
+
+                // Add cell to attendance table
+                $attendanceTable .= '<td class="' . $cellClass . '" title="' . $tooltip . '">';
+                if ($checkIn && $checkOut) {
+                    $attendanceTable .= $checkIn . '<br>' . $checkOut;
+                } elseif ($checkIn && !$checkOut) {
+                    $attendanceTable .= $checkIn;
+                } elseif ($statusText) {
+                    $attendanceTable .= $statusText;
+                } else {
+                    $attendanceTable .= '-';
+                }
+                $attendanceTable .= '</td>';
+            }
+            $attendanceTable .= '</tr></tbody>';
+            $attendanceTable .= '</table>';
+
+            $row['attendance'] = $attendanceTable;
+            $formattedData[] = $row;
         }
     }
 
-    $vars['data'] = $departmentData;
+    // Prepare JSON response
+    $response = json_encode([
+        "draw" => $draw,
+        "recordsTotal" => $totalEmployees,
+        "recordsFiltered" => $filteredEmployees,
+        "data" => $formattedData
+    ]);
 
-    echo $app->render('templates/employee/attendance.html', $vars);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("JSON Encode Error: " . json_last_error_msg());
+    }
+
+    echo $response;
 })->setPermissions(['attendance']);
-
-
-
-// Route để xuất Excel (giả lập)
-$app->router("/manager/attendance/excel", 'GET', function($vars) use ($app, $jatbi) {
-    $app->header(['Content-Type' => 'application/json']);
-    echo json_encode(["status" => "success", "content" => "Đang xuất file Excel..."]);
-})->setPermissions(['attendance']);
-
-$app->router("/manager/attendance/excel_pro", 'GET', function($vars) use ($app, $jatbi) {
-    $app->header(['Content-Type' => 'application/json']);
-    echo json_encode(["status" => "success", "content" => "Đang xuất file Excel theo công..."]);
-})->setPermissions(['attendance']);
-
