@@ -210,11 +210,6 @@ $app->router("/advance-salary/edit/{id}", 'GET', function($vars) use ($app, $jat
 
     // Kiểm tra xem ứng lương có tồn tại không
     $advance = $app->select("salaryadvances", ["AdvanceID", "sn", "TypeID", "Amount", "AppliedDate", "Note"], ["AdvanceID" => $advanceID]);
-    // if (empty($advance)) {
-    //     // Nếu không tìm thấy, trả về lỗi hoặc chuyển hướng
-    //     $jatbi->error($jatbi->lang("Ứng lương không tồn tại"));
-    //     return;
-    // }
 
     // Lấy danh sách nhân viên từ bảng employee
     $employees = $app->select("employee", ["sn", "name"], [], ["name" => "ASC"]); // Sắp xếp theo tên
@@ -232,13 +227,13 @@ $app->router("/advance-salary/edit/{id}", 'GET', function($vars) use ($app, $jat
     $vars['data'] = [
         'AdvanceID' => $advance[0]['AdvanceID'],
         'sn' => $advance[0]['sn'],
-        'employee_name' => $advance[0]['employee_name'], // Tên nhân viên đã được lấy
+        'employee_name' => $advance[0]['employee_name'],
         'TypeID' => $advance[0]['TypeID'],
         'Amount' => $advance[0]['Amount'],
         'AppliedDate' => $advance[0]['AppliedDate'],
         'Note' => $advance[0]['Note'],
-        'edit' => 1, // Đánh dấu là chế độ chỉnh sửa
-        'id' => $advance[0]['AdvanceID'], // Truyền id để sử dụng trong form
+        'edit' => 1, 
+        'id' => $advance[0]['AdvanceID'], 
     ];
 
     echo $app->render('templates/employee/advance-salary-post.html', $vars, 'global');
@@ -249,7 +244,7 @@ $app->router("/advance-salary/edit/{id}", 'POST', function($vars) use ($app, $ja
         'Content-Type' => 'application/json',
     ]);
 
-    $advanceID = $vars['id']; // Lấy AdvanceID từ URL
+    $advanceID = $vars['id'];
 
     // Kiểm tra xem ứng lương có tồn tại không
     $existingAdvance = $app->get("salaryadvances", ["AdvanceID"], ["AdvanceID" => $advanceID]);
