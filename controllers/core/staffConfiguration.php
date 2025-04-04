@@ -148,7 +148,7 @@ $app->router("/staffConfiguration/department-edit/{id}", 'GET', function($vars) 
     else {
         echo $app->render('templates/common/error-modal.html', $vars, 'global');
     }
-})->setPermissions(['staffConfiguration.edit']);
+})->setPermissions(['staffConfiguration-department.edit']);
 
 $app->router("/staffConfiguration/department-edit/{id}", 'POST', function($vars) use ($app, $jatbi) {
     $app->header([
@@ -166,13 +166,13 @@ $app->router("/staffConfiguration/department-edit/{id}", 'POST', function($vars)
         $jatbi->logs('staffConfiguration','department-edit departmentId = '.$vars['id'],$insert);
         echo json_encode(['status'=>'success','content'=>$jatbi->lang("Cập nhật thành công")]);
     }
-})->setPermissions(['staffConfiguration.edit']);
+})->setPermissions(['staffConfiguration-department.edit']);
 
 //----------------------------------------Xóa phòng ban----------------------------------------
 $app->router("/staffConfiguration/department-delete", 'GET', function($vars) use ($app, $jatbi) {
     $vars['title'] = $jatbi->lang("Xóa Phòng ban");
     echo $app->render('templates/common/deleted.html', $vars, 'global');
-})->setPermissions(['staffConfiguration.delete']);
+})->setPermissions(['staffConfiguration-department.delete']);
 
 $app->router("/staffConfiguration/department-delete", 'POST', function($vars) use ($app,$jatbi) {
     $app->header([
@@ -191,7 +191,7 @@ $app->router("/staffConfiguration/department-delete", 'POST', function($vars) us
     else {
         echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
     }
-})->setPermissions(['staffConfiguration.delete']);
+})->setPermissions(['staffConfiguration-department.delete']);
 
 //========================================Chức vụ========================================
 $app->router("/staffConfiguration/position", 'GET', function($vars) use ($app, $jatbi, $setting) {
