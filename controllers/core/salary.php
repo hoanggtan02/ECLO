@@ -69,8 +69,6 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
 
     $app->select("salary", [
         "[>]employee" => ["personSn" => "sn"],
-        "[>]employee_contracts" => ["personSn" => "person_sn"],
-        "[>]staff-salary" => ["employee_contracts.salaryId" => "id"],
         ],
         [
         'salary.personSn',
@@ -87,14 +85,11 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
         'salary.reward',
         'salary.discipline',
         'salary.salaryAdvance',
-        'employee.name (employeeName)',
-        'employee_contracts.salaryId ',
-        // 'staff-salary.price (dailySalary)',
-        'staff-salary.priceValue',
+        'employee.name (personName)',
         ], $where, function ($data) use (&$datas,$jatbi,$app) {
             $datas[] = [
                 "numericalOrder"            => 0,
-                "personSn"                  => $data['personSn'] . " - " . $data['employeeName'],
+                "personSn"                  => $data['personSn'] . " - " . $data['personName'],
                 "departmentId"              => $data['departmentId'],
                 "workingDays"               => $data['workingDays'] . ' / ' . $data['totalWorkingDays'],
                 "insurance"                 => 0,
@@ -223,7 +218,6 @@ function attendanceTracking($app) {
     $staff = $app->select("salary", [
         "[>]assignments"        => ["personSn" => "employee_id"],
         "[>]timeperiod"         => ["assignments.timeperiod_id" => "acTzNumber"],
-        "[>]salaryadvances"     => ["personSn" => "sn"],
     ], [
         'salary.id',
         'salary.personSn',
@@ -249,8 +243,6 @@ function attendanceTracking($app) {
         'timeperiod.fri_off',
         'timeperiod.sat_off',
         'timeperiod.sun_off',
-        'salaryadvances.Amount',
-        'salaryadvances.AppliedDate',
     ], ["salary.status" => 'A']);
     
     foreach ($staff as $s) {// duyệt qua từng staff 
@@ -313,15 +305,15 @@ function attendanceTracking($app) {
                     } else $totalWorkingDays++;
                     if($timeMin) {
                         $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
+                        // $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
+                        // $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
                     }
                     break;
                 case 'Wednesday':
                     if($s['wed_off'] == '1') {
                         break;
                     } else $totalWorkingDays++;
-                    if(($timeMin)) {
+                    if($timeMin) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["wedStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["wedEnd"]);
@@ -331,7 +323,7 @@ function attendanceTracking($app) {
                     if($s['thu_off'] == '1') {
                         break;
                     } else $totalWorkingDays++;
-                    if(($timeMin)) {
+                    if($timeMin) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["thursStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["thursEnd"]);
@@ -341,7 +333,7 @@ function attendanceTracking($app) {
                     if($s['fri_off'] == '1') {
                         break;
                     } else $totalWorkingDays++;
-                    if(($timeMin)) {
+                    if($timeMin) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["friStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["friEnd"]);
@@ -351,7 +343,7 @@ function attendanceTracking($app) {
                     if($s['sat_off'] == '1') {
                         break;
                     } else $totalWorkingDays++;
-                    if(($timeMin)) {
+                    if($timeMin) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["satStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["satEnd"]);
@@ -361,7 +353,7 @@ function attendanceTracking($app) {
                     if($s['sun_off'] == '1') {
                         break;
                     } else $totalWorkingDays++;
-                    if(($timeMin)) {
+                    if($timeMin) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["sunStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["sunEnd"]);
@@ -407,13 +399,25 @@ function attendanceTracking($app) {
             $discipline += ($earlyLeave / $b["value"]) * $b["amount"];
         }
 
+        // $dailySalary = $app->get("employee_contracts", [
+        //     "[>]staff-salary" => ["salaryId" => "id"],
+        // ], [
+        //     "staff-salary.price",
+        // ], [
+        //     "employee_contracts.person_sn"          => $s["personSn"],
+        //     "employee_contracts.working_date[<]"    => $date->format('Y-m-d'),
+        //     "ORDER"             => ["employee_contracts.working_date" => "DESC"],
+        //     "LIMIT"             => 1
+        // ]);
+
         $dailySalary = $app->get("employee_contracts", [
-            "[>]staff-salary" => ["salaryId" => "id"],
+            "[>]contract_salary" => ["id" => "Id_contract"],
+            "[>]staff-salary" => ["contract_salary.Id_salary" => "id"], 
         ], [
             "staff-salary.price",
         ], [
             "employee_contracts.person_sn"          => $s["personSn"],
-            "employee_contracts.working_date[<]"    => $date->format('Y-m-d'),
+            "employee_contracts.working_date[<=]"    => $date->format('Y-m-d'),
             "ORDER"             => ["employee_contracts.working_date" => "DESC"],
             "LIMIT"             => 1
         ]);
