@@ -11,9 +11,9 @@ $app->router("/salaryCalculation", 'GET', function($vars) use ($app, $jatbi, $se
     // Lấy tham số lọc từ URL
     $vars['month'] = $app->xss($_GET['month'] ?? date('m'));
     $vars['year'] = $app->xss($_GET['year'] ?? date('Y'));
-    $vars['employeeFilter'] = array_map([$app, 'xss'], explode(',', $_GET['employee'] ?? '')?? "");
+    $vars['employeeFilter'] = array_map([$app, 'xss'], explode(',', $_GET['employee'] ?? '') ?? []);
 
-    $vars['salary'] = $app->select("staff-salary", ["id", "name", "price"], [
+    $vars['salary'] = $app->select("staff-salary", ["id", "name", "price", "priceValue"], [
         "type IN" => [1, 2],
         "status" => 'A'
     ]);
@@ -62,7 +62,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $orderColumn = $validColumns[$orderColumnIndex] ?? "personSn";
 
     // Lấy tham số lọc từ $_POST
-    $month = $app->xss($_POST['month'] ?? date('m'));
+    $month = str_pad($app->xss($_POST['month'] ?? date('m')), 2, '0', STR_PAD_LEFT);
     $year = $app->xss($_POST['year'] ?? date('Y'));
     $employeeFilter = array_map([$app, 'xss'], $_POST['employee'] ?? []);
 
@@ -131,18 +131,43 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $attendanceData[$sn][$date][] = $record['createTime'];
     }
 
+    // Lấy dữ liệu từ leave_requests, bao gồm SalaryType từ leavetype
     $leaveRequests = $app->select("leave_requests", [
         "[>]leavetype" => ["LeaveId" => "LeaveTypeID"]
     ], [
-        "leave_requests.personSN", "leave_requests.start_date", "leave_requests.end_date",
-        "leavetype.Code"
+        "leave_requests.personSN",
+        "leave_requests.start_date",
+        "leave_requests.end_date",
+        "leave_requests.leave_days",
+        "leavetype.SalaryType"
     ], [
         "AND" => ["leave_requests.start_date[<=]" => $monthEnd, "leave_requests.end_date[>=]" => $monthStart]
     ]) ?? [];
     $leaveData = [];
+    $leaveDaysMap = []; // Lưu danh sách các ngày nghỉ phép cho từng nhân viên
     foreach ($leaveRequests as $request) {
-        $leaveData[$request['personSN']][] = $request;
+        $sn = $request['personSN'];
+        $leaveData[$sn][] = $request;
+
+        // Tạo danh sách các ngày nghỉ phép
+        $start = max(strtotime($monthStart), strtotime($request['start_date']));
+        $end = min(strtotime($monthEnd), strtotime($request['end_date']));
+        $startDate = date('Y-m-d', $start);
+        $endDate = date('Y-m-d', $end);
+        $currentDate = $startDate;
+
+        if (!isset($leaveDaysMap[$sn])) {
+            $leaveDaysMap[$sn] = [];
+        }
+
+        // Thêm từng ngày trong khoảng thời gian nghỉ vào leaveDaysMap
+        while (strtotime($currentDate) <= strtotime($endDate)) {
+            $leaveDaysMap[$sn][$currentDate] = true;
+            $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
+        }
     }
+    error_log("Leave Data: " . print_r($leaveData, true));
+    error_log("Leave Days Map: " . print_r($leaveDaysMap, true));
 
     $overtimes = $app->select("overtime", ["employee_sn", "start", "end"], [
         "AND" => ["start[>=]" => $monthStart, "end[<=]" => $monthEnd]
@@ -160,23 +185,68 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $latetimeData[$lt['personSn']][] = $lt;
     }
 
-    $rewards = $app->select("reward_discipline", ["personSn", "amount", "type"], [
-        "date[~]" => "$year-$month%"
+    // Lấy dữ liệu từ reward_discipline
+    $rewards = $app->select("reward_discipline", ["personSN", "amount", "type"], [
+        "AND" => [
+            "apply_date[>=]" => "$year-$month-01",
+            "apply_date[<=]" => "$year-$month-$daysInMonth"
+        ]
     ]) ?? [];
     $rewardData = [];
     foreach ($rewards as $rd) {
-        $rewardData[$rd['personSn']][] = $rd;
+        $rewardData[$rd['personSN']][] = $rd;
     }
+    error_log("Reward Data: " . print_r($rewardData, true));
 
+    // Lấy dữ liệu từ salaryadvances
+    $monthStart = "$year-$month-01";
+    $monthEnd = "$year-$month-$daysInMonth";
     $advances = $app->select("salaryadvances", ["sn", "Amount", "TypeID"], [
-        "AppliedDate[~]" => "$year-$month%"
+        "AND" => [
+            "AppliedDate[>=]" => "$monthStart",
+            "AppliedDate[<=]" => "$monthEnd"
+        ]
     ]) ?? [];
     $advanceData = [];
     foreach ($advances as $ad) {
         $advanceData[$ad['sn']][] = $ad;
     }
+    error_log("Advance Data: " . print_r($advanceData, true));
 
-    $salaries = $app->select("staff-salary", ["id", "name", "price", "type"], ["type IN" => [1, 2], "status" => 'A']) ?? [];
+    // Lấy thông tin bảo hiểm của nhân viên (bản ghi mới nhất)
+    $insurances = $app->select("insurance", [
+        "employee", "money", "statu", "day"
+    ], [
+        "ORDER" => ["idbh" => "DESC"]
+    ]) ?? [];
+    $insuranceMap = [];
+    foreach ($insurances as $insurance) {
+        if (!isset($insuranceMap[$insurance['employee']])) {
+            $insuranceMap[$insurance['employee']] = $insurance;
+        }
+    }
+    error_log("Insurance Map: " . print_r($insuranceMap, true));
+
+    $contracts = $app->select("employee_contracts", ["id", "person_sn", "position_id"], [
+        "ORDER" => ["working_date" => "DESC"]
+    ]) ?? [];
+    $contractMap = [];
+    foreach ($contracts as $contract) {
+        if (!isset($contractMap[$contract['person_sn']])) {
+            $contractMap[$contract['person_sn']] = $contract;
+        }
+    }
+
+    $contractSalaries = $app->select("contract_salary", ["Id_contract", "Id_salary"], []) ?? [];
+    $contractSalaryMap = [];
+    foreach ($contractSalaries as $cs) {
+        $contractSalaryMap[$cs['Id_contract']][] = $cs['Id_salary'];
+    }
+
+    $salaries = $app->select("staff-salary", ["id", "name", "price", "type", "priceValue"], [
+        "type IN" => [1, 2],
+        "status" => 'A'
+    ]) ?? [];
     error_log("Salaries in POST: " . print_r($salaries, true));
 
     foreach ($employees as $index => $employee) {
@@ -186,36 +256,28 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $salaryData = [];
         $totalSalary = 0;
         $basicSalary = 0;
-        foreach ($salaries as $s) {
-            $price = is_numeric($s['price']) ? (int)$s['price'] : 0; // Đảm bảo price là số
-            $salaryData["salaryData_" . $s['id']] = number_format($price, 0, ',', '.') . ' / ' . number_format($price / 12, 0, ',', '.');
-            $totalSalary += $price;
-            if ($s['type'] == 1) {
-                $basicSalary = $price;
-            }
-        }
-        error_log("Salary Data for employee $sn: " . print_r($salaryData, true));
-
-        $dailySalary = $basicSalary ? $basicSalary / 26 : 0;
-        $insurance = $basicSalary ? $basicSalary * 0.1 : 0;
+        $dailySalary = 0;
 
         $totalWorkingDays = 0;
         $actualWorkingDays = 0;
         $overtimeHours = 0;
+        $unauthorizedLeaveFromRecords = 0; // Nghỉ không phép từ chấm công
         $assignments = $assignmentMap[$sn] ?? [];
         $timeperiodId = end($assignments)['timeperiod_id'] ?? '1';
         $timePeriod = $timePeriodMap[$timeperiodId] ?? [];
 
+        // Duyệt qua từng ngày trong tháng để tính ngày công và nghỉ không phép
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $date = "$year-$month-" . sprintf("%02d", $day);
             $dayOfWeek = date('N', strtotime($date));
             $offKey = $dayMap[$dayOfWeek]['off'];
 
+            // Kiểm tra xem ngày đó có phải ngày nghỉ theo lịch làm việc không
             if (!$timePeriod || !isset($timePeriod[$offKey]) || !$timePeriod[$offKey]) {
-                $totalWorkingDays++;
+                $totalWorkingDays++; // Tăng tổng số ngày làm việc
                 $records = $attendanceData[$sn][$date] ?? [];
                 if (!empty($records)) {
-                    $actualWorkingDays++;
+                    $actualWorkingDays++; // Có chấm công, tăng ngày công thực tế
                     $checkIn = min(array_map('strtotime', $records));
                     $checkOut = max(array_map('strtotime', $records));
                     $startTime = strtotime("$date " . ($timePeriod[$dayMap[$dayOfWeek]['start']] ?? '09:00'));
@@ -225,51 +287,165 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                     if ($actualHours > $workHours) {
                         $overtimeHours += $actualHours - $workHours;
                     }
+                } else {
+                    // Kiểm tra xem ngày này có nằm trong danh sách nghỉ phép không
+                    if (!isset($leaveDaysMap[$sn][$date])) {
+                        // Không có chấm công, không phải ngày nghỉ, và không có đăng ký nghỉ phép → tính là nghỉ không phép
+                        $unauthorizedLeaveFromRecords++;
+                    }
                 }
             }
         }
 
+        $contract = $contractMap[$sn] ?? null;
+        $contractId = $contract['id'] ?? null;
+
+        $hasContractSalary = $contractId && isset($contractSalaryMap[$contractId]) && !empty($contractSalaryMap[$contractId]);
+
+        if ($hasContractSalary) {
+            $salaryIds = $contractSalaryMap[$contractId];
+            $employeeSalaries = array_filter($salaries, fn($s) => in_array($s['id'], $salaryIds));
+
+            $monthlyTotal = 0;
+            $dailyTotal = 0;
+
+            foreach ($salaries as $s) {
+                $price = 0;
+                $priceValue = 3;
+                $found = false;
+
+                foreach ($employeeSalaries as $es) {
+                    if ($es['id'] === $s['id']) {
+                        $price = is_numeric($es['price']) ? (int)$es['price'] : 0;
+                        $priceValue = $es['priceValue'];
+                        $found = true;
+                        break;
+                    }
+                }
+
+                if (!$found) {
+                    $price = 0;
+                    $priceValue = 3;
+                }
+
+                $unitLabel = '';
+                switch ($priceValue) {
+                    case 1: $unitLabel = 'Giờ'; break;
+                    case 2: $unitLabel = 'Ngày'; break;
+                    case 3: default: $unitLabel = 'Tháng'; break;
+                }
+
+                $salaryData["salaryData_" . $s['id']] = $unitLabel . ' / ' . number_format($price, 0, ',', '.');
+
+                $monthlyPrice = 0;
+                if ($priceValue == 1) {
+                    $monthlyPrice = $price * 9 * 26;
+                } elseif ($priceValue == 2) {
+                    $monthlyPrice = $price * 26;
+                } else {
+                    $monthlyPrice = $price;
+                }
+                $totalSalary += $monthlyPrice;
+
+                if ($s['type'] == 1) {
+                    $basicSalary = $monthlyPrice;
+                }
+
+                if ($priceValue == 1) {
+                    $dailyTotal += $price * 9;
+                } elseif ($priceValue == 2) {
+                    $dailyTotal += $price;
+                } else {
+                    $monthlyTotal += $price;
+                }
+            }
+
+            $dailySalary = $dailyTotal;
+            if ($monthlyTotal > 0 && $totalWorkingDays > 0) {
+                $dailySalary += $monthlyTotal / $totalWorkingDays;
+            }
+        } else {
+            foreach ($salaries as $s) {
+                $salaryData["salaryData_" . $s['id']] = '/0';
+            }
+            $totalSalary = 0;
+            $dailySalary = 0;
+        }
+
+        error_log("Salary Data for employee $sn: " . print_r($salaryData, true));
+
+        // Lấy số tiền bảo hiểm từ bảng insurance
+        $insurance = 0;
+        $insuranceInfo = $insuranceMap[$sn] ?? null;
+        error_log("Employee SN: $sn, Insurance Info: " . print_r($insuranceInfo, true));
+        if ($insuranceInfo && $insuranceInfo['statu'] === 'A') {
+            // Lấy số tiền bảo hiểm từ cột money
+            $insurance = (float)str_replace(',', '', $insuranceInfo['money']);
+        }
+
         $overtimePay = $app->select("staff-salary", ["price"], ["type" => 3, "status" => 'A'])[0]['price'] ?? 0;
         $overtime = isset($overtimeData[$sn]) ? array_sum(array_map(function($ot) use ($overtimePay) {
-            return (strtotime($ot['end']) - strtotime($ot['start'])) / 3600 * ($overtimePay / 8);
-        }, $overtimeData[$sn])) : $overtimeHours * ($overtimePay / 8);
+            return (strtotime($ot['end']) - strtotime($ot['start'])) / 3600 * ($overtimePay / 9);
+        }, $overtimeData[$sn])) : $overtimeHours * ($overtimePay / 9);
 
         $lateArrival = count($latetimeData[$sn] ?? []);
         $earlyLeave = 0;
 
+        // Tính nghỉ có lương và không lương từ bảng leave_requests
         $unpaidLeave = 0;
         $paidLeave = 0;
-        $unauthorizedLeave = 0;
         foreach ($leaveData[$sn] ?? [] as $leave) {
             $start = max(strtotime($monthStart), strtotime($leave['start_date']));
             $end = min(strtotime($monthEnd), strtotime($leave['end_date']));
-            $days = ($end - $start) / (60 * 60 * 24) + 1;
-            switch ($leave['Code']) {
-                case 'NKL': $unpaidLeave += $days; break;
-                case 'NCL': $paidLeave += $days; break;
-                case 'NKP': $unauthorizedLeave += $days; break;
+            // Tính số ngày nghỉ dựa trên leave_days
+            $days = $leave['leave_days'];
+            
+            // Dựa trên SalaryType để xác định loại nghỉ
+            if ($leave['SalaryType'] === 'Nghỉ có lương') {
+                $paidLeave += $days;
+            } elseif ($leave['SalaryType'] === 'Nghỉ không lương') {
+                $unpaidLeave += $days;
             }
         }
 
+        // Nghỉ không phép chỉ tính từ chấm công (đã loại trừ các ngày nghỉ phép)
+        $unauthorizedLeave = $unauthorizedLeaveFromRecords;
+
         $totalAttendance = $actualWorkingDays + $paidLeave;
 
-        $reward = array_sum(array_map(fn($rd) => $rd['type'] == 1 ? $rd['amount'] : 0, $rewardData[$sn] ?? []));
-        $discipline = array_sum(array_map(fn($rd) => $rd['type'] == 2 ? $rd['amount'] : 0, $rewardData[$sn] ?? []));
+        // Tính khen thưởng và kỷ luật
+        $reward = 0;
+        $discipline = 0;
+        foreach ($rewardData[$sn] ?? [] as $rd) {
+            if ($rd['type'] === 'reward') {
+                $reward += $rd['amount'];
+            } elseif ($rd['type'] === 'discipline') {
+                $discipline += abs($rd['amount']); // Lấy giá trị tuyệt đối vì amount đã âm
+            }
+        }
 
-        $salaryAdvance = array_sum(array_map(fn($ad) => $ad['TypeID'] == 1 ? $ad['Amount'] : 0, $advanceData[$sn] ?? []));
+        // Tính ứng lương và hoàn ứng
+        $salaryAdvance = array_sum(array_map(fn($ad) => $ad['TypeID'] == 1 ? (float)str_replace(',', '', $ad['Amount']) : 0, $advanceData[$sn] ?? []));
+        error_log("Salary Advance for $sn: " . $salaryAdvance);
 
-        $totalReceived = ($totalSalary / 12) + $overtime + $reward - $discipline - $insurance - $salaryAdvance;
+        $salaryRepayment = array_sum(array_map(fn($ad) => $ad['TypeID'] == 2 ? (float)str_replace(',', '', $ad['Amount']) : 0, $advanceData[$sn] ?? []));
+        error_log("Salary Repayment for $sn: " . $salaryRepayment);
+
+        $netAdvance = $salaryAdvance - $salaryRepayment;
+        error_log("Net Advance for $sn: " . $netAdvance);
+
+        // Tính tổng thực lãnh theo công thức mới
+        $totalReceived = ($dailySalary * $totalAttendance) - $insurance + $reward - $discipline - $netAdvance;
 
         $entry = [
             "personSn" => $employee['name'],
             "departmentId" => $department,
         ];
 
-        // Sửa lỗi ánh xạ salaryData_ để sử dụng dữ liệu từ $salaryData
         foreach ($salaries as $s) {
             $salaryKey = "salaryData_" . $s['id'];
-            $salaryValue = $salaryData[$salaryKey] ?? '0 / 0'; // Lấy giá trị từ $salaryData
-            $entry[$salaryKey] = is_string($salaryValue) ? $salaryValue : '0 / 0'; // Đảm bảo giá trị là chuỗi
+            $salaryValue = $salaryData[$salaryKey] ?? '/0';
+            $entry[$salaryKey] = is_string($salaryValue) ? $salaryValue : '/0';
         }
 
         $entry["dailySalary"] = is_numeric($dailySalary) ? number_format($dailySalary, 0, ',', '.') : '0';
@@ -283,16 +459,13 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $entry["totalAttendance"] = $totalAttendance;
         $entry["discipline"] = number_format($discipline, 0, ',', '.');
         $entry["reward"] = number_format($reward, 0, ',', '.');
-        $entry["salaryAdvance"] = number_format($salaryAdvance, 0, ',', '.');
+        $entry["salaryAdvance"] = number_format($netAdvance, 0, ',', '.'); // Hiển thị ứng lương - hoàn ứng
         $entry["totalReceived"] = number_format($totalReceived, 0, ',', '.');
 
         error_log("Entry for employee $sn: " . print_r($entry, true));
         $datas[] = $entry;
     }
 
-    $totalReward = array_sum(array_map(fn($d) => (int)str_replace(',', '', $d['reward']), $datas));
-    $totalDiscipline = array_sum(array_map(fn($d) => (int)str_replace(',', '', $d['discipline']), $datas));
-    $totalSalaryAdvance = array_sum(array_map(fn($d) => (int)str_replace(',', '', $d['salaryAdvance']), $datas));
     $totalReceived = array_sum(array_map(fn($d) => (int)str_replace(',', '', $d['totalReceived']), $datas));
 
     $response = [
@@ -300,13 +473,8 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         "recordsTotal" => $count,
         "recordsFiltered" => $count,
         "data" => $datas,
-        "footer" => [
-            "totalReward" => number_format($totalReward, 0, ',', '.'),
-            "totalDiscipline" => number_format($totalDiscipline, 0, ',', '.'),
-            "totalSalaryAdvance" => number_format($totalSalaryAdvance, 0, ',', '.'),
-            "totalReceived" => number_format($totalReceived, 0, ',', '.')
-        ]
     ];
 
     echo json_encode($response);
 })->setPermissions(['salaryCalculation']);
+?>
