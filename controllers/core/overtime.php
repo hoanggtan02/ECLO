@@ -40,7 +40,7 @@
         $where = [
             "AND" => [
                 "OR" => [
-                    "overtime.employee[~]" => $searchValue,
+                    "employee.name[~]" => $searchValue, // Tìm kiếm theo tên nhân viên
                     "overtime.money[~]" => $searchValue,
                     "overtime.dayStart[~]" => $searchValue,
                     "overtime.dayEnd[~]" => $searchValue,
@@ -61,7 +61,17 @@
 
         // Truy vấn danh sách Tăng ca
         $datas = $app->select("overtime", [
-            'ids','type','employee','money','dayStart','dayEnd','note','statu','day'
+            "[>]employee" => ["employee" => "sn"] // Thực hiện JOIN: overtime.employee -> employee.sn
+        ], [
+            'overtime.ids',
+            'overtime.type',
+            'employee.name(employee_name)', // Lấy tên nhân viên từ bảng employee
+            'overtime.money',
+            'overtime.dayStart',
+            'overtime.dayEnd',
+            'overtime.note',
+            'overtime.statu',
+            'overtime.day'
         ], $where) ?? [];
 
         // Đếm số bản ghi
@@ -71,18 +81,17 @@
         error_log("Fetched overtimes Data: " . print_r($datas, true));
     
         // Xử lý dữ liệu đầu ra
-        $formattedData = array_map(function($data) use ($app, $jatbi) {
-            
+        $formattedData = array_map(function($data) use ($app, $jatbi) {       
             $typeLabels = array_column($app->select("staff-salary", ["id", "name"]), "name", "id");
             $moneylabel = number_format($data['money'], 0, '.', ',');
+            
             if ($data['statu'] === 'Approved') {
-            $temp = '<a href="#" class="status-link" " data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+                $temp = '<a href="#" class="status-link" " data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
             } elseif ($data['statu'] === 'Pending') {                   
-            $temp = '<a href="#" class="status-link" style="color: green;" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+                $temp = '<a href="#" class="status-link" style="color: green;" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
             }
 
             $actionButtons = [];
-
             if ($data['statu'] !== 'Approved') {
             $actionButtons[] = [
                 'type' => 'button',
@@ -91,19 +100,18 @@
                 'action' => ['data-url' => '/overtime-edit?ids=' . $data['ids'], 'data-action' => 'modal']
             ];
             }
-
             $actionButtons[] = [
                 'type' => 'button',
                 'name' => $jatbi->lang("Xóa"),
                 'permission' => ['overtime.deleted'],
                 'action' => ['data-url' => '/overtime-deleted?ids=' . $data['ids'], 'data-action' => 'modal']
             ];
-
+            
             return [
             "checkbox" => $app->component("box", ["data" => $data['ids']]),
             "ids" => $data['ids'],
             "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
-            "employee" => $data['employee'],
+            "employee" => $data['employee_name'] ?? $jatbi->lang("Không xác định"), // Hiển thị tên nhân viên
             "money" => $moneylabel,
             "dayStart" => $data['dayStart'],
             "dayEnd" => $data['dayEnd'],
@@ -151,7 +159,7 @@
         $app->header(['Content-Type' => 'application/json']);
     
         // Lấy dữ liệu từ form và kiểm tra XSS
-        $ids = $app->count("overtime") + 1;
+        //$ids = $app->count("overtime") + 1;
         $employee = isset($_POST['employee']) ? $app->xss($_POST['employee']) : '';
         $type = isset($_POST['type']) ? $app->xss($_POST['type']) : '';
         $money = isset($_POST['money']) ? $app->xss($_POST['money']) : '';
@@ -163,7 +171,7 @@
         $day = date('Y-m-d H:i:s');
         
         // Kiểm tra dữ liệu đầu vào
-        if (empty($ids) || empty($employee) || empty($type) || empty($money) || empty($dayStart) || empty($dayEnd)) {
+        if (empty($employee) || empty($type) || empty($money) || empty($dayStart) || empty($dayEnd)) {
             echo json_encode(["status" => "error", "content" => $jatbi->lang("Vui lòng không để trống")]);
             return;
         }
@@ -173,12 +181,12 @@
             return;
         }
         $temp = substr($type, 0, strpos($type, " -"));
-        $temp2 = substr($employee, strpos($employee, "- ") + 2);
+        $temp2 = substr($employee, 0, strpos($employee, " -"));
         $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
         try {
             // Dữ liệu để lưu vào database
             $insert = [
-                "ids" => $ids,
+                //"ids" => $ids,
                 "employee" => $temp2,
                 "type" => $temp,
                 "money" => $temp3,
@@ -195,7 +203,7 @@
             // Thêm dữ liệu vào database
             $app->insert("overtime", $insert);
 
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công: $temp2")]);
     
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ
@@ -297,7 +305,7 @@
         }
 
         $temp = substr($type, 0, strpos($type, " -"));
-        $temp2 = substr($employee, strpos($employee, "- ") + 2);
+        $temp2 = substr($employee, 0, strpos($employee, " -"));
         $temp3 = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
 
         // Cập nhật dữ liệu trong database

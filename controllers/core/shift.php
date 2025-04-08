@@ -41,7 +41,7 @@
         $where = [
             "AND" => [
                 "OR" => [
-                    "shift.employee[~]" => $searchValue,
+                    "employee.name[~]" => $searchValue,
                     "shift.note[~]" => $searchValue,
                     "shift.shift[~]" => $searchValue,
                     "shift.shift2[~]" => $searchValue,
@@ -67,7 +67,21 @@
     
         // Truy vấn danh sách Khung thời gian
         $datas = $app->select("shift", [
-            'idshift', 'employee', 'shift', 'day', 'timeStart', 'timeEnd', 'shift2', 'day2', 'timeStart2', 'timeEnd2', 'statu', 'dayCreat', 'note'
+            "[>]employee" => ["employee" => "sn"] // Thực hiện JOIN: shift.employee -> employee.sn
+        ], [
+            'shift.idshift',
+            'employee.name(employee_name)', // Lấy tên nhân viên từ bảng employee
+            'shift.shift',
+            'shift.day',
+            'shift.timeStart',
+            'shift.timeEnd',
+            'shift.shift2',
+            'shift.day2',
+            'shift.timeStart2',
+            'shift.timeEnd2',
+            'shift.statu',
+            'shift.dayCreat',
+            'shift.note'
         ], $where) ?? [];
     
         // Log dữ liệu truy vấn để kiểm tra
@@ -83,7 +97,7 @@
             return [
                 "checkbox" => $app->component("box", ["data" => $data['idshift']]),
                 "idshift" => $data['idshift'],
-                "employee" => $data['employee'],
+                "employee" => $data['employee_name'] ?? $jatbi->lang("Không xác định"), // Hiển thị tên nhân viên
                 "shift" => "{$temp} : {$data['day']} || {$data['timeStart']} : {$data['timeEnd']}",
                 "shift2" => "{$temp2} : {$data['day2']} || {$data['timeStart2']} : {$data['timeEnd2']}",
                 "note" => $data['note'],
@@ -130,8 +144,8 @@
     $app->router("/shift-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Thêm Nhảy Ca");
         $vars['nv1'] = array_map(function($employee) {
-            return implode(' - ', $employee);
-        }, $app->select("employee", ["name"], ["status" => "A"]));
+            return $employee['sn'] . ' - ' . $employee['name'];
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
         $vars['ca'] = array_map(function($employee) {
             return $employee['acTzNumber'] . ' - ' . $employee['name'];
         }, $app->select("timeperiod", ["name", "acTzNumber"], ["status" => "A"]));
@@ -171,8 +185,10 @@
         try {
             $temp = substr($shift, 0, strpos($shift, " -"));
             $temp2 = substr($shift2, 0, strpos($shift2, " -"));
+            $temp3 = substr($employee, 0, strpos($employee, " -"));
+
             // Dữ liệu để lưu vào database
-            $insert = ["idshift" => $idshift, "employee" => $employee, "shift" => $temp, "day" => $day, "timeStart" => $timeStart, "timeEnd" => $timeEnd, "shift2" => $temp2, "day2" => $day2, "timeStart2" => $timeStart2, "timeEnd2" => $timeEnd2, "statu" => $statu, "note" => $note, "dayCreat" => $dayCreat];
+            $insert = ["idshift" => $idshift, "employee" => $temp3, "shift" => $temp, "day" => $day, "timeStart" => $timeStart, "timeEnd" => $timeEnd, "shift2" => $temp2, "day2" => $day2, "timeStart2" => $timeStart2, "timeEnd2" => $timeEnd2, "statu" => $statu, "note" => $note, "dayCreat" => $dayCreat];
               
             // Ghi log
             $jatbi->logs('shift', 'shift-add', $insert);
@@ -227,8 +243,8 @@
     $app->router("/shift-edit", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Sửa Nhảy ca");
         $vars['nv1'] = array_map(function($employee) {
-            return implode(' - ', $employee);
-        }, $app->select("employee", ["name"], ["status" => "A"]));
+            return $employee['sn'] . ' - ' . $employee['name'];
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
         $vars['ca'] = array_map(function($employee) {
             return $employee['acTzNumber'] . ' - ' . $employee['name'];
         }, $app->select("timeperiod", ["name", "acTzNumber"], ["status" => "A"]));
@@ -291,10 +307,11 @@
         }
         $temp = substr($shift, 0, strpos($shift, " -"));
         $temp2 = substr($shift2, 0, strpos($shift2, " -"));
+        $temp3 = substr($employee, 0, strpos($employee, " -"));
 
         // Cập nhật dữ liệu trong database
         $update = [
-            "employee"  => $employee,
+            "employee"  => $temp3,
             "shift"     => $temp,
             "day"       => $day,
             "timeStart" => $timeStart,

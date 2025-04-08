@@ -36,7 +36,7 @@
         $where = [
             "AND" => [
                 "OR" => [
-                    "insurance.employee[~]" => $searchValue,
+                    "employee.name[~]" => $searchValue,
                     "insurance.placebhxh[~]" => $searchValue,
                     "insurance.placeyte[~]" => $searchValue, 
                     "insurance.numberyte[~]" => $searchValue,
@@ -54,8 +54,21 @@
         $count = $app->count("insurance", ["AND" => $where["AND"]]);
     
         // Truy vấn danh sách Khung thời gian
-        $datas = $app->select('insurance', [
-            'idbh', 'employee', 'money', 'moneybhxh', 'numberbhxh', 'daybhxh', 'placebhxh', 'numberyte', 'dayyte', 'placeyte', 'statu'
+        $datas = $app->select("insurance", [
+            "[>]employee" => ["employee" => "sn"] // Thực hiện JOIN: insurance.employee -> employee.sn
+        ], [
+            'insurance.idbh',
+            'employee.name(employee_name)', // Lấy tên nhân viên từ bảng employee
+            'insurance.money',
+            'insurance.moneybhxh',
+            'insurance.numberbhxh',
+            'insurance.daybhxh',
+            'insurance.placebhxh',
+            'insurance.numberyte',
+            'insurance.dayyte',
+            'insurance.placeyte',
+            'insurance.statu',
+            'insurance.note'
         ], $where) ?? [];
     
         // Log dữ liệu truy vấn để kiểm tra
@@ -69,7 +82,7 @@
             return [
                 "checkbox" => $app->component("box", ["data" => $data['idbh']]),
                 "idbh" => $data['idbh'],
-                "employee" => $data['employee'],
+                "employee" => $data['employee_name'] ?? $jatbi->lang("Không xác định"), // Hiển thị tên nhân viên
                 "money" => $moneylabel,
                 "moneybhxh" => $moneylabel2,
                 "numberbhxh" => $data['numberbhxh'],
@@ -120,8 +133,8 @@
     $app->router("/insurance-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Thêm Bảo Hiểm");
         $vars['nv1'] = array_map(function($employee) {
-            return implode(' - ', $employee);
-        }, $app->select("employee", ["name"], ["status" => "A"]));
+            return $employee['sn'] . ' - ' . $employee['name'];
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
 
         echo $app->render('templates/employee/insurance-post.html', $vars, 'global');
     })->setPermissions(['insurance.add']);
@@ -150,12 +163,13 @@
         }
         $temp = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
         $temp2 = str_replace(',', '', $app->xss($_POST['moneybhxh'] ?? ''));
+        $temp3 = substr($employee, 0, strpos($employee, " -"));
 
         try {
             // Dữ liệu để lưu vào database
             $insert = [
                 "idbh" => $idbh,
-                "employee" => $employee,
+                "employee" => $temp3,
                 "money" => $temp,
                 "moneybhxh" => $temp2,
                 "numberbhxh" => $numberbhxh,
@@ -219,8 +233,8 @@
     $app->router("/insurance-edit", 'GET', function($vars) use ($app, $jatbi) {
         $vars['title'] = $jatbi->lang("Sửa insurance");
         $vars['nv1'] = array_map(function($employee) {
-            return implode(' - ', $employee);
-        }, $app->select("employee", ["name"], ["status" => "A"]));
+            return $employee['sn'] . ' - ' . $employee['name'];
+        }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
         $idbh = isset($_GET['idbh']) ? $app->xss($_GET['idbh']) : null;
         if (!$idbh) {
             echo $app->render('templates/common/error-modal.html', $vars, 'global');
@@ -272,10 +286,11 @@
         }
         $temp = str_replace(',', '', $app->xss($_POST['money'] ?? ''));
         $temp2 = str_replace(',', '', $app->xss($_POST['moneybhxh'] ?? ''));
+        $temp3 = substr($employee, 0, strpos($employee, " -"));
 
         // Cập nhật dữ liệu trong database
         $update = [
-            "employee" => $employee,
+            "employee" => $temp3,
             "money" => $temp,
             "moneybhxh" => $temp2,
             "numberbhxh" => $numberbhxh,
