@@ -40,6 +40,7 @@
                     "employee.name[~]" => $searchValue, // Tìm kiếm theo tên nhân viên
                 ],
                 // "deleted" => 0, // Bỏ điều kiện deleted để kiểm tra dữ liệu
+                
             ],
             "LIMIT" => [$start, $length],
             "ORDER" => [$orderName => strtoupper($orderDir)]
@@ -66,8 +67,7 @@
             "employee.name(employee_name)",
             "transactiontypes.TypeName(transaction_type)"
         ], $where, function ($data) use (&$datas, $jatbi, $app) {
-            // Debug: Kiểm tra dữ liệu lấy được
-            error_log("Record: " . json_encode($data));
+    
             $note = $data['Note'] ?: $jatbi->lang("Không có ghi chú");
             // Thay thế ký tự xuống dòng \n bằng <br>
             $note = str_replace("\n", "<br>", $note);
@@ -132,7 +132,7 @@ $app->router("/advance-salary/add", 'GET', function($vars) use ($app, $jatbi) {
     $vars['title'] = $jatbi->lang("Thêm ứng lương");
 
      // Truy vấn danh sách nhân viên từ bảng employee
-     $employees = $app->select("employee", ["sn", "name"]);
+     $employees = $app->select("employee", ["sn", "name"], ["status" => 'A'], ["name" => "ASC"]);
      $vars['employees'] = $employees;
  
     $vars['data'] = []; // Dữ liệu rỗng vì đây là form thêm mới
@@ -271,15 +271,23 @@ $app->router("/advance-salary/edit/{id}", 'POST', function($vars) use ($app, $ja
         return;
     }
 
-    // Kiểm tra mã nhân viên có tồn tại không
-    $existingEmployee = $app->get("employee", ["sn"], ["sn" => $sn]);
+    // Kiểm tra sn có tồn tại và có status = 'A' trong bảng employee không
+    $existingEmployee = $app->get("employee", ["sn", "status"], ["sn" => $sn]);
     if (!$existingEmployee) {
         echo json_encode([
             'status' => 'error',
-            'content' => $jatbi->lang("Mã nhân viên không tồn tại"),
+            'content' => $jatbi->lang("Nhân viên không tồn tại"),
         ]);
         return;
     }
+    if ($existingEmployee['status'] !== 'A') {
+        echo json_encode([
+            'status' => 'error',
+            'content' => $jatbi->lang("Nhân viên không hoạt động, không thể cập nhật bản ghi"),
+        ]);
+        return;
+    }
+
 
     // Chuẩn bị dữ liệu để cập nhật vào DB
     $advanceData = [
