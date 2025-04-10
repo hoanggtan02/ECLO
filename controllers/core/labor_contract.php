@@ -180,7 +180,7 @@
     
         // Chuyển danh sách về dạng key-value
         $vars['contract_type'] = array_combine(range(1, count($contract_types)), $contract_types);
-    
+
         // Lấy danh sách chức vụ từ bảng `staff-position`
         $positions = $app->select("staff-position", ["id", "name"]);
         $vars['position'] = array_column($positions, 'name', 'id');
@@ -204,7 +204,7 @@
     
         // Lấy và làm sạch dữ liệu đầu vào
         $personSN = $app->xss($_POST['person_sn'] ?? '');
-        $position = $app->xss($_POST['position'] ?? '');  
+        $position = $app->xss($_POST['position_id'] ?? '');  
         $contractType = $app->xss($_POST['contract_type'] ?? '');
         $contractDuration = $app->xss($_POST['contract_duration'] ?? '');
         $workingDate = $app->xss($_POST['working_date'] ?? '');
@@ -213,14 +213,14 @@
         $note = $app->xss($_POST['note'] ?? ''); 
         $interviewDateStr = $app->xss($_POST['interview_date'] ?? '');
         $contractNumber = $app->xss($_POST['contract_number'] ?? '');
-        $job = $app->xss($_POST['job'] ?? '');
+        $job = $app->xss($_POST['department'] ?? '');
     
         // Lấy dữ liệu lương và trợ cấp (chỉ có 1 giá trị, không phải mảng)
         $salaryID = $_POST['salary_content'] ?? ''; 
         $allowanceID = $_POST['allowance_content'] ?? '';
     
         // Kiểm tra dữ liệu bắt buộc
-        if (!$personSN || !$position || !$contractType || !$contractDuration || !$workingDate) {
+        if (!$personSN || !$position || !$contractType || !$contractDuration || !$workingDate || $contractNumber) {
             echo json_encode(["status" => "error", "content" => "Vui lòng điền đầy đủ thông tin bắt buộc"]);
             return;
         }
