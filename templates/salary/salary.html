@@ -21,17 +21,17 @@
                         <hr class="border-secondary border-opacity-50 my-2" />
                         <div class="px-3">
                         <?=$app->component('select',[
-                            "name"=>'status',
+                            "name"=>'department',
                             "placeholder"=>$jatbi->lang("Phòng ban"),
-                            "selected" => $app->xss($_GET['status'] ?? ''),
+                            "selected" => $app->xss($_GET['department'] ?? ''),
                             "class" => 'filter-name',
                             "attr" => 'data-width="100%"',
-                            "options" => [["value"=>"A","text"=>$jatbi->lang("Kích hoạt")],["value"=>"D","text"=>$jatbi->lang("Không Kích hoạt")],]
+                            "options" => $department,
                         ])?>
                         <?=$app->component('select',[
                             "name"=>'employee',
                             "placeholder"=>$jatbi->lang("Nhân viên"),
-                            "selected" => $app->xss($_GET['permission'] ?? ''),
+                            "selected" => $app->xss($_GET['employeex'] ?? ''),
                             "class" => 'filter-name',         
                             "attr" => 'data-width="100%" multiple data-actions-box="true"',
                             "options" => $employee,
@@ -87,8 +87,6 @@
         <!-- <h4 class="mt-2 fw-bold text-center"><?=$title?></h4> -->
 
         <div class="card-body">
-
-            
             <table 
             id="datatable"
             data-table
@@ -179,9 +177,7 @@
                         class="text-center">THỰC LÃNH</th>
                     </tr>
                 </thead>
-                <tbody>
-
-                </tbody>
+        
             </table>
         </div>
     </div>

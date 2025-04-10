@@ -1,13 +1,12 @@
 <?php
 
-use ECLO\App;
-
 if (!defined('ECLO')) die("Hacking attempt");
 $jatbi = new Jatbi($app);
 $setting = $app->getValueData('setting');
 
 $app->router("/salary", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Tính lương");
+    $vars['department'] = $app->select("department",["personName (text)","departmentId (value)"],[]);
     $vars['employee'] = $app->select("employee",["name (text)","sn (value)"],[]);
     $vars['month'] = date('m');
     $vars['year'] = date('Y');
@@ -35,28 +34,36 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
     $start = $_POST['start'] ?? 0;
     $length = $_POST['length'] ?? 10;
     $searchValue = $_POST['search']['value'] ?? '';
-    $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'numericalOrder';
+    $orderName = isset($_POST['order'][0]['name']) ? $_POST['order'][0]['name'] : 'employee.name';
     $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
-
-    // global $monthYear;
 
     $month = $app->xss($_POST['month'] ?? date('m'));
     $year = $app->xss($_POST['yesr'] ?? date('Y'));
     $month = $year . "-" . $month;
+    $department = isset($_POST['department']) ? $_POST['department'] : '';
+    $employee = isset($_POST['employee']) ? $_POST['employee'] : '';
 
     $where = [
         "AND" => [
             "OR" => [
                 // "salary.id[~]" => $searchValue,
-                // "salary.personName[~]" => $searchValue,
+                // "salary.departmentId[~]" => $searchValue,
                 "salary.personSn[~]" => $searchValue,
+                "employee.name[~]"   => $searchValue,
             ],
             "salary.month" => $month,
         ],
 
         "LIMIT" => [$start, $length],
-        // "ORDER" => [$orderName => strtoupper($orderDir)]
+        "ORDER" => [$orderName => strtoupper($orderDir)]
     ];
+
+    if(!empty($department)) {
+        $where["AND"]["salary.departmentId"] = $department;
+    }
+    if(!empty($employee)) {
+        $where["AND"]["salary.personSn"] = $employee;
+    }
 
     $count = $app->count("salary",[
         "AND" => $where['AND'],
@@ -85,28 +92,75 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
         'salary.reward',
         'salary.discipline',
         'salary.salaryAdvance',
+        'salary.month',
         'employee.name (personName)',
         ], $where, function ($data) use (&$datas,$jatbi,$app) {
+            $insurance = (float)$app->sum("insurance", "money", [// bảo hiểm
+                "employee"          => $data['personSn'],
+                "statu"             => "A",
+            ]);
+
+            $overtime = $app->select("overtime", ["money"], [// tăng ca
+                "employee"          => $data['personSn'],
+                "dayEnd[>=]"        => $data['month'] . "-01 00:00:00",
+                "dayEnd[<]"         => (new DateTime($data['month'] . '-01'))->format('Y-m-t') . " 23:59:59",
+                "statu"             => "Approved",
+            ]);
+            $overtimeMoney = 0;
+            foreach ($overtime as $item) {
+                $overtimeMoney += $item['money'];
+            }
+
+            $reward = $app->select("reward_discipline", ["amount"], [// nhận thưởng
+                "personSN"          => $data['personSn'],
+                "apply_date[<>]"    => [$data['month'] . "-01", (new DateTime($data['month'] . '-01'))->format('Y-m-t')],
+                "type"              => "reward",
+            ]);
+            $rewardMoney = 0;
+            foreach ($reward as $item) {
+                $rewardMoney += $item['amount'];
+            }
+
+            $discipline = $app->select("reward_discipline", ["amount"], [// phạt
+                "personSN"          => $data['personSn'],
+                "apply_date[<>]"    => [$data['month'] . "-01", (new DateTime($data['month'] . '-01'))->format('Y-m-t')],
+                "type"              => "discipline",
+            ]);
+            $disciplineMoney = 0;
+            foreach ($discipline as $item) {
+                $disciplineMoney += $item['amount'];
+            }
+
+            $provisionalSalary = $data['workingDays'] * $data['dailySalary'] -$insurance + $overtimeMoney + $rewardMoney + $disciplineMoney;// tạm tính
             $datas[] = [
-                "numericalOrder"            => 0,
                 "personSn"                  => $data['personSn'] . " - " . $data['personName'],
                 "departmentId"              => $data['departmentId'],
                 "workingDays"               => $data['workingDays'] . ' / ' . $data['totalWorkingDays'],
-                "insurance"                 => 0,
+                "insurance"                 => number_format($insurance, 0, '.', ','),
                 "dailySalary"               => number_format($data['dailySalary'], 0, '.', ','),
-                "overtime"                  => $data['overtime'],
+                "overtime"                  => number_format($overtimeMoney, 0, '.', ',') . " / " . count($overtime),
                 "lateArrival/earlyLeave"    => $data['lateArrival'] . ' / ' . $data['earlyLeave'],
                 "unpaidLeave"               => $data['unpaidLeave'],
                 "paidLeave"                 => $data['paidLeave'],
                 "unauthorizedLeave"         => $data['unauthorizedLeave'],
                 "total"                     => 0,
-                "reward"                    => $data['reward'],
-                "discipline"                => number_format($data['discipline'], 0, '.', ','),
-                "provisionalSalary"         => number_format($data['workingDays'] * $data['dailySalary'] + $data['reward'] - $data['discipline'], 0, '.', ','),
+                "reward"                    => number_format($rewardMoney, 0, '.', ',') . " / " . count($reward),
+                "discipline"                => number_format($disciplineMoney, 0, '.', ',') . " / " . count($discipline),
+                "provisionalSalary"         => number_format($provisionalSalary, 0, '.', ','),
                 "salaryAdvance"             => number_format($data['salaryAdvance'], 0, '.', ','),
-                "salaryReceived"            => number_format($data['workingDays'] * $data['dailySalary'] + $data['reward'] - $data['discipline'] - $data['salaryAdvance'], 0, '.', ','),
+                "salaryReceived"            => number_format($provisionalSalary - $data['salaryAdvance'], 0, '.', ','),
             ];
     }); 
+
+    if($datas) {
+        $index = 1;
+        foreach ($datas as &$item) {
+            $item = array_merge($item, [
+                "numericalOrder"            => $index,
+            ]);
+            $index++;
+        }
+    }
 
     echo json_encode([
         "draw" => $draw,
@@ -251,6 +305,9 @@ function attendanceTracking($app) {
         $totalWorkingDays = 0;// ngày công
         $lateArrival = 0;// tới trễ
         $earlyLeave = 0;// về sớm
+        $paidLeave = 0;
+        $unpaidLeave = 0;
+        $unauthorizedLeave = 0;
         
         $workingDate = $app->get("employee_contracts", [
             "working_date",
@@ -293,11 +350,14 @@ function attendanceTracking($app) {
                     if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
                         break;
                     } else $totalWorkingDays++;
+   
                     if($timeMin) {// nếu đi làm + 1 ngày công
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["monStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["monEnd"]);
                     }
+
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Tuesday':
                     if($s['tue_off'] == '1') {
@@ -305,9 +365,11 @@ function attendanceTracking($app) {
                     } else $totalWorkingDays++;
                     if($timeMin) {
                         $workingDays++;
-                        // $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
-                        // $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
+                        break;
                     }
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Wednesday':
                     if($s['wed_off'] == '1') {
@@ -317,7 +379,9 @@ function attendanceTracking($app) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["wedStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["wedEnd"]);
+                        break;
                     }
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Thursday':
                     if($s['thu_off'] == '1') {
@@ -327,7 +391,28 @@ function attendanceTracking($app) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["thursStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["thursEnd"]);
+                        break;
                     }
+                    $dayOff = $app->select("leave_requests", [
+                        "[>]leavetype"          => ["LeaveTypeID" => "LeaveId"],
+                    ],[
+                        'leave_requests.leave_days',
+                        'leave_requests.start_date',
+                        'leave_requests.end_date',
+                        'leavetype.SalaryType',
+                    ],[
+                        'leave_requests.personSN'   => $s["personSn"],
+                        'leave_requests.start_date[<=]' => $date->format('Y-m-d') . " 23:59:59",
+                        'leave_requests.end_date[>=]'   => $date->format('Y-m-d') . " 00:00:00",
+                    ]);
+               
+                    foreach ($dayOff as $item) {
+                        if($item["SalaryType"] == "Nghỉ có lương") $paidLeave++;
+                        else $unpaidLeave++;
+                        break;
+                    }
+               
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Friday':
                     if($s['fri_off'] == '1') {
@@ -337,7 +422,9 @@ function attendanceTracking($app) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["friStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["friEnd"]);
+                        break;
                     }
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Saturday':
                     if($s['sat_off'] == '1') {
@@ -347,7 +434,9 @@ function attendanceTracking($app) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["satStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["satEnd"]);
+                        break;
                     }
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Sunday':
                     if($s['sun_off'] == '1') {
@@ -357,7 +446,9 @@ function attendanceTracking($app) {
                         $workingDays++;
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["sunStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["sunEnd"]);
+                        break;
                     }
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 default:
                     break;
@@ -399,17 +490,6 @@ function attendanceTracking($app) {
             $discipline += ($earlyLeave / $b["value"]) * $b["amount"];
         }
 
-        // $dailySalary = $app->get("employee_contracts", [
-        //     "[>]staff-salary" => ["salaryId" => "id"],
-        // ], [
-        //     "staff-salary.price",
-        // ], [
-        //     "employee_contracts.person_sn"          => $s["personSn"],
-        //     "employee_contracts.working_date[<]"    => $date->format('Y-m-d'),
-        //     "ORDER"             => ["employee_contracts.working_date" => "DESC"],
-        //     "LIMIT"             => 1
-        // ]);
-
         $dailySalary = $app->get("employee_contracts", [
             "[>]contract_salary" => ["id" => "Id_contract"],
             "[>]staff-salary" => ["contract_salary.Id_salary" => "id"], 
@@ -417,7 +497,7 @@ function attendanceTracking($app) {
             "staff-salary.price",
         ], [
             "employee_contracts.person_sn"          => $s["personSn"],
-            "employee_contracts.working_date[<=]"    => $date->format('Y-m-d'),
+            "employee_contracts.working_date[<]"    => $date->format('Y-m-d'),
             "ORDER"             => ["employee_contracts.working_date" => "DESC"],
             "LIMIT"             => 1
         ]);
@@ -429,11 +509,16 @@ function attendanceTracking($app) {
             "AppliedDate[<]"    => $date->format('Y-m-d'),
         ]);
 
+        $leaveDay = 0;
+
         $insert = [
             "workingDays"       => $workingDays,
             "totalWorkingDays"  => $totalWorkingDays,
             "lateArrival"       => $lateArrival,
             "earlyLeave"        => $earlyLeave,
+            "paidLeave"         => $paidLeave,
+            "unpaidLeave"       => $unpaidLeave,
+            "unauthorizedLeave" => $unauthorizedLeave,
             "discipline"        => $discipline,
             "dailySalary"       => $dailySalary["price"]??0,
             "salaryAdvance"     => $salaryAdvance,

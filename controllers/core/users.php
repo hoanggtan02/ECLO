@@ -406,7 +406,7 @@
             $permission = isset($_POST['permission']) ? $_POST['permission'] : '';
             $where = [
                 "AND" => [
-                    "OR" => [
+                    "OR" => [ 
                         "accounts.name[~]" => $searchValue,
                         "accounts.email[~]" => $searchValue,
                         "accounts.account[~]" => $searchValue,
