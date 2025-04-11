@@ -131,7 +131,11 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                 $disciplineMoney += $item['amount'];
             }
 
-            $provisionalSalary = $data['workingDays'] * $data['dailySalary'] -$insurance + $overtimeMoney + $rewardMoney + $disciplineMoney;// tạm tính
+            $total = $data['workingDays'] + $data['paidLeave'];
+
+            $penalty = penalty ($app, $data['personSn'], $data['lateArrival'], $data['earlyLeave']);
+
+            $provisionalSalary = $total * $data['dailySalary'] -$insurance + $overtimeMoney + $rewardMoney + $disciplineMoney -$penalty;// tạm tính
             $datas[] = [
                 "personSn"                  => $data['personSn'] . " - " . $data['personName'],
                 "departmentId"              => $data['departmentId'],
@@ -143,9 +147,10 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                 "unpaidLeave"               => $data['unpaidLeave'],
                 "paidLeave"                 => $data['paidLeave'],
                 "unauthorizedLeave"         => $data['unauthorizedLeave'],
-                "total"                     => 0,
+                "total"                     => $total,
                 "reward"                    => number_format($rewardMoney, 0, '.', ',') . " / " . count($reward),
                 "discipline"                => number_format($disciplineMoney, 0, '.', ',') . " / " . count($discipline),
+                "penalty"                   => $penalty,
                 "provisionalSalary"         => number_format($provisionalSalary, 0, '.', ','),
                 "salaryAdvance"             => number_format($data['salaryAdvance'], 0, '.', ','),
                 "salaryReceived"            => number_format($provisionalSalary - $data['salaryAdvance'], 0, '.', ','),
@@ -170,6 +175,42 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
     ]);
 
 })->setPermissions(['salary']);
+
+function penalty ($app, $personSn, $lateArrival, $earlyLeave){
+    $penalty = 0;
+    $a = $app->get("latetime", [
+        "value",
+        "amount",
+    ], [
+        "type"              => 'Đi trễ',
+        "sn"                => $personSn,
+        "status"            => 'A',
+        "apply_date[<=]"    => date("Y-m-d H:i:s"),
+        "ORDER"             => ["apply_date" => "DESC"],
+        "LIMIT"             => 1
+    ]);
+
+    $b = $app->get("latetime", [
+        "value",
+        "amount",
+    ], [
+        "type"              => 'Về sớm',
+        "sn"                => $personSn,
+        "status"            => 'A',
+        "apply_date[<=]"    => date("Y-m-d"),
+        "ORDER"             => ["apply_date" => "DESC"],
+        "LIMIT"             => 1
+    ]);
+
+    if(!empty($a)) {
+        $penalty += ($lateArrival / $a["value"]) * $a["amount"];
+    }
+
+    if(!empty($b)) {
+        $penalty += ($earlyLeave / $b["value"]) * $b["amount"];
+    }
+    return $penalty;
+}
 
 function addAllStaff($app, $month) { // thêm toàn bộ nhân viên vào bảng tính lương trong tháng mới
     $month = DateTime::createFromFormat('Y-m-d', "$month-01");
@@ -268,6 +309,31 @@ function checkStaff($app, $month) {
     }
 }
 
+function checkDayOff ($app, $personSn, $date, &$paidLeave, &$unpaidLeave) {
+    $dayOff = $app->get("leave_requests", [
+        "[>]leavetype"          => ["LeaveId" => "LeaveTypeID"],
+    ],[
+        'leave_requests.leave_days',
+        'leave_requests.start_date',
+        'leave_requests.end_date',
+        'leavetype.SalaryType',
+    ],[
+        'leave_requests.personSN'       => $personSn,
+        'leave_requests.start_date[<=]' => $date . " 23:59:59",
+        'leave_requests.end_date[>=]'   => $date . " 00:00:00",
+        "ORDER"             => ["leave_requests.created_at" => "DESC"],
+        "LIMIT"             => 1
+    ]);
+               
+
+    if($dayOff) {
+        if($dayOff["SalaryType"] == "Nghỉ có lương") $paidLeave++;
+        else $unpaidLeave++;
+        return 1;
+    }
+    return "";
+}
+
 function attendanceTracking($app) {
     $staff = $app->select("salary", [
         "[>]assignments"        => ["personSn" => "employee_id"],
@@ -356,7 +422,7 @@ function attendanceTracking($app) {
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["monStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["monEnd"]);
                     }
-
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
                     if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Tuesday':
@@ -369,6 +435,7 @@ function attendanceTracking($app) {
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
                         break;
                     }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
                     if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Wednesday':
@@ -381,6 +448,7 @@ function attendanceTracking($app) {
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["wedEnd"]);
                         break;
                     }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
                     if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Thursday':
@@ -392,26 +460,8 @@ function attendanceTracking($app) {
                         $lateArrival += checkArrive($timeMin->format('H:i'), $s["thursStart"]);
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["thursEnd"]);
                         break;
-                    }
-                    $dayOff = $app->select("leave_requests", [
-                        "[>]leavetype"          => ["LeaveTypeID" => "LeaveId"],
-                    ],[
-                        'leave_requests.leave_days',
-                        'leave_requests.start_date',
-                        'leave_requests.end_date',
-                        'leavetype.SalaryType',
-                    ],[
-                        'leave_requests.personSN'   => $s["personSn"],
-                        'leave_requests.start_date[<=]' => $date->format('Y-m-d') . " 23:59:59",
-                        'leave_requests.end_date[>=]'   => $date->format('Y-m-d') . " 00:00:00",
-                    ]);
-               
-                    foreach ($dayOff as $item) {
-                        if($item["SalaryType"] == "Nghỉ có lương") $paidLeave++;
-                        else $unpaidLeave++;
-                        break;
-                    }
-               
+                    }   
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
                     if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Friday':
@@ -424,6 +474,7 @@ function attendanceTracking($app) {
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["friEnd"]);
                         break;
                     }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
                     if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Saturday':
@@ -436,6 +487,7 @@ function attendanceTracking($app) {
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["satEnd"]);
                         break;
                     }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
                     if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 case 'Sunday':
@@ -448,6 +500,7 @@ function attendanceTracking($app) {
                         $earlyLeave += checkLeave($timeMax->format('H:i'), $s["sunEnd"]);
                         break;
                     }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break; 
                     if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                     break;
                 default:
@@ -455,39 +508,6 @@ function attendanceTracking($app) {
                 }
             }
             $date->modify('+1 day');  
-        }
-
-        $discipline = 0;
-        $a = $app->get("latetime", [
-            "value",
-            "amount",
-        ], [
-            "type"              => 'Đi trễ',
-            "sn"                => $s["personSn"],
-            "status"            => 'A',
-            "apply_date[<=]"    => date("Y-m-d H:i:s"),
-            "ORDER"             => ["apply_date" => "DESC"],
-            "LIMIT"             => 1
-        ]);
-
-        $b = $app->get("latetime", [
-            "value",
-            "amount",
-        ], [
-            "type"              => 'Về sớm',
-            "sn"                => $s["personSn"],
-            "status"            => 'A',
-            "apply_date[<=]"    => date("Y-m-d"),
-            "ORDER"             => ["apply_date" => "DESC"],
-            "LIMIT"             => 1
-        ]);
-
-        if(!empty($a)) {
-            $discipline += ($lateArrival / $a["value"]) * $a["amount"];
-        }
-
-        if(!empty($b)) {
-            $discipline += ($earlyLeave / $b["value"]) * $b["amount"];
         }
 
         $dailySalary = $app->get("employee_contracts", [
@@ -519,7 +539,6 @@ function attendanceTracking($app) {
             "paidLeave"         => $paidLeave,
             "unpaidLeave"       => $unpaidLeave,
             "unauthorizedLeave" => $unauthorizedLeave,
-            "discipline"        => $discipline,
             "dailySalary"       => $dailySalary["price"]??0,
             "salaryAdvance"     => $salaryAdvance,
         ];
