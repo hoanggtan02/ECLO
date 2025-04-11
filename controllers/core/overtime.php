@@ -27,6 +27,8 @@
         $searchValue = $_POST['search']['value'] ?? '';
         $statu = $_POST['statu'] ?? '';
         $type = $_POST['type'] ?? '';
+        $dayStart = $_POST['dayStart'] ?? '';
+        $dayEnd = $_POST['dayEnd'] ?? '';
     
         // Fix lỗi ORDER cột
         $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
@@ -57,6 +59,12 @@
         }
         if (!empty($type)) {
             $where["AND"]["overtime.type"] = $type;
+        }
+        if (!empty($dayStart)) {
+            $where["AND"]["overtime.dayStart[>=]"] = $dayStart . ' 00:00:00';
+        }
+        if (!empty($dayEnd)) {
+            $where["AND"]["overtime.dayEnd[<=]"] = $dayEnd . ' 23:59:59';
         }
 
         // Truy vấn danh sách Tăng ca
