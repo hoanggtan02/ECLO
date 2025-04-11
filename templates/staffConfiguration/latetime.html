@@ -35,13 +35,12 @@
             </div>
             <hr class="border-secondary border-opacity-50 my-2" />
             <div class="px-3">
-              <?=$app->component('select',[ "name"=>'status',
-              "placeholder"=>$jatbi->lang("Trạng thái"), "selected" =>
+              <?=$app->component('select', [ "name" => 'status', "placeholder"
+              => $jatbi->lang("Trạng thái"), "selected" =>
               $app->xss($_GET['status'] ?? ''), "class" => 'filter-name', "attr"
-              => 'data-width="100%"', "options" =>
-              [["value"=>"A","text"=>$jatbi->lang("Kích
-              hoạt")],["value"=>"D","text"=>$jatbi->lang("Không Kích hoạt")],]
-              ])?>
+              => 'data-width="100%"', "options" => [ ["value" => "A", "text" =>
+              $jatbi->lang("Kích hoạt")], ["value" => "D", "text" =>
+              $jatbi->lang("Không Kích hoạt")], ] ])?>
             </div>
             <hr class="border-secondary border-opacity-50 my-2" />
             <div class="px-3 py-2 text-end w-100">
