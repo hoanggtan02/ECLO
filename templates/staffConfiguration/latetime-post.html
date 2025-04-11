@@ -20,23 +20,18 @@
                         </div>
                         <div class="mb-3">
                             <label class="fw-bold text-body mb-2">
-                                <?= $jatbi->lang("Số định danh (sn)") ?>
+                                <?= $jatbi->lang("Tên nhân viên (sn)") ?>
                                 <span class="text-danger">*</span>
                             </label>
-                            <?php if (empty($data['sn'])) { ?>
-                                <select name="sn" class="form-control py-3 rounded-4 bg-body-tertiary" required>
-                                    <option value=""><?= $jatbi->lang("Chọn nhân viên") ?></option>
-                                    <?php foreach ($employees as $employee) { ?>
-                                        <option value="<?= htmlspecialchars($employee['sn']) ?>">
-                                            <?= htmlspecialchars($employee['name'] . " (" . $employee['sn'] . ")") ?>
-                                        </option>
-                                    <?php } ?>
-                                </select>
-                            <?php } else { ?>
-                                <input type="text" class="form-control py-3 rounded-4 bg-body-tertiary" 
-                                    value="<?= htmlspecialchars((isset($data['employee_name']) ? $data['employee_name'] : 'Không xác định') . " (" . $data['sn'] . ")") ?>" readonly>
-                                <input type="hidden" name="sn" value="<?= htmlspecialchars($data['sn'] ?? '') ?>" />
-                            <?php } ?>
+                            <select name="sn" class="form-control py-3 rounded-4 bg-body-tertiary" required>
+                                <option value=""><?= $jatbi->lang("Chọn nhân viên") ?></option>
+                                <?php foreach ($employees as $employee) { ?>
+                                    <option value="<?= htmlspecialchars($employee['sn']) ?>" 
+                                        <?= isset($data['sn']) && $data['sn'] == $employee['sn'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($employee['name'] . " (" . $employee['sn'] . ")") ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
                             <input type="hidden" name="id" value="<?= htmlspecialchars($data['id'] ?? '') ?>" />
                         </div>
                         <div class="mb-3">

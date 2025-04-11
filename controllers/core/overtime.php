@@ -203,7 +203,7 @@
             // Thêm dữ liệu vào database
             $app->insert("overtime", $insert);
 
-            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm thành công: $temp2")]);
+            echo json_encode(["status" => "success", "content" => $jatbi->lang("Thêm tăng ca thành công")]);
     
         } catch (Exception $e) {
             // Xử lý lỗi ngoại lệ

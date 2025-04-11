@@ -4,12 +4,14 @@
             <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
             <ul class="breadcrumb small mb-0">
                 <li class="breadcrumb-item small">
-                    <a href="/" class="pjax-load link-secondary">Trang chủ</a>
+                  <a href="/" class="pjax-load link-secondary">Trang chủ</a>
                 </li>
-            </ul>
+                <li class="breadcrumb-item small text-body" aria-current="page">
+                  <?=$title?>
+                </li>
+              </ul>
         </div>          
     </div>
-
     <div class="position-fixed bottom right z-3 dropup" style="--bottom:20px;--right:20px">
         <button class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center" style="--width:60px;--height:60px;" data-bs-toggle="dropdown">
             <i class="ti ti-menu-2 fs-2"></i>
