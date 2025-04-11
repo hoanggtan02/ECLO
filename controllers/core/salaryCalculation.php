@@ -88,6 +88,8 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
     $monthStart = "$year-$month-01"; // Ví dụ: 2025-04-01
     $monthEnd = "$year-$month-$daysInMonth"; // Ví dụ: 2025-04-30
+    $monthStartTimestamp = strtotime($monthStart);
+    $monthEndTimestamp = strtotime($monthEnd);
 
     $dayMap = [
         1 => ['start' => 'monStart', 'end' => 'monEnd', 'off' => 'mon_off'],
@@ -261,21 +263,27 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     }
     error_log("Insurance Map: " . print_r($insuranceMap, true));
 
-    $contracts = $app->select("employee_contracts", ["id", "person_sn", "position_id"], [
+    // Lấy tất cả hợp đồng lao động
+    $contracts = $app->select("employee_contracts", [
+        "id", "person_sn", "position_id", "working_date", "contract_duration", "contract_type"
+    ], [
         "ORDER" => ["working_date" => "DESC"]
     ]) ?? [];
     $contractMap = [];
     foreach ($contracts as $contract) {
         if (!isset($contractMap[$contract['person_sn']])) {
-            $contractMap[$contract['person_sn']] = $contract;
+            $contractMap[$contract['person_sn']] = [];
         }
+        $contractMap[$contract['person_sn']][] = $contract;
     }
+    error_log("Contract Map (all contracts): " . print_r($contractMap, true));
 
     $contractSalaries = $app->select("contract_salary", ["Id_contract", "Id_salary"], []) ?? [];
     $contractSalaryMap = [];
     foreach ($contractSalaries as $cs) {
         $contractSalaryMap[$cs['Id_contract']][] = $cs['Id_salary'];
     }
+    error_log("Contract Salary Map: " . print_r($contractSalaryMap, true));
 
     $salaries = $app->select("staff-salary", ["id", "name", "price", "type", "priceValue"], [
         "type IN" => [1, 2],
@@ -325,7 +333,6 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                         if ($leaveInfo) {
                             if ($leaveInfo['type'] === 'Nghỉ có lương') {
                                 // Trường hợp 1: Nghỉ có lương 0.5 ngày và có đi làm
-                                // Tăng $actualWorkingDays thêm 0.5, vì 0.5 còn lại đã được tính trong $paidLeave
                                 $actualWorkingDays += (1 - $leaveInfo['days']); // Cộng 0.5 ngày công
                             } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
                                 // Trường hợp 2: Nghỉ không lương 0.5 ngày và có đi làm
@@ -361,10 +368,9 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                 $leaveInfo = $leaveDaysMap[$sn][$date] ?? null;
                                 if ($leaveInfo) {
                                     if ($leaveInfo['type'] === 'Nghỉ có lương') {
-                                        // Tăng $actualWorkingDays thêm 0.5
                                         $actualWorkingDays += (1 - $leaveInfo['days']);
                                     } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
-                                        $actualWorkingDays += (1 - $leaveInfo['days']); // Chỉ tính 0.5 ngày công
+                                        $actualWorkingDays += (1 - $leaveInfo['days']);
                                     }
                                 } else {
                                     $actualWorkingDays += 1;
@@ -405,10 +411,9 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                 $leaveInfo = $leaveDaysMap[$sn][$date] ?? null;
                                 if ($leaveInfo) {
                                     if ($leaveInfo['type'] === 'Nghỉ có lương') {
-                                        // Tăng $actualWorkingDays thêm 0.5
                                         $actualWorkingDays += (1 - $leaveInfo['days']);
                                     } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
-                                        $actualWorkingDays += (1 - $leaveInfo['days']); // Chỉ tính 0.5 ngày công
+                                        $actualWorkingDays += (1 - $leaveInfo['days']);
                                     }
                                 } else {
                                     $actualWorkingDays += 1;
@@ -434,9 +439,30 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
             }
         }
 
-        $contract = $contractMap[$sn] ?? null;
-        $contractId = $contract['id'] ?? null;
+        // Tìm hợp đồng phù hợp nhất cho tháng tính lương
+        $contract = null;
+        $contractsForEmployee = $contractMap[$sn] ?? [];
+        foreach ($contractsForEmployee as $c) {
+            $workingDate = strtotime($c['working_date']);
+            $contractDuration = (int)$c['contract_duration']; // Thời hạn hợp đồng (tháng)
+            $endDate = strtotime("+$contractDuration months", $workingDate);
 
+            // Kiểm tra hợp đồng có hiệu lực trong tháng tính lương
+            // - working_date <= $monthEnd
+            // - working_date + contract_duration >= $monthStart
+            // Hợp đồng không thời hạn luôn hiệu lực
+            $isValidContract = $c['contract_type'] === 'Không thời hạn' ||
+                ($workingDate <= $monthEndTimestamp && $endDate >= $monthStartTimestamp);
+
+            if ($isValidContract) {
+                // Nếu có nhiều hợp đồng thỏa mãn, lấy hợp đồng có working_date gần nhất với $monthStart
+                if ($contract === null || $workingDate > strtotime($contract['working_date'])) {
+                    $contract = $c;
+                }
+            }
+        }
+
+        $contractId = $contract['id'] ?? null;
         $hasContractSalary = $contractId && isset($contractSalaryMap[$contractId]) && !empty($contractSalaryMap[$contractId]);
 
         if ($hasContractSalary) {
@@ -550,7 +576,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
         // Định dạng cột overtime: "Số lần: [dayStart-dayEnd (money), ...]. Tổng tiền: [tổng tiền]"
         $countOvertime = count($overtimeDetails);
-        $detailsString = $countOvertime > 0 ? '[' . implode(', ', $overtimeDetails) . ']' : 'Không có';
+        $detailsString = $countOvertime > 0 ? '[' . implode(', ', $overtimeDetails) . ']' : '';
         $overtimeDisplay = "$countOvertime lần: $detailsString. Tổng tiền: " . number_format($finalOvertimeMoney, 0, ',', '.');
 
         // Tính tổng số phút đi trễ và về sớm
