@@ -27,6 +27,8 @@ $app->router("/api", 'POST', function($vars) use ($app, $jatbi, $setting) {
     $personName  = isset($decoded_params['personName']) ? urldecode($decoded_params['personName']) : null;
     $personType  = isset($decoded_params['personType']) ? $decoded_params['personType'] : null;
     $createTime  = isset($decoded_params['recordTimeStr']) ? $decoded_params['recordTimeStr'] : null;
+    $flag        = isset($decoded_params['openDoorFlag']) ? $decoded_params['openDoorFlag'] : null;
+
 
     // Ghi log các biến để kiểm tra
     $log_data = "Parsed Data:\n";
@@ -48,9 +50,12 @@ $app->router("/api", 'POST', function($vars) use ($app, $jatbi, $setting) {
     // Thêm dữ liệu vào bảng API (log request)
     $app->insert("API", ["data" => json_encode($decoded_params)]);
 
-    // Thêm dữ liệu vào bảng records
-    $app->insert("record", $insert);
-
+    if ($flag == 1) {
+        $app->insert("record", $insert);
+    } else {
+        file_put_contents("log1.txt", "⚠️ Bỏ qua insert record vì flag = 1\n", FILE_APPEND);
+    }
+    
     echo json_encode(["status" => "success"]);
 });
 ?>

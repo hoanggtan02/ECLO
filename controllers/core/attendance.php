@@ -114,15 +114,15 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
     // Count total and filtered employees
     $totalEmployees = $app->count("employee", ["status" => "A"]);
     $filteredRecords = $app->select("employee", [
-        "[>]department" => ["departmentId" => "departmentId"]
+        "[>]department" => ["departmentId" => "departmentId"]   
     ], [
         "employee.sn"
     ], $filteredConditions);
     $filteredEmployees = count($filteredRecords);
 
-    // Log để kiểm tra
-    error_log("Total Employees (status=A): " . $totalEmployees);
-    error_log("Filtered Employees: " . $filteredEmployees);
+    // // Log để kiểm tra
+    // error_log("Total Employees (status=A): " . $totalEmployees);
+    // error_log("Filtered Employees: " . $filteredEmployees);
 
     // Fetch employees with their departments
     $employees = $app->select("employee", [

@@ -72,6 +72,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $year = $app->xss($_POST['year'] ?? date('Y'));
     $employeeFilter = array_map([$app, 'xss'], $_POST['employee'] ?? []);
     $departmentFilter = $app->xss($_POST['department'] ?? '');
+    
 
     // Xây dựng điều kiện lọc
     $where = [
