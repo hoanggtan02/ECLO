@@ -21,10 +21,7 @@
                     >
                         <i class="ti ti-filter fs-5 me-2"></i> <?=$jatbi->lang("Điều kiện lọc")?>
                     </button>
-                    <div
-                        class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width"
-                        style="--min-width: 300px"
-                    >
+                    <div class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 min-width" style="--min-width: 300px">
                         <div class="fw-semibold py-2 px-3"><?=$jatbi->lang("Điều kiện lọc")?></div>
                         <hr class="border-secondary border-opacity-50 my-2" />
                         <div class="px-3">
@@ -39,6 +36,14 @@
                                 <?php for ($i = date('Y') - 5; $i <= date('Y') + 5; $i++): ?>
                                     <option value="<?=$i?>" <?= ($year == $i) ? 'selected' : '' ?>><?=$i?></option>
                                 <?php endfor; ?>
+                            </select>
+                            <select name="department" class="form-select filter-name mt-2">
+                                <option value=""><?=$jatbi->lang("Phòng Ban")?></option>
+                                <?php foreach ($departmentList as $d): ?>
+                                    <option value="<?=$d['value']?>" <?= ($departmentFilter == $d['value']) ? 'selected' : '' ?>>
+                                        <?=$d['text']?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                             <!-- <select name="employee" class="form-select filter-name mt-2">
                                 <option value=""><?=$jatbi->lang("Nhân viên")?></option>
@@ -82,7 +87,7 @@
                 data-searching="true"
                 data-paging="true"
                 data-state-save="true"
-                data-url="/salaryCalculation"
+                data-url="/salaryCalculation"   
                 style="width: 100%"
             >
                 <thead>
