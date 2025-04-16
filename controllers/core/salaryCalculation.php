@@ -3,14 +3,13 @@ if (!defined('ECLO')) die("Hacking attempt");
 $jatbi = new Jatbi($app);
 $setting = $app->getValueData('setting');
 
-// Định nghĩa route GET để hiển thị giao diện
 // Định nghĩa route GET để hiển thị giao diện tính lương
 $app->router("/salaryCalculation", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Tính lương");
 
     // Lấy danh sách nhân viên và phòng ban
     $vars['employee'] = $app->select("employee", ["name (text)", "sn (value)"], []);
-    $vars['departmentList'] = $app->select("department", ["departmentId  (value)", "personName (text)"]);
+    $vars['departmentList'] = $app->select("department", ["departmentId (value)", "personName (text)"]);
 
     // Lấy dữ liệu lọc từ URL (nếu có)
     $vars['month'] = $app->xss($_GET['month'] ?? '');
@@ -27,7 +26,6 @@ $app->router("/salaryCalculation", 'GET', function($vars) use ($app, $jatbi, $se
     echo $app->render('templates/employee/salaryCalculation.html', $vars);
 })->setPermissions(['salaryCalculation']);
 
-
 // Định nghĩa route POST để trả về dữ liệu JSON cho DataTables
 $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $app->header([
@@ -41,9 +39,10 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $orderColumnIndex = $_POST['order'][0]['column'] ?? 0;
     $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
 
+    // Định nghĩa các cột hợp lệ cho sắp xếp và ánh xạ với cột thực tế trong DB
     $validColumns = [
-        0 => "personSn",
-        1 => "departmentId",
+        0 => "employee.name", // personSn ánh xạ với employee.name
+        1 => "department.personName", // departmentId ánh xạ với department.personName
     ];
     $salaryColumns = $app->select("staff-salary", ["id"], ["type IN" => [1, 2], "status" => 'A']) ?? [];
     $columnOffset = 2;
@@ -65,7 +64,8 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $validColumns[$columnOffset + 11] = "salaryAdvance";
     $validColumns[$columnOffset + 12] = "totalReceived";
 
-    $orderColumn = $validColumns[$orderColumnIndex] ?? "personSn";
+    // Chỉ cho phép sắp xếp trên các cột thực sự tồn tại trong DB
+    $orderColumn = in_array($orderColumnIndex, [0, 1]) ? $validColumns[$orderColumnIndex] : "employee.name";
 
     // Lấy tham số lọc từ $_POST
     $month = str_pad($app->xss($_POST['month'] ?? date('m')), 2, '0', STR_PAD_LEFT);
@@ -73,32 +73,49 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $employeeFilter = array_map([$app, 'xss'], $_POST['employee'] ?? []);
     $departmentFilter = $app->xss($_POST['department'] ?? '');
 
-
+    // Xây dựng điều kiện lọc
     $where = [
-        "AND" => [],
         "LIMIT" => [$start, $length],
         "ORDER" => [$orderColumn => $orderDir]
     ];
-    
+
+    // Chỉ thêm $where["AND"] nếu có điều kiện lọc
+    $conditions = [];
     if (!empty($searchValue)) {
-        $where["AND"]["OR"] = [
+        $conditions["OR"] = [
             "employee.sn[~]" => $searchValue,
             "employee.name[~]" => $searchValue,
+            "department.personName[~]" => $searchValue,
         ];
     }
-    
+
     if (!empty($employeeFilter)) {
-        $where["AND"]["employee.sn IN"] = $employeeFilter;
+        $conditions["employee.sn IN"] = $employeeFilter;
     }
-    
+
     if (!empty($departmentFilter)) {
-        $where["AND"]["employee.departmentID"] = $departmentFilter;
+        $conditions["employee.departmentID"] = $departmentFilter;
     }
-    
 
-    $employees = $app->select("employee", ["sn", "name", "departmentId"], $where["AND"]) ?? [];
+    // Nếu có điều kiện lọc, thêm vào $where["AND"]
+    if (!empty($conditions)) {
+        $where["AND"] = $conditions;
+    }
 
-    $count = $app->count("employee", $where["AND"]) ?? 0;
+    // Join với bảng department để lấy tên phòng ban và hỗ trợ tìm kiếm/sắp xếp
+    $join = [
+        "[>]department" => ["departmentId" => "departmentId"]
+    ];
+
+    // Tính tổng số nhân viên (không áp dụng bộ lọc) - recordsTotal
+    $totalEmployees = $app->count("employee", []) ?? 0;
+
+    // Tính số nhân viên sau khi áp dụng bộ lọc - recordsFiltered
+    $filteredCount = $app->count("employee", $join, "*", !empty($conditions) ? ["AND" => $conditions] : []) ?? 0;
+
+    // Lấy danh sách nhân viên với điều kiện lọc và phân trang
+    $employees = $app->select("employee", $join, ["employee.sn", "employee.name", "employee.departmentId", "department.personName"], $where) ?? [];
+
     $datas = [];
 
     $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
@@ -309,7 +326,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
     foreach ($employees as $index => $employee) {
         $sn = $employee['sn'];
-        $department = $app->select("department", ["personName"], ["departmentId" => $employee['departmentId']])[0]['personName'] ?? 'Không xác định';
+        $department = $employee['personName'] ?? 'Không xác định'; // Lấy trực tiếp từ kết quả join
 
         $salaryData = [];
         $totalSalary = 0;
@@ -627,7 +644,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
             $end = min(strtotime("$year-$month-$daysInMonth 23:59:59"), strtotime($leave['end_date']));
             // Tính số ngày nghỉ dựa trên leave_days
             $days = $leave['leave_days'];
-            
+
             // Dựa trên SalaryType để xác định loại nghỉ
             if ($leave['SalaryType'] === 'Nghỉ có lương') {
                 $paidLeave += $days;
@@ -665,9 +682,10 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         // Tính tổng thực lãnh, trừ thêm tiền phạt đi trễ và về sớm, cộng tiền tăng ca
         $totalReceived = ($dailySalary * $totalAttendance) - $insurance + $reward - $discipline - $netAdvance - ($latePenalty + $earlyPenalty) + $finalOvertimeMoney;
 
+        // Tạo entry cho DataTables
         $entry = [
-            "personSn" => $employee['name'],
-            "departmentId" => $department,
+            "personSn" => $employee['name'] ?? '',
+            "departmentId" => $department ?? 'Không xác định',
         ];
 
         foreach ($salaries as $s) {
@@ -679,16 +697,16 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $entry["dailySalary"] = is_numeric($dailySalary) ? number_format($dailySalary, 0, ',', '.') : '0';
         $entry["insurance"] = is_numeric($insurance) ? number_format($insurance, 0, ',', '.') : '0';
         $entry["workingDays"] = "$totalWorkingDays/$actualWorkingDays";
-        $entry["overtime"] = $overtimeDisplay;
+        $entry["overtime"] = $overtimeDisplay ?? '';
         $entry["lateArrival/earlyLeave"] = "Đi trễ: $lateMinutes phút / Về sớm: $earlyMinutes phút. Tổng: $totalPenaltyFormatted";
-        $entry["unpaidLeave"] = $unpaidLeave;
-        $entry["paidLeave"] = $paidLeave;
-        $entry["unauthorizedLeave"] = $unauthorizedLeave;
-        $entry["totalAttendance"] = $totalAttendance;
-        $entry["discipline"] = number_format($discipline, 0, ',', '.');
-        $entry["reward"] = number_format($reward, 0, ',', '.');
-        $entry["salaryAdvance"] = number_format($netAdvance, 0, ',', '.'); // Hiển thị ứng lương - hoàn ứng
-        $entry["totalReceived"] = number_format($totalReceived, 0, ',', '.');
+        $entry["unpaidLeave"] = $unpaidLeave ?? 0;
+        $entry["paidLeave"] = $paidLeave ?? 0;
+        $entry["unauthorizedLeave"] = $unauthorizedLeave ?? 0;
+        $entry["totalAttendance"] = $totalAttendance ?? 0;
+        $entry["discipline"] = number_format($discipline, 0, ',', '.') ?? '0';
+        $entry["reward"] = number_format($reward, 0, ',', '.') ?? '0';
+        $entry["salaryAdvance"] = number_format($netAdvance, 0, ',', '.') ?? '0';
+        $entry["totalReceived"] = number_format($totalReceived, 0, ',', '.') ?? '0';
 
         error_log("Entry for employee $sn: " . print_r($entry, true));
         $datas[] = $entry;
@@ -698,11 +716,12 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
     $response = [
         "draw" => $draw,
-        "recordsTotal" => $count,
-        "recordsFiltered" => $count,
+        "recordsTotal" => $totalEmployees,
+        "recordsFiltered" => $filteredCount,
         "data" => $datas,
     ];
 
+    error_log("Response: " . print_r($response, true));
     echo json_encode($response);
 })->setPermissions(['salaryCalculation']);
 ?>
