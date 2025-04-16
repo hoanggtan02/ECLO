@@ -4,23 +4,29 @@ $jatbi = new Jatbi($app);
 $setting = $app->getValueData('setting');
 
 // Định nghĩa route GET để hiển thị giao diện
+// Định nghĩa route GET để hiển thị giao diện tính lương
 $app->router("/salaryCalculation", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Tính lương");
+
+    // Lấy danh sách nhân viên và phòng ban
     $vars['employee'] = $app->select("employee", ["name (text)", "sn (value)"], []);
+    $vars['departmentList'] = $app->select("department", ["departmentId  (value)", "personName (text)"]);
 
-    // Lấy tham số lọc từ URL
-    $vars['month'] = $app->xss($_GET['month'] ?? date('m'));
-    $vars['year'] = $app->xss($_GET['year'] ?? date('Y'));
-    $vars['employeeFilter'] = array_map([$app, 'xss'], explode(',', $_GET['employee'] ?? '') ?? []);
+    // Lấy dữ liệu lọc từ URL (nếu có)
+    $vars['month'] = $app->xss($_GET['month'] ?? '');
+    $vars['year'] = $app->xss($_GET['year'] ?? '');
+    $vars['departmentFilter'] = $app->xss($_GET['department'] ?? '');
+    $vars['employeeFilter'] = array_map([$app, 'xss'], explode(',', $_GET['employee'] ?? ''));
 
+    // Lấy danh sách loại lương
     $vars['salary'] = $app->select("staff-salary", ["id", "name", "price", "priceValue"], [
         "type IN" => [1, 2],
         "status" => 'A'
     ]);
-    error_log("Salaries in GET: " . print_r($vars['salary'], true));
 
     echo $app->render('templates/employee/salaryCalculation.html', $vars);
 })->setPermissions(['salaryCalculation']);
+
 
 // Định nghĩa route POST để trả về dữ liệu JSON cho DataTables
 $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
@@ -65,23 +71,33 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $month = str_pad($app->xss($_POST['month'] ?? date('m')), 2, '0', STR_PAD_LEFT);
     $year = $app->xss($_POST['year'] ?? date('Y'));
     $employeeFilter = array_map([$app, 'xss'], $_POST['employee'] ?? []);
+    $departmentFilter = $app->xss($_POST['department'] ?? '');
+
 
     $where = [
         "AND" => [],
         "LIMIT" => [$start, $length],
         "ORDER" => [$orderColumn => $orderDir]
     ];
+    
     if (!empty($searchValue)) {
         $where["AND"]["OR"] = [
             "employee.sn[~]" => $searchValue,
             "employee.name[~]" => $searchValue,
         ];
     }
+    
     if (!empty($employeeFilter)) {
         $where["AND"]["employee.sn IN"] = $employeeFilter;
     }
+    
+    if (!empty($departmentFilter)) {
+        $where["AND"]["employee.departmentID"] = $departmentFilter;
+    }
+    
 
     $employees = $app->select("employee", ["sn", "name", "departmentId"], $where["AND"]) ?? [];
+
     $count = $app->count("employee", $where["AND"]) ?? 0;
     $datas = [];
 

@@ -219,8 +219,8 @@
         $salaryID = $_POST['salary_content'] ?? ''; 
         $allowanceID = $_POST['allowance_content'] ?? '';
     
-        // Kiểm tra dữ liệu bắt buộc
-        if (!$personSN || !$position || !$contractType || !$contractDuration || !$workingDate || $contractNumber) {
+        //Kiểm tra dữ liệu bắt buộc
+        if (!$personSN || !$position || !$contractDuration || !$contractNumber) {
             echo json_encode(["status" => "error", "content" => "Vui lòng điền đầy đủ thông tin bắt buộc"]);
             return;
         }
