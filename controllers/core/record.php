@@ -233,8 +233,8 @@
         }
 
         // Nếu đã có checkImgUrl trong database, sử dụng nó
-        if (!empty($record['checkImgUrl'])) {
-            $vars['image'] = $record['checkImgUrl'];
+        if (!empty($record[0]['checkImgUrl'])) {
+            $vars['image'] = $record[0]['checkImgUrl'];
         } else {
             // Gọi API để lấy ảnh nếu chưa có trong database
             $apiData = [

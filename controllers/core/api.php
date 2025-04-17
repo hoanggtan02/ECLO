@@ -24,6 +24,17 @@ $app->router("/api", 'POST', function($vars) use ($app, $jatbi, $setting) {
     $id          = isset($decoded_params['recordId']) ? $decoded_params['recordId'] : null;
     $sn          = isset($decoded_params['personSn']) ? $decoded_params['personSn'] : null;
     $checkImgUrl = isset($decoded_params['checkImgBase64']) ? urldecode($decoded_params['checkImgBase64']) : null;
+    if ($checkImgUrl) {
+        // Loại bỏ khoảng trắng và xuống dòng
+        $checkImgUrl = preg_replace('/\s+/', '', $checkImgUrl);
+        // Loại bỏ ký tự không hợp lệ (chỉ giữ A-Z, a-z, 0-9, +, /, =)
+        $checkImgUrl = preg_replace('/[^A-Za-z0-9\+\/=]/', '', $checkImgUrl);
+        // Kiểm tra tính hợp lệ của chuỗi Base64
+        if (base64_decode($checkImgUrl, true) === false) {
+            file_put_contents("log1.txt", "❌ Invalid Base64 data for recordId {$id}: " . $checkImgUrl . PHP_EOL, FILE_APPEND);
+            $checkImgUrl = null; // Không lưu nếu không hợp lệ
+        }
+    }
     $personName  = isset($decoded_params['personName']) ? urldecode($decoded_params['personName']) : null;
     $personType  = isset($decoded_params['personType']) ? $decoded_params['personType'] : null;
     $createTime  = isset($decoded_params['recordTimeStr']) ? $decoded_params['recordTimeStr'] : null;
