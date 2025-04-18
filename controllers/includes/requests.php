@@ -32,7 +32,10 @@
                     "menu"=>$jatbi->lang("Danh Sách Ra Vào"),
                     "url"=>'/record',
                     "icon"=>'<i class="ti ti-book "></i>',
-                    "controllers"=>"controllers/core/record.php",
+                    "controllers" => [
+                        "controllers/core/record.php",
+                        "controllers/core/api.php",  
+                    ],
                     "main"=>'false',
                     "permission"=>[
                         'record'      =>$jatbi->lang("Hồ sơ"),
