@@ -93,7 +93,7 @@
                             'type' => 'button',
                             'name' => $jatbi->lang("Xem ảnh"),
                             'permission' => ['face_employee'],
-                            'action' => ['data-url' => '/manager/face-viewimage?box='.$data['sn'], 'data-record-action' => 'modal']
+                            'action' => ['data-url' => '/manager/face-viewimage?box='.$data['sn'], 'data-action' => 'modal']
                         ],
                     
                         [
