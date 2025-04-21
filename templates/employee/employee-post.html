@@ -25,26 +25,12 @@
 							</div>
 							<div class="mb-3">
 								<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Loại") ?> <span class="text-danger">*</span></label>
-								<select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%"  name="type">
+								<select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%" name="type">
 									<option value=""><?= $jatbi->lang("Loại") ?></option>
 									<option value="1" <?= isset($data['type']) && $data['type'] == 1 ? 'selected' : '' ?>>Nhân viên nội bộ</option>
 									<option value="2" <?= isset($data['type']) && $data['type'] == 2 ? 'selected' : '' ?>>Khách</option>
 									<option value="3" <?= isset($data['type']) && $data['type'] == 3 ? 'selected' : '' ?>>Danh sách đen</option>
 								</select>
-							</div>
-							<div class="mb-3">
-								<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Nhóm") ?> <span class="text-danger">*</span></label>
-								<select data-select data-style="form-select bg-body-tertiary py-3 rounded-4 w-100" data-live-search="true" data-width="100%"  name="acGroupNumber">
-									<option value="0" <?= empty($data['acGroupNumber']) ? 'selected' : '' ?>><?= $jatbi->lang("Không có nhóm") ?></option>
-									<?php 
-										// Lấy danh sách nhóm trực tiếp từ database
-										$groups = $app->select("group-access", ['acGroupNumber', 'name']);
-										foreach ($groups as $group): 
-											$selected = isset($data['acGroupNumber']) && $data['acGroupNumber'] == $group['acGroupNumber'] ? 'selected' : '';
-									?>
-										<option value="<?= $group['acGroupNumber'] ?>" <?= $selected ?>><?= $group['name'] ?></option>
-									<?php endforeach; ?>
-								</select>			
 							</div>
 							<div class="mb-3">
 								<label class="fw-bold text-body mb-2"><?= $jatbi->lang("Phòng ban") ?> <span class="text-danger">*</span></label>
