@@ -72,7 +72,6 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $year = $app->xss($_POST['year'] ?? date('Y'));
     $employeeFilter = array_map([$app, 'xss'], $_POST['employee'] ?? []);
     $departmentFilter = $app->xss($_POST['department'] ?? '');
-    
 
     // Xây dựng điều kiện lọc
     $where = [
@@ -125,20 +124,24 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     $monthStartTimestamp = strtotime($monthStart);
     $monthEndTimestamp = strtotime($monthEnd);
 
+    // Ánh xạ ngày trong tuần với các cột trong bảng timeperiod, bao gồm work_credit
     $dayMap = [
-        1 => ['start' => 'monStart', 'end' => 'monEnd', 'off' => 'mon_off'],
-        2 => ['start' => 'tueStart', 'end' => 'tueEnd', 'off' => 'tue_off'],
-        3 => ['start' => 'wedStart', 'end' => 'wedEnd', 'off' => 'wed_off'],
-        4 => ['start' => 'thursStart', 'end' => 'thursEnd', 'off' => 'thu_off'],
-        5 => ['start' => 'friStart', 'end' => 'friEnd', 'off' => 'fri_off'],
-        6 => ['start' => 'satStart', 'end' => 'satEnd', 'off' => 'sat_off'],
-        7 => ['start' => 'sunStart', 'end' => 'sunEnd', 'off' => 'sun_off']
+        1 => ['start' => 'monStart', 'end' => 'monEnd', 'off' => 'mon_off', 'credit' => 'mon_work_credit'],
+        2 => ['start' => 'tueStart', 'end' => 'tueEnd', 'off' => 'tue_off', 'credit' => 'tue_work_credit'],
+        3 => ['start' => 'wedStart', 'end' => 'wedEnd', 'off' => 'wed_off', 'credit' => 'wed_work_credit'],
+        4 => ['start' => 'thursStart', 'end' => 'thursEnd', 'off' => 'thu_off', 'credit' => 'thu_work_credit'],
+        5 => ['start' => 'friStart', 'end' => 'friEnd', 'off' => 'fri_off', 'credit' => 'fri_work_credit'],
+        6 => ['start' => 'satStart', 'end' => 'satEnd', 'off' => 'sat_off', 'credit' => 'sat_work_credit'],
+        7 => ['start' => 'sunStart', 'end' => 'sunEnd', 'off' => 'sun_off', 'credit' => 'sun_work_credit']
     ];
 
+    // Lấy dữ liệu từ bảng timeperiod, bao gồm cả work_credit
     $timePeriods = $app->select("timeperiod", [
         "acTzNumber", "monStart", "monEnd", "tueStart", "tueEnd", "wedStart", "wedEnd",
         "thursStart", "thursEnd", "friStart", "friEnd", "satStart", "satEnd", "sunStart", "sunEnd",
-        "mon_off", "tue_off", "wed_off", "thu_off", "fri_off", "sat_off", "sun_off"
+        "mon_off", "tue_off", "wed_off", "thu_off", "fri_off", "sat_off", "sun_off",
+        "mon_work_credit", "tue_work_credit", "wed_work_credit", "thu_work_credit",
+        "fri_work_credit", "sat_work_credit", "sun_work_credit"
     ]) ?? [];
     $timePeriodMap = array_column($timePeriods, null, 'acTzNumber');
 
@@ -350,14 +353,17 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
             $date = "$year-$month-" . sprintf("%02d", $day);
             $dayOfWeek = date('N', strtotime($date));
             $offKey = $dayMap[$dayOfWeek]['off'];
+            $creditKey = $dayMap[$dayOfWeek]['credit'];
 
             // Kiểm tra xem ngày đó có phải ngày nghỉ theo lịch làm việc không
             $isOffDay = $timePeriod && isset($timePeriod[$offKey]) && $timePeriod[$offKey];
+            // Lấy giá trị work_credit cho ngày này, mặc định là 1 nếu không có
+            $workCredit = $timePeriod && isset($timePeriod[$creditKey]) ? (float)$timePeriod[$creditKey] : 1.0;
             $records = $attendanceData[$sn][$date] ?? [];
 
             if (!$isOffDay) {
                 // Ngày làm việc
-                $totalWorkingDays++; // Tăng tổng số ngày làm việc
+                $totalWorkingDays += $workCredit; // Tăng tổng số ngày làm việc theo work_credit
 
                 // Kiểm tra chấm công trực tiếp
                 if (!empty($records)) {
@@ -367,14 +373,14 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                         if ($leaveInfo) {
                             if ($leaveInfo['type'] === 'Nghỉ có lương') {
                                 // Trường hợp 1: Nghỉ có lương 0.5 ngày và có đi làm
-                                $actualWorkingDays += (1 - $leaveInfo['days']); // Cộng 0.5 ngày công
+                                $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // Cộng ngày công theo tỷ lệ
                             } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
                                 // Trường hợp 2: Nghỉ không lương 0.5 ngày và có đi làm
-                                $actualWorkingDays += (1 - $leaveInfo['days']); // Chỉ tính 0.5 ngày công
+                                $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // Chỉ tính ngày công theo tỷ lệ
                             }
                         } else {
                             // Không có nghỉ phép, tính bình thường
-                            $actualWorkingDays += 1;
+                            $actualWorkingDays += $workCredit;
                         }
                         $processedDays[$date] = true;
                     }
@@ -402,12 +408,12 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                 $leaveInfo = $leaveDaysMap[$sn][$date] ?? null;
                                 if ($leaveInfo) {
                                     if ($leaveInfo['type'] === 'Nghỉ có lương') {
-                                        $actualWorkingDays += (1 - $leaveInfo['days']);
+                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
                                     } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
-                                        $actualWorkingDays += (1 - $leaveInfo['days']);
+                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
                                     }
                                 } else {
-                                    $actualWorkingDays += 1;
+                                    $actualWorkingDays += $workCredit;
                                 }
                                 $processedDays[$date] = true;
                             }
@@ -430,7 +436,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
                     if (!$hasShiftCompensation && !isset($leaveDaysMap[$sn][$date])) {
                         // Không có chấm công, không nhảy ca, và không có đăng ký nghỉ phép → tính là nghỉ không phép
-                        $unauthorizedLeaveFromRecords++;
+                        $unauthorizedLeaveFromRecords += $workCredit;
                     }
                 }
             } else {
@@ -445,12 +451,12 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                 $leaveInfo = $leaveDaysMap[$sn][$date] ?? null;
                                 if ($leaveInfo) {
                                     if ($leaveInfo['type'] === 'Nghỉ có lương') {
-                                        $actualWorkingDays += (1 - $leaveInfo['days']);
+                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
                                     } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
-                                        $actualWorkingDays += (1 - $leaveInfo['days']);
+                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
                                     }
                                 } else {
-                                    $actualWorkingDays += 1;
+                                    $actualWorkingDays += $workCredit;
                                 }
                                 $processedDays[$originalDay] = true;
                             }
@@ -697,13 +703,13 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
         $entry["dailySalary"] = is_numeric($dailySalary) ? number_format($dailySalary, 0, ',', '.') : '0';
         $entry["insurance"] = is_numeric($insurance) ? number_format($insurance, 0, ',', '.') : '0';
-        $entry["workingDays"] = "$totalWorkingDays/$actualWorkingDays";
+        $entry["workingDays"] = round($totalWorkingDays, 2) . "/" . round($actualWorkingDays, 2);
         $entry["overtime"] = $overtimeDisplay ?? '';
         $entry["lateArrival/earlyLeave"] = "Đi trễ: $lateMinutes phút / Về sớm: $earlyMinutes phút. Tổng: $totalPenaltyFormatted";
         $entry["unpaidLeave"] = $unpaidLeave ?? 0;
         $entry["paidLeave"] = $paidLeave ?? 0;
-        $entry["unauthorizedLeave"] = $unauthorizedLeave ?? 0;
-        $entry["totalAttendance"] = $totalAttendance ?? 0;
+        $entry["unauthorizedLeave"] = round($unauthorizedLeave, 2) ?? 0;
+        $entry["totalAttendance"] = round($totalAttendance, 2) ?? 0;
         $entry["discipline"] = number_format($discipline, 0, ',', '.') ?? '0';
         $entry["reward"] = number_format($reward, 0, ',', '.') ?? '0';
         $entry["salaryAdvance"] = number_format($netAdvance, 0, ',', '.') ?? '0';
