@@ -3,7 +3,7 @@
     $jatbi = new Jatbi($app);
     $setting = $app->getValueData('setting');
 
-// Nhảy Ca
+    // Nhảy Ca
     $app->router("/shift", 'GET', function($vars) use ($app, $jatbi, $setting) {
         $vars['title'] = $jatbi->lang("Nhảy Ca");
         $vars['tangca'] = array_map(function($employee) {
@@ -16,56 +16,79 @@
         $app->header([
             'Content-Type' => 'application/json',
         ]);
-    
+
         // Kiểm tra dữ liệu nhận từ DataTables
         error_log("Received POST Data: " . print_r($_POST, true));
-    
+
         // Nhận dữ liệu từ DataTable
         $draw = $_POST['draw'] ?? 0;
         $start = $_POST['start'] ?? 0;
         $length = $_POST['length'] ?? 10;
         $searchValue = $_POST['search']['value'] ?? '';
         $statu = $_POST['statu'] ?? ''; // Lọc theo trạng thái
-        $shift = $_POST['shift'] ?? ''; // Lọc theo trạng thái
-        $shift2 = $_POST['shift2'] ?? ''; // Lọc theo trạng thái
-    
+        $shift = $_POST['shift'] ?? ''; // Lọc theo ca 1
+        $shift2 = $_POST['shift2'] ?? ''; // Lọc theo ca 2
+
         // Fix lỗi ORDER cột
-        $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
+        $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột employee
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
-    
+
         // Danh sách cột hợp lệ
         $validColumns = ["checkbox", "employee", "shift", "shift2", "dayCreat", "note"];
         $orderColumn = $validColumns[$orderColumnIndex] ?? "employee";
-    
+
         // Điều kiện lọc dữ liệu
+        $conditions = [];
+
+        // Tìm kiếm toàn cục (searchValue)
+        if (!empty($searchValue)) {
+            $conditions["OR"] = [
+                "employee.name[~]" => $searchValue,
+                "shift.note[~]" => $searchValue,
+                "shift.shift[~]" => $searchValue,
+                "shift.shift2[~]" => $searchValue,
+                "shift.dayCreat[~]" => $searchValue,
+            ];
+        }
+
+        // Lọc theo trạng thái (statu)
+        if (!empty($statu)) {
+            $conditions["shift.statu"] = $statu;
+        }
+
+        // Lọc theo ca 1 (shift)
+        if (!empty($shift)) {
+            $conditions["shift.shift"] = $shift;
+        }
+
+        // Lọc theo ca 2 (shift2)
+        if (!empty($shift2)) {
+            $conditions["shift.shift2"] = $shift2;
+        }
+
+        // Xây dựng $where cho truy vấn
         $where = [
-            "AND" => [
-                "OR" => [
-                    "employee.name[~]" => $searchValue,
-                    "shift.note[~]" => $searchValue,
-                    "shift.shift[~]" => $searchValue,
-                    "shift.shift2[~]" => $searchValue,
-                    "shift.dayCreat[~]" => $searchValue,
-                ]
-            ],
             "LIMIT" => [$start, $length],
             "ORDER" => [$orderColumn => $orderDir]
         ];
-    
-        if (!empty($statu)) {
-            $where["AND"]["shift.statu"] = $statu;
+
+        // Nếu có điều kiện lọc, thêm vào $where["AND"]
+        if (!empty($conditions)) {
+            $where["AND"] = $conditions;
         }
-        if (!empty($shift)) {
-            $where["AND"]["shift.shift"] = $shift;
-        }
-        if (!empty($shift2)) {
-            $where["AND"]["shift.shift2"] = $shift2;
-        }
-    
-        // Đếm số bản ghi
-        $count = $app->count("shift", ["AND" => $where["AND"]]);
-    
-        // Truy vấn danh sách Khung thời gian
+
+        // Log điều kiện lọc để debug
+        error_log("Query Conditions: " . print_r($where, true));
+
+        // Tính tổng số bản ghi (recordsTotal), không áp dụng bộ lọc
+        $totalRecords = $app->count("shift", []);
+
+        // Tính số bản ghi sau khi áp dụng bộ lọc (recordsFiltered)
+        $filteredRecords = $app->count("shift", [
+            "[>]employee" => ["employee" => "sn"]
+        ], "*", !empty($conditions) ? ["AND" => $conditions] : []);
+
+        // Truy vấn danh sách Nhảy ca
         $datas = $app->select("shift", [
             "[>]employee" => ["employee" => "sn"] // Thực hiện JOIN: shift.employee -> employee.sn
         ], [
@@ -83,16 +106,24 @@
             'shift.dayCreat',
             'shift.note'
         ], $where) ?? [];
-    
+
         // Log dữ liệu truy vấn để kiểm tra
         error_log("Fetched shifts Data: " . print_r($datas, true));
-    
+
         // Xử lý dữ liệu đầu ra
         $formattedData = array_map(function($data) use ($app, $jatbi) {
             $shiftLabels = array_column($app->select("timeperiod", ["acTzNumber", "name"]), "name", "acTzNumber");
 
             $temp = $shiftLabels[$data['shift']] ?? $jatbi->lang("Không xác định");
             $temp2 = $shiftLabels[$data['shift2']] ?? $jatbi->lang("Không xác định");
+
+            // Tùy chỉnh hiển thị trạng thái (statu) với màu sắc
+            $statuDisplay = $data['statu'];
+            if ($data['statu'] === 'Approved') {
+                $statuDisplay = '<a href="#" class="status-link" data-url="/shift-status/' . $data['idshift'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            } elseif ($data['statu'] === 'Pending') {
+                $statuDisplay = '<a href="#" class="status-link" style="color: green;" data-url="/shift-status/' . $data['idshift'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            }
 
             return [
                 "checkbox" => $app->component("box", ["data" => $data['idshift']]),
@@ -101,7 +132,7 @@
                 "shift" => "{$temp} : {$data['day']} || {$data['timeStart']} : {$data['timeEnd']}",
                 "shift2" => "{$temp2} : {$data['day2']} || {$data['timeStart2']} : {$data['timeEnd2']}",
                 "note" => $data['note'],
-                "statu" => $app->component("status",["url"=>"/shift-status/".$data['idshift'],"data"=>$data['statu'],"permission"=>['shift.edit']]),
+                "statu" => $statuDisplay,
                 "dayCreat" => $data['dayCreat'],
                 "action" => $app->component("action", [
                     "button" => [          
@@ -121,22 +152,22 @@
                 ]),                         
             ];
         }, $datas);
-    
+
         // Log dữ liệu đã format trước khi JSON encode
         error_log("Formatted Data: " . print_r($formattedData, true));
-    
+
         // Kiểm tra lỗi JSON
         $response = json_encode([
             "draw" => $draw,
-            "recordsTotal" => $count,
-            "recordsFiltered" => $count,
+            "recordsTotal" => $totalRecords,
+            "recordsFiltered" => $filteredRecords,
             "data" => $formattedData
         ]);
-    
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             error_log("JSON Encode Error: " . json_last_error_msg());
         }
-    
+
         echo $response;
     })->setPermissions(['shift']);
 
