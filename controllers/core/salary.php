@@ -65,9 +65,10 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
         $where["AND"]["salary.personSn"] = $employee;
     }
 
-    $count = $app->count("salary",[
-        "AND" => $where['AND'],
-    ]);
+    // $count = $app->count("salary", [
+    //     "[>]employee" => ["personSn" => "sn"],
+    //     "AND" => $where['AND'],
+    // ]);
 
     if($month == date("Y-m")) {
         checkStaff($app, $month);
@@ -76,8 +77,7 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
 
     $app->select("salary", [
         "[>]employee" => ["personSn" => "sn"],
-        ],
-        [
+    ],[
         'salary.personSn',
         'salary.departmentId',
         'salary.dailySalary',
@@ -166,6 +166,8 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
             $index++;
         }
     }
+
+    $count = count($datas);
 
     echo json_encode([
         "draw" => $draw,

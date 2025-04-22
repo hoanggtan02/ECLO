@@ -715,7 +715,7 @@ $app->router("/staffConfiguration/holiday-status/{id}", 'POST', function($vars) 
 
 //----------------------------------------Thêm ngày lễ----------------------------------------
 $app->router("/staffConfiguration/holiday-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
-    $vars['title'] = $jatbi->lang("Thêm Tiền lương");
+    $vars['title'] = $jatbi->lang("Thêm Ngày lễ");
     $vars['data'] = [
         "startDate"         => "1",
         "endDate"           => "1",
