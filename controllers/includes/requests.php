@@ -97,6 +97,7 @@
                         'labor_contract.add'      => $jatbi->lang("Thêm Hợp đồng lao động"),
                         'labor_contract.edit'     => $jatbi->lang("Sửa Hợp đồng lao động"),
                         'labor_contract.deleted'  => $jatbi->lang("Xóa Hợp đồng lao động"),
+                       
                     ]
                 ],
                 'insurance'=>[

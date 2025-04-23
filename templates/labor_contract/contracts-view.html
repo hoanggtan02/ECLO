@@ -1,0 +1,125 @@
+<div class="modal fade modal-load" tabindex="-1">
+  <div class="modal-dialog modal-lg pt-standalone">
+    <div class="modal-content rounded-5">
+      <div
+        class="d-flex w-100 justify-content-end align-items-center position-relative"
+      >
+        <button
+          type="button"
+          class="btn btn-primary position-absolute z-1 rounded-circle d-flex align-items-center justify-content-center width height top right"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+          style="--width: 50px; --height: 50px; --top: -5px; --right: -5px"
+        >
+          <i class="ti ti-x fs-4"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h5 class="mb-3">Chi tiết hợp đồng lao động #<?=$data['id']?></h5>
+        <table class="table table-bordered">
+          <tr>
+            <th>Số hợp đồng</th>
+            <td><?=htmlspecialchars($data['contract_number'] ?? 'N/A')?></td>
+          </tr>
+          <tr>
+            <th>Nhân viên</th>
+            <td><?=htmlspecialchars($data['employee_name'] ?? 'N/A')?></td>
+          </tr>
+          <tr>
+            <th>Phòng ban</th>
+            <td><?=htmlspecialchars($data['department_name'] ?? 'N/A')?></td>
+          </tr>
+          <tr>
+            <th>Chức vụ</th>
+            <td><?=htmlspecialchars($data['position_name'] ?? 'N/A')?></td>
+          </tr>
+          <tr>
+            <th>Loại hợp đồng</th>
+            <td>
+              <?=htmlspecialchars($jatbi->lang($data['contract_type'] ??
+              'N/A'))?>
+            </td>
+          </tr>
+          <tr>
+            <th>Thời hạn hợp đồng</th>
+            <td>
+              <?=htmlspecialchars($data['contract_duration'] ? $data['contract_duration'] . ' tháng' : 'N/A')?>
+            </td>
+          </tr>
+          <tr>
+            <th>Thời gian còn lại</th>
+            <td>
+              <?php
+                // Tính toán thời gian còn lại
+                $remainingDays = 'N/A';
+                if (isset($data['working_date']) && isset($data['contract_duration'])) {
+                    $workingDate = strtotime($data['working_date']);
+                    if ($workingDate) {
+                        $contractMonths = (int) $data['contract_duration'];
+                        $contractEndDate = strtotime("+{$contractMonths} months", $workingDate);
+                        $currentDate = time();
+                        $daysLeft = round(($contractEndDate - $currentDate) / (60 * 60 * 24));
+                        if ($daysLeft < 0) {
+                            $remainingDays = $jatbi->lang("Hết hạn"); } else {
+              $remainingMonths = floor($daysLeft / 30); $remainingDaysLeft =
+              $daysLeft % 30; $remainingDays = ($remainingMonths > 0 ?
+              "$remainingMonths " . $jatbi->lang("tháng") : "") .
+              ($remainingDaysLeft > 0 ? " $remainingDaysLeft " .
+              $jatbi->lang("ngày") : ""); if (empty($remainingDays)) {
+              $remainingDays = "$daysLeft " . $jatbi->lang("ngày"); } } } } echo
+              htmlspecialchars($remainingDays); ?>
+            </td>
+          </tr>
+          <tr>
+            <th>Ngày làm việc</th>
+            <td>
+              <?=htmlspecialchars($data['working_date'] ? date('d/m/Y', strtotime($data['working_date'])) : 'N/A')?>
+            </td>
+          </tr>
+          <tr>
+            <th>Ngày phỏng vấn</th>
+            <td>
+              <?=htmlspecialchars($data['interview_date'] ? date('d/m/Y', strtotime($data['interview_date'])) : 'N/A')?>
+            </td>
+          </tr>
+          <tr>
+            <th>Trình độ học vấn</th>
+            <td><?=htmlspecialchars($data['education_level'] ?? 'N/A')?></td>
+          </tr>
+          <tr>
+            <th>Bằng cấp</th>
+            <td><?=htmlspecialchars($data['degree'] ?? 'N/A')?></td>
+          </tr>
+          <tr>
+            <th>Ghi chú</th>
+            <td><?=htmlspecialchars($data['note'] ?? 'N/A')?></td>
+          </tr>
+          <tr>
+            <th>Lương</th>
+            <td>
+              <?php if (!empty($data['salaries'])): ?>
+              <?php foreach ($data['salaries'] as $salary): ?>
+              <?=htmlspecialchars($salary['salary_name'] . ' (' . number_format($salary['price']) . ' VND)')?><br />
+              <?php endforeach; ?>
+              <?php else: ?>
+              N/A
+              <?php endif; ?>
+            </td>
+          </tr>
+          <tr>
+            <th>Phụ cấp</th>
+            <td>
+              <?php if (!empty($data['allowances'])): ?>
+              <?php foreach ($data['allowances'] as $allowance): ?>
+              <?=htmlspecialchars($allowance['salary_name'] . ' (' . number_format($allowance['price']) . ' VND)')?><br />
+              <?php endforeach; ?>
+              <?php else: ?>
+              N/A
+              <?php endif; ?>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

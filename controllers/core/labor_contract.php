@@ -152,8 +152,17 @@
                             'permission' => ['labor_contract.deleted'],
                             'action' => ['data-url' => '/labor_contract-deleted?id='.$data['id'], 'data-action' => 'modal']
                         ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Chi tiết"),
+                            'permission' => ['labor_contract'],
+                            'action' => ['data-url' => '/labor_contract-view/'.$data['id'], 'data-action' => 'modal']
+                        ],
                     ]
                 ]),
+
+                "detail" => $app->component("action", [
+                    "button" => []]),
             ];
         }, $datas);
         
@@ -547,4 +556,55 @@
             echo json_encode(["status" => "error", "content" => "Lỗi hệ thống: " . $e->getMessage()]);
         }
     })->setPermissions(['labor_contract.edit']);
+
+
+// Route để hiển thị chi tiết hợp đồng
+$app->router("/labor_contract-view/{id}", 'GET', function($vars) use ($app, $jatbi) {
+    // Lấy dữ liệu hợp đồng từ bảng employee_contracts và các bảng liên quan
+    $vars['data'] = $app->get("employee_contracts", [
+        "[>]employee" => ["person_sn" => "sn"],
+        "[>]department" => ["employee.departmentId" => "departmentId"],
+        "[>]staff-position" => ["employee_contracts.position_id" => "id"],
+    ], [
+        "employee_contracts.id",
+        "employee_contracts.person_sn",
+        "employee.name(employee_name)",
+        "department.personName(department_name)",
+        "staff-position.name(position_name)",
+        "employee_contracts.contract_type",
+        "employee_contracts.contract_number",
+        "employee_contracts.contract_duration",
+        "employee_contracts.working_date",
+        "employee_contracts.interview_date",
+        "employee_contracts.degree",
+        "employee_contracts.education_level",
+        "employee_contracts.note",
+    ], [
+        "employee_contracts.id" => $vars['id'],
+    ]);
+
+    // Lấy thông tin lương và phụ cấp từ bảng contract_salary
+    $salary_data = $app->select("contract_salary", [
+        "[>]staff-salary" => ["Id_salary" => "id"],
+    ], [
+        "staff-salary.name(salary_name)",
+        "staff-salary.price",
+        "staff-salary.type",
+    ], [
+        "contract_salary.Id_contract" => $vars['id'],
+    ]);
+
+    // Thêm lương và phụ cấp vào $vars['data']
+    $vars['data']['salaries'] = array_filter($salary_data, fn($s) => $s['type'] == 1);
+    $vars['data']['allowances'] = array_filter($salary_data, fn($s) => $s['type'] == 2);
+
+    // Kiểm tra xem hợp đồng có tồn tại không
+    if ($vars['data']) {
+        // Render modal hiển thị hợp đồng
+        echo $app->render('templates/labor_contract/contracts-view.html', $vars, 'global');
+    } else {
+        // Nếu không tìm thấy hợp đồng, hiển thị modal lỗi
+        echo $app->render('templates/common/error-modal.html', $vars, 'global');
+    }
+})->setPermissions(['labor_contract']);
 ?>

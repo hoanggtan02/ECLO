@@ -1,68 +1,184 @@
 <div class="container">
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
-            <ul class="breadcrumb small mb-0">
-                <li class="breadcrumb-item small">
-                  <a href="/" class="pjax-load link-secondary">Trang chủ</a>
-                </li>
-                <li class="breadcrumb-item small text-body" aria-current="page">
-                  <?=$title?>
-                </li>
-              </ul>
-        </div>          
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+      <ul class="breadcrumb small mb-0">
+        <li class="breadcrumb-item small">
+          <a href="/" class="pjax-load link-secondary">Trang chủ</a>
+        </li>
+        <li class="breadcrumb-item small text-body" aria-current="page">
+          <?=$title?>
+        </li>
+      </ul>
     </div>
-    <div class="position-fixed bottom right z-3 dropup" style="--bottom:20px;--right:20px">
-        <button class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center" style="--width:60px;--height:60px;" data-bs-toggle="dropdown">
-            <i class="ti ti-menu-2 fs-2"></i>
-        </button>
-        <ul class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2" style="--min-width:100%">
-            <li class="my-2">
-                <a class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-checkbox="input.checker" data-url="/labor_contract-deleted" style="--width:50px;--height:50px;">
-                    <i class="ti ti-trash fs-3"></i>
-                </a>
-            </li>
-            <li class="my-2">
-                <a class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1" data-action="modal" data-url="/labor_contract-add" style="--width:50px;--height:50px;">
-                    <i class="ti ti-plus fs-3"></i>
-                </a>
-            </li>
-        </ul>
+  </div>
+  <div
+    class="position-fixed bottom right z-3 dropup"
+    style="--bottom: 20px; --right: 20px"
+  >
+    <button
+      class="btn btn-info rounded-circle width height d-flex align-items-center justify-content-center"
+      style="--width: 60px; --height: 60px"
+      data-bs-toggle="dropdown"
+    >
+      <i class="ti ti-menu-2 fs-2"></i>
+    </button>
+    <ul
+      class="dropdown-menu min-width bg-transparent border-0 justify-content-center p-2"
+      style="--min-width: 100%"
+    >
+      <li class="my-2">
+        <a
+          class="btn rounded-circle btn-danger width height d-flex justify-content-center align-items-center p-1"
+          data-action="modal"
+          data-checkbox="input.checker"
+          data-url="/labor_contract-deleted"
+          style="--width: 50px; --height: 50px"
+        >
+          <i class="ti ti-trash fs-3"></i>
+        </a>
+      </li>
+      <li class="my-2">
+        <a
+          class="btn rounded-circle btn-primary width height d-flex justify-content-center align-items-center p-1"
+          data-action="modal"
+          data-url="/labor_contract-add"
+          style="--width: 50px; --height: 50px"
+        >
+          <i class="ti ti-plus fs-3"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+    <div class="card-body">
+      <div class="custom-buttons d-none">
+        <div class="d-flex align-items-center justify-content-end">
+          <button
+            class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1"
+            data-action="modal"
+            data-url="/labor_contract-add"
+          >
+            <i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Thêm")?>
+          </button>
+          <button
+            class="btn rounded-pill btn-sm btn-danger d-flex align-items-center"
+            data-action="modal"
+            data-checkbox="input.checker"
+            data-url="/labor_contract-deleted"
+          >
+            <i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i>
+            <?=$jatbi->lang("Xóa")?>
+          </button>
+        </div>
+      </div>
+      <table
+        id="datatable"
+        data-table
+        class="table align-middle"
+        data-type="POST"
+        data-server="true"
+        data-processing="true"
+        data-page-length="10"
+        data-searching="true"
+        data-paging="true"
+        data-state-save="true"
+        style="width: 100%"
+      >
+        <thead>
+          <tr>
+            <th
+              data-name="checkbox"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-center"
+            >
+              <div class="form-check">
+                <input
+                  class="form-check-input checkall"
+                  type="checkbox"
+                  value=""
+                  data-checkbox="input.checker"
+                />
+              </div>
+            </th>
+            <th
+              data-name="employee_name"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("TÊN NHÂN VIÊN")?>
+            </th>
+            <th
+              data-name="department"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("PHÒNG BAN")?>
+            </th>
+            <th
+              data-name="contract_type"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("LOẠI HỢP ĐỒNG")?>
+            </th>
+            <th
+              data-name="contract_number"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("SỐ HỢP ĐỒNG")?>
+            </th>
+            <th
+              data-name="contract_duration"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("THỜI HẠN HỢP ĐỒNG")?>
+            </th>
+            <th
+              data-name="remaining_days"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("CÒN LẠI")?>
+            </th>
+            <th
+              data-name="working_date"
+              data-orderable="true"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-start"
+            >
+              <?=$jatbi->lang("NGÀY LÀM VIỆC")?>
+            </th>
+            <th
+              data-name="action"
+              data-orderable="false"
+              class="text-nowrap"
+              data-visible="true"
+              data-class="text-end"
+            >
+              <?=$jatbi->lang("Tùy chọn")?>
+            </th>
+          </tr>
+        </thead>
+      </table>
     </div>
-    <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
-		<div class="card-body">
-            <div class="custom-buttons d-none">
-                <div class="d-flex align-items-center justify-content-end">
-                    <button class="btn rounded-pill btn-sm btn-primary d-flex align-items-center me-1" data-action="modal" data-url="/labor_contract-add"><i class="ti ti-plus fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Thêm")?></button>
-                    <button class="btn rounded-pill btn-sm btn-danger d-flex align-items-center" data-action="modal" data-checkbox="input.checker" data-url="/labor_contract-deleted"><i class="ti ti-trash fs-6 me-1" aria-hidden="true"></i> <?=$jatbi->lang("Xóa")?></button>
-                </div>
-            </div>
-            <table id="datatable" 
-            data-table 
-            class="table align-middle" 
-            data-type="POST" 
-            data-server="true" 
-            data-processing="true" 
-            data-page-length="10"
-            data-searching="true"
-            data-paging="true"
-            data-state-save='true'
-            style="width:100%">
-                <thead>
-                    <tr>
-                        <th data-name="checkbox" data-orderable="false" class="text-nowrap" data-visible="true" data-class="text-center"><div class="form-check"> <input class="form-check-input checkall" type="checkbox" value="" data-checkbox="input.checker"/></div></th>                        
-                        <th data-name="employee_name" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("TÊN NHÂN VIÊN")?></th>
-                        <th data-name="department" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("PHÒNG BAN")?></th>
-                        <th data-name="contract_type" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("LOẠI HỢP ĐỒNG")?></th>
-                        <th data-name="contract_number" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("SỐ HỢP ĐỒNG")?></th>
-                        <th data-name="contract_duration" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("THỜI HẠN HỢP ĐỒNG")?></th>
-                        <th data-name="remaining_days" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("CÒN LẠI")?></th>
-                        <th data-name="working_date" data-orderable="true" class="text-nowrap" data-visible="true" data-class="text-start"><?=$jatbi->lang("NGÀY LÀM VIỆC")?></th>
-                        <th data-name="action" data-orderable="false" class="text-nowrap " data-visible="true" data-class="text-end"><?=$jatbi->lang("Tùy chọn")?></th>
-                    </tr>
-                </thead>
-        </table>
-    </div>
+  </div>
 </div>
-</div>
-
