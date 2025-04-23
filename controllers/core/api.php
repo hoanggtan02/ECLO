@@ -9,7 +9,7 @@ $app->router("/api", 'POST', function($vars) use ($app, $jatbi, $setting) {
 
     // Lấy dữ liệu từ request
     $input = file_get_contents("php://input");
-    file_put_contents("log1.txt", "Raw Input: " . $input . PHP_EOL, FILE_APPEND);
+    file_put_contents("log1.txt", "Raw Input: " . $input . PHP_EOL, FILE_APPEND);   
 
     // Chuyển đổi từ URL-encoded string thành mảng
     parse_str($input, $decoded_params);
