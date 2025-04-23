@@ -38,12 +38,12 @@
         $orderColumn = $validColumns[$orderColumnIndex] ?? "employee";
 
         // Điều kiện lọc dữ liệu
-        $conditions = [];
+        $conditions = ["AND" => []];
 
         // Tìm kiếm toàn cục (searchValue)
         if (!empty($searchValue)) {
-            $conditions["OR"] = [
-                "employee.name[~]" => $searchValue,
+            $conditions["AND"]["OR"] = [
+                "employee.name[~]" => $searchValue, // Tìm kiếm theo tên nhân viên
                 "shift.note[~]" => $searchValue,
                 "shift.shift[~]" => $searchValue,
                 "shift.shift2[~]" => $searchValue,
@@ -53,40 +53,28 @@
 
         // Lọc theo trạng thái (statu)
         if (!empty($statu)) {
-            $conditions["shift.statu"] = $statu;
+            $conditions["AND"]["shift.statu"] = $statu;
         }
 
         // Lọc theo ca 1 (shift)
         if (!empty($shift)) {
-            $conditions["shift.shift"] = $shift;
+            $conditions["AND"]["shift.shift"] = $shift;
         }
 
         // Lọc theo ca 2 (shift2)
         if (!empty($shift2)) {
-            $conditions["shift.shift2"] = $shift2;
+            $conditions["AND"]["shift.shift2"] = $shift2;
         }
 
-        // Xây dựng $where cho truy vấn
-        $where = [
-            "LIMIT" => [$start, $length],
-            "ORDER" => [$orderColumn => $orderDir]
-        ];
-
-        // Nếu có điều kiện lọc, thêm vào $where["AND"]
-        if (!empty($conditions)) {
-            $where["AND"] = $conditions;
+        // Kiểm tra nếu conditions bị trống, tránh lỗi SQL
+        if (empty($conditions["AND"])) {
+            unset($conditions["AND"]);
         }
 
-        // Log điều kiện lọc để debug
-        error_log("Query Conditions: " . print_r($where, true));
-
-        // Tính tổng số bản ghi (recordsTotal), không áp dụng bộ lọc
-        $totalRecords = $app->count("shift", []);
-
-        // Tính số bản ghi sau khi áp dụng bộ lọc (recordsFiltered)
-        $filteredRecords = $app->count("shift", [
+        // Đếm tổng số bản ghi (không dùng LIMIT)
+        $count = $app->count("shift", [
             "[>]employee" => ["employee" => "sn"]
-        ], "*", !empty($conditions) ? ["AND" => $conditions] : []);
+        ], "shift.idshift", $conditions);
 
         // Truy vấn danh sách Nhảy ca
         $datas = $app->select("shift", [
@@ -105,7 +93,10 @@
             'shift.statu',
             'shift.dayCreat',
             'shift.note'
-        ], $where) ?? [];
+        ], array_merge($conditions, [
+            "LIMIT" => [$start, $length],
+            "ORDER" => [$orderColumn => $orderDir]
+        ])) ?? [];
 
         // Log dữ liệu truy vấn để kiểm tra
         error_log("Fetched shifts Data: " . print_r($datas, true));
@@ -159,8 +150,8 @@
         // Kiểm tra lỗi JSON
         $response = json_encode([
             "draw" => $draw,
-            "recordsTotal" => $totalRecords,
-            "recordsFiltered" => $filteredRecords,
+            "recordsTotal" => $count,
+            "recordsFiltered" => $count,
             "data" => $formattedData
         ]);
 

@@ -1,0 +1,71 @@
+<div class="modal fade modal-load" tabindex="-1" data-bs-backdrop="static">
+	<div class="modal-dialog modal-md pt-standalone"> <!-- Changed modal-lg to modal-md -->
+		<div class="modal-content rounded-5">
+			<div class="d-flex w-100 justify-content-end align-items-center position-relative">
+				<button type="button" class="btn btn-primary position-absolute z-1 rounded-circle d-flex align-items-center justify-content-center width height top right" 
+					data-bs-dismiss="modal" aria-label="Close" 
+					style="--width:50px;--height:50px;--top:-5px;--right:-5px">
+					<i class="ti ti-x fs-4"></i>
+				</button>
+			</div>
+			<div class="modal-body">
+				<h5 class="fw-bold text-body mb-3"><?= $title ?></h5>
+				<div class="row g-2">
+					<div>
+                        <?= $jatbi->lang("Nhân Viên: ") ?>
+						<label class="fw-bold text-body mb-2">
+                        <?php foreach ($nv1 as $name): ?>
+                            <?php $temp = strstr($name, ' -', true); ?>
+                            <?= isset($data['employee']) && $data['employee'] == $temp ? $name : '' ?>
+                        <?php endforeach; ?>
+                        </label>
+					</div>
+                    <div>
+                        <?= $jatbi->lang("Mã Bảo Hiểm: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['idbh'] ?? '' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Số BHXH: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['numberbhxh'] ?? '' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Số Y Tế: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['numberyte'] ?? '' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Ngày Cấp BHXH: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['daybhxh'] ?? '' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Ngày Cấp Y Tế: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['dayyte'] ?? '' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Nơi Cấp BHXH: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['placebhxh'] ?? '' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Nơi Cấp Y Tế: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['placeyte'] ?? '' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Tiền Bảo Hiểm: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['moneybhxh'] ?? '' ?> / Tháng</label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Tiền Nhân Viên Đóng Bảo Hiểm: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['money'] ?? '' ?> / Tháng</label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Trạng Thái: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['statu'] === "A" ? 'Kích hoạt' : 'Không kích hoạt' ?></label>
+                    </div>
+                    <div>
+                        <?= $jatbi->lang("Ghi Chú: ") ?>
+                        <label class="fw-bold text-body mb-2"><?= $data['note'] ?? '' ?></label>
+                    </div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
