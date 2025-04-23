@@ -33,26 +33,32 @@
         $orderColumn = $validColumns[$orderColumnIndex] ?? "type";
     
         // Điều kiện lọc dữ liệu
-        $where = [
-            "AND" => [
-                "OR" => [
-                    "employee.name[~]" => $searchValue,
-                    "insurance.placebhxh[~]" => $searchValue,
-                    "insurance.placeyte[~]" => $searchValue, 
-                    "insurance.numberyte[~]" => $searchValue,
-                    "insurance.numberbhxh[~]" => $searchValue,               ]
-            ],
-            "LIMIT" => [$start, $length],
-            "ORDER" => [$orderColumn => $orderDir]
-        ];
-    
-        if (!empty($statu)) {
-            $where["AND"]["insurance.statu"] = $statu;
+        $conditions = ["AND" => []];
+
+        if (!empty($searchValue)) {
+            $conditions["AND"]["OR"] = [
+                "employee.name[~]" => $searchValue,
+                "insurance.placebhxh[~]" => $searchValue,
+                "insurance.placeyte[~]" => $searchValue,
+                "insurance.numberyte[~]" => $searchValue,
+                "insurance.numberbhxh[~]" => $searchValue,
+            ];
         }
-    
+
+        if (!empty($statu)) {
+            $conditions["AND"]["insurance.statu"] = $statu;
+        }
+
+        // Kiểm tra nếu conditions bị trống, tránh lỗi SQL
+        if (empty($conditions["AND"])) {
+            unset($conditions["AND"]);
+        }
+
         // Đếm số bản ghi
-        $count = $app->count("insurance", ["AND" => $where["AND"]]);
-    
+        $count = $app->count("insurance", [
+            "[>]employee" => ["employee" => "sn"]
+        ], "insurance.idbh", $conditions);
+
         // Truy vấn danh sách Khung thời gian
         $datas = $app->select("insurance", [
             "[>]employee" => ["employee" => "sn"] // Thực hiện JOIN: insurance.employee -> employee.sn
@@ -69,7 +75,10 @@
             'insurance.placeyte',
             'insurance.statu',
             'insurance.note'
-        ], $where) ?? [];
+        ], array_merge($conditions, [
+            "LIMIT" => [$start, $length],
+            "ORDER" => [$orderColumn => $orderDir]
+        ])) ?? [];
     
         // Log dữ liệu truy vấn để kiểm tra
         error_log("Fetched insurances Data: " . print_r($datas, true));
@@ -105,6 +114,12 @@
                             'name' => $jatbi->lang("Xóa"),
                             'permission' => ['insurance.deleted'],
                             'action' => ['data-url' => '/insurance-deleted?idbh=' . $data['idbh'], 'data-action' => 'modal']
+                        ],
+                        [
+                            'type' => 'button',
+                            'name' => $jatbi->lang("Chi tiết"),
+                            'permission' => ['insurance'],
+                            'action' => ['data-url' => '/insurance-detail?idbh=' . $data['idbh'], 'data-action' => 'modal']
                         ],
                     ]
                 ]),                         
@@ -231,7 +246,7 @@
 
     //Sửa insurance
     $app->router("/insurance-edit", 'GET', function($vars) use ($app, $jatbi) {
-        $vars['title'] = $jatbi->lang("Sửa insurance");
+        $vars['title'] = $jatbi->lang("Sửa Bảo Hiểm");
         $vars['nv1'] = array_map(function($employee) {
             return $employee['sn'] . ' - ' . $employee['name'];
         }, $app->select("employee", ["name", "sn"], ["status" => "A"]));
@@ -344,4 +359,23 @@
             echo json_encode(["status"=>"error","content"=>$jatbi->lang("Không tìm thấy dữ liệu")]);
         }
     })->setPermissions(['insurance.edit']);
+
+    //Chi tiết insurance
+    $app->router("/insurance-detail", 'GET', function($vars) use ($app, $jatbi) {
+        $vars['title'] = $jatbi->lang("Chi tiết bảo hiểm");
+        $vars['nv1'] = array_map(function($employee) {
+            return $employee['sn'] . ' - ' . $employee['name'];
+        }, $app->select("employee", ["name", "sn"]));
+        $idbh = isset($_GET['idbh']) ? $app->xss($_GET['idbh']) : null;
+        if (!$idbh) {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+            return;
+        }
+        $vars['data'] = $app->get("insurance", "*", ["idbh" => $idbh]);
+        if ($vars['data']) {
+            echo $app->render('templates/employee/insurance-detail.html', $vars, 'global');
+        } else {
+            echo $app->render('templates/common/error-modal.html', $vars, 'global');
+        }
+    })->setPermissions(['insurance']);
 ?>

@@ -38,11 +38,11 @@
         $orderColumn = $validColumns[$orderColumnIndex] ?? "type";
 
         // Điều kiện lọc dữ liệu
-        $conditions = [];
+        $conditions = ["AND" => []];
 
         // Tìm kiếm toàn cục (searchValue)
         if (!empty($searchValue)) {
-            $conditions["OR"] = [
+            $conditions["AND"]["OR"] = [
                 "employee.name[~]" => $searchValue, // Tìm kiếm theo tên nhân viên
                 "overtime.money[~]" => $searchValue,
                 "overtime.dayStart[~]" => $searchValue,
@@ -54,45 +54,33 @@
 
         // Lọc theo trạng thái (statu)
         if (!empty($statu)) {
-            $conditions["overtime.statu"] = $statu;
+            $conditions["AND"]["overtime.statu"] = $statu;
         }
 
         // Lọc theo loại tăng ca (type)
         if (!empty($type)) {
-            $conditions["overtime.type"] = $type;
+            $conditions["AND"]["overtime.type"] = $type;
         }
 
         // Lọc theo ngày bắt đầu
         if (!empty($dayStart)) {
-            $conditions["overtime.dayStart[>=]"] = $dayStart . ' 00:00:00';
+            $conditions["AND"]["overtime.dayStart[>=]"] = $dayStart . ' 00:00:00';
         }
 
         // Lọc theo ngày kết thúc
         if (!empty($dayEnd)) {
-            $conditions["overtime.dayEnd[<=]"] = $dayEnd . ' 23:59:59';
+            $conditions["AND"]["overtime.dayEnd[<=]"] = $dayEnd . ' 23:59:59';
         }
 
-        // Xây dựng $where cho truy vấn
-        $where = [
-            "LIMIT" => [$start, $length],
-            "ORDER" => [$orderColumn => $orderDir]
-        ];
-
-        // Nếu có điều kiện lọc, thêm vào $where["AND"]
-        if (!empty($conditions)) {
-            $where["AND"] = $conditions;
+        // Kiểm tra nếu conditions bị trống, tránh lỗi SQL
+        if (empty($conditions["AND"])) {
+            unset($conditions["AND"]);
         }
 
-        // Log điều kiện lọc để debug
-        error_log("Query Conditions: " . print_r($where, true));
-
-        // Tính tổng số bản ghi (recordsTotal), không áp dụng bộ lọc
-        $totalRecords = $app->count("overtime", []);
-
-        // Tính số bản ghi sau khi áp dụng bộ lọc (recordsFiltered)
-        $filteredRecords = $app->count("overtime", [
+        // Đếm tổng số bản ghi (không dùng LIMIT)
+        $count = $app->count("overtime", [
             "[>]employee" => ["employee" => "sn"]
-        ], "*", !empty($conditions) ? ["AND" => $conditions] : []);
+        ], "overtime.ids", $conditions);
 
         // Truy vấn danh sách Tăng ca
         $datas = $app->select("overtime", [
@@ -107,7 +95,10 @@
             'overtime.note',
             'overtime.statu',
             'overtime.day'
-        ], $where) ?? [];
+        ], array_merge($conditions, [
+            "LIMIT" => [$start, $length],
+            "ORDER" => [$orderColumn => $orderDir]
+        ])) ?? [];
 
         // Log dữ liệu truy vấn để kiểm tra
         error_log("Fetched overtimes Data: " . print_r($datas, true));
@@ -165,8 +156,8 @@
         // Kiểm tra lỗi JSON
         $response = json_encode([
             "draw" => $draw,
-            "recordsTotal" => $totalRecords,
-            "recordsFiltered" => $filteredRecords,
+            "recordsTotal" => $count,
+            "recordsFiltered" => $count,
             "data" => $formattedData
         ]);
 
