@@ -99,9 +99,10 @@ $app->router("/manager/employee", 'POST', function($vars) use ($app, $jatbi) {
                         'name' => $jatbi->lang("Xem Thời Gian Ra Vào"),
                         'permission' => ['checkinout.edit'],
                         'action' => ['data-url' => '/manager/checkinout-edit?box=' . $data['sn'], 'data-action' => 'modal']
-                    ],
-                ]
+                    ]
+                ] 
             ]),
+            "view" => '<a href="/manager/employee-detail?box=' . $data['sn'] . '" title="' . $jatbi->lang("Xem Chi Tiết") . '"><i class="ti ti-eye"></i></a>',
         ];
     }, $datas);
 
@@ -113,6 +114,68 @@ $app->router("/manager/employee", 'POST', function($vars) use ($app, $jatbi) {
         "data" => $formattedData
     ]);
 })->setPermissions(['employee']);
+
+$app->router("/manager/employee-detail", 'GET', function($vars) use ($app, $jatbi, $setting) {
+    $vars['title'] = $jatbi->lang("Chi tiết nhân viên");
+
+    // Lấy giá trị box (sn) từ query parameter
+    $sn = $_GET['box'] ?? null;
+
+    if (!$sn) {
+        // Nếu không có sn, trả về thông báo lỗi
+        $vars['error'] = $jatbi->lang("Không tìm thấy nhân viên");
+        echo $app->render('templates/employee/employee-detail.html', $vars);
+        return;
+    }
+
+    // Truy vấn thông tin nhân viên từ bảng employees
+
+    $employee = $app->select("employee", [
+        "sn",
+        "name",
+        "type",
+        "acGroupNumber",
+        "departmentId",
+        "status"
+    ], ["sn" => $sn])[0] ?? null;
+    
+    // Truy vấn khuôn mặt 
+    $face_employee = $app->select("face_employee", [
+        "img_base64"
+    ], ["employee_sn" => $sn]);
+
+    // Truy vấn hợp đồng lao động từ bảng contracts
+    $contracts = $app->select("employee_contracts","*", ["person_sn" => $sn]);
+
+    // Truy vấn thông tin bảo hiểm từ bảng insurances
+    $insurances = $app->select("insurance","*", ["employee" => $sn]);
+
+    // Debug dữ liệu (tạm thời, có thể xóa sau khi kiểm tra)
+    
+    // echo "<pre>";
+    // var_dump("Employee:", $employee);
+    // var_dump("Contracts:", $contracts);
+    //var_dump("Insurances:", $insurances);
+    // var_dump($face_employee);
+    // echo "</pre>";
+    //die();
+    
+
+    // Truyền dữ liệu vào template
+    $vars['employee'] = $employee;
+    $vars['contracts'] = $contracts;
+    $vars['insurances'] = $insurances;
+    $vars['face'] = $face_employee[0]['img_base64'] ?? '';
+
+    
+
+    // Render template
+    echo $app->render('templates/employee/employee-detail.html', $vars);
+
+})->setPermissions(['employee']);
+
+
+
 
 $app->router("/manager/employee-add", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Nhân viên");
