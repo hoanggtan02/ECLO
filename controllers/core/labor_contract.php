@@ -173,6 +173,7 @@
             "recordsFiltered" => $count,
             "data" => $formattedData,
         ]);
+        
     })->setPermissions(['labor_contract']);
 
     

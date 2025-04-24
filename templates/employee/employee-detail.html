@@ -1,0 +1,204 @@
+<div class="container">
+    <!-- Tiêu đề và breadcrumb -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 fw-bold text-body"><?=$title?></h4>
+            <ul class="breadcrumb small mb-0">
+                <li class="breadcrumb-item small">
+                    <a href="/" class="pjax-load link-secondary"><?=$jatbi->lang("Trang chủ")?></a>
+                </li>
+                <li class="breadcrumb-item small">
+                    <a href="/manager/employee" class="pjax-load link-secondary"><?=$jatbi->lang("Nhân viên")?></a>
+                </li>
+                <li class="breadcrumb-item small text-body" aria-current="page">
+                    <?=$jatbi->lang("Chi tiết nhân viên")?>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Hiển thị thông báo lỗi nếu có -->
+    <?php if (isset($error)) { ?>
+        <div class="alert alert-danger"><?=$error?></div>
+    <?php } else { ?>
+        <div class="row">
+            <!-- Sidebar Thông tin cá nhân -->
+            <div class="col-xl-3 mb-4">
+                <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
+                    <button class="btn btn-light position-absolute top-0 start-0 m-2" data-action="modal" data-url="/manager/employee-edit?id=<?= $employee['sn'] ?? 0 ?>"><i class="ti ti-edit" aria-hidden="true"></i></button>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <?php if (!empty($face)) { ?> 
+                                <img src="data:image/jpeg;base64,<?= htmlspecialchars($face) ?>" class="rounded-circle mx-auto" style="width: 100px; height: 100px;" alt="Ảnh nhân viên">
+                            <?php } else { ?>
+                                <div class="rounded-circle bg-secondary p-4 mx-auto" style="width: 100px; height: 100px;"></div>
+                            <?php } ?>
+                        </div>
+                                              
+                        <h5 class="fw-bold text-center mb-3"><?=$jatbi->lang("Thông tin cá nhân")?></h5>
+                        <?php if ($employee) { ?>
+                            <?php
+                            // Ánh xạ type thành văn bản
+                            $typeLabels = [
+                                "1" => $jatbi->lang("Nhân viên nội bộ"),
+                                "2" => $jatbi->lang("Khách"),
+                                "3" => $jatbi->lang("Danh sách đen"),
+                            ];
+                            $employeeType = isset($employee['type']) ? ($typeLabels[$employee['type']] ?? $jatbi->lang("Không xác định")) : $jatbi->lang("Không xác định");
+
+                            // Ánh xạ status thành văn bản
+                            $statusLabels = [
+                                "A" => $jatbi->lang("Chưa kích hoạt"),
+                                "D" => $jatbi->lang("Đã kích hoạt"),
+                            ];
+                            $employeeStatus = isset($employee['status']) ? ($statusLabels[$employee['status']] ?? $jatbi->lang("Không xác định")) : $jatbi->lang("Không xác định");
+
+                            // Lấy tên phòng ban từ departmentID (giả định có bảng departments)
+                            $departmentName = $jatbi->lang("Không xác định");
+                            if (isset($employee['departmentId'])) {
+                                $department = $app->select("department", ["personName"], ["departmentId" => $employee['departmentId']])[0] ?? null;
+                                $departmentName = $department['personName'] ?? $jatbi->lang("Không xác định");
+                            }
+                            ?>
+                            <ul class="list-unstyled small mb-0">
+                                <li><strong><?=$jatbi->lang("ID")?>:</strong> <?=isset($employee['sn']) ? $employee['sn'] : $jatbi->lang("Không xác định")?></li>
+                                <li><strong><?=$jatbi->lang("Họ & Tên")?>:</strong> <?=isset($employee['name']) ? $employee['name'] : $jatbi->lang("Không xác định")?></li>
+                                <li><strong><?=$jatbi->lang("Loại nhân viên")?>:</strong> <?=$employeeType?></li>
+                                <li><strong><?=$jatbi->lang("Số nhóm truy cập")?>:</strong> <?=isset($employee['acGroupNumber']) ? $employee['acGroupNumber'] : $jatbi->lang("Không xác định")?></li>
+                                <li><strong><?=$jatbi->lang("Phòng ban")?>:</strong> <?=$departmentName?></li>
+                                <li><strong><?=$jatbi->lang("Trạng thái")?>:</strong> <?=$employeeStatus?></li>
+                            </ul>
+                        <?php } else { ?>
+                            <div class="text-center text-muted"><?=$jatbi->lang("Không tìm thấy dữ liệu")?></div>
+                        <?php } ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-xl-9">
+                <!-- Hợp đồng lao động -->
+                <div class="card mb-4 bg-body bg-opacity-50 shadow border-0 rounded-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><?=$jatbi->lang("Hợp đồng lao động")?></h6>
+                        <div>
+                            <?php if ($jatbi->permission(['labor_contract']) == 'true') { ?>
+                                <button class="btn btn-sm btn-danger rounded-pill me-1" data-action="modal" data-url="/manager/employee-deleted?sn=<?=$employee['sn']?>">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            <?php } ?>
+                            <?php if ($jatbi->permission(['labor_contract']) == 'true') { ?>
+                                <button class="btn btn-sm btn-primary rounded-pill" data-action="modal" data-url="/labor_contract-add">
+                                    <i class="ti ti-plus"></i>
+                                </button>
+                            <?php } ?>
+                        </div>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Loại hợp đồng")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Số hợp đồng")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Công việc")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Thời hạn")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Còn lại")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Ngày làm việc")?></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($contracts)) { ?>
+                                    <?php foreach ($contracts as $contract) { ?>
+                                        <tr>
+                                            <td><?=isset($contract['contract_type']) ? $contract['contract_type'] : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($contract['contract_number']) ? $contract['contract_number'] : '-'?></td>
+                                            <td><?=isset($contract['job_title']) ? $contract['job_title'] : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($contract['duration']) ? $contract['duration'] : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($contract['remaining_time']) ? $contract['remaining_time'] : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($contract['start_date']) ? $contract['start_date'] : $jatbi->lang("Không xác định")?></td>
+                                            <td><i class="ti ti-edit"></i></td>
+                                            <td><i class="ti ti-eye"></i></td>
+                                        </tr>
+                                    <?php } ?>
+                                <?php } else { ?>
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted"><?=$jatbi->lang("Không tìm thấy dữ liệu")?></td>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Bảo hiểm -->
+                <div class="card mb-4 bg-body bg-opacity-50 shadow border-0 rounded-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><?=$jatbi->lang("Bảo hiểm")?></h6>
+                        <div>
+                            <?php if ($jatbi->permission(['employee.deleted']) == 'true') { ?>
+                                <button class="btn btn-sm btn-danger rounded-pill me-1" data-action="modal" data-url="/manager/employee-deleted?sn=<?=$employee['sn']?>">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            <?php } ?>
+                            <?php if ($jatbi->permission(['employee.add']) == 'true') { ?>
+                                <button class="btn btn-sm btn-primary rounded-pill" data-action="modal" data-url="/insurance-add">
+                                    <i class="ti ti-plus"></i>
+                                </button>
+                            <?php } ?>
+                        </div>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <!-- <th class="text-nowrap"><?=$jatbi->lang("ID BH")?></th> -->
+                                    <th class="text-nowrap"><?=$jatbi->lang("Số BHXH")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Số tiền")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Ngày cấp BHXH")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Nơi cấp BHXH")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Số Y Tế")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Ngày cấp Y Tế")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Nơi cấp Y Tế")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Ngày")?></th>
+                                    <th class="text-nowrap"><?=$jatbi->lang("Trạng thái")?></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($insurances)) { ?>
+                                    <?php foreach ($insurances as $insurance) { ?>
+                                        <tr> 
+                                            <!-- <td><?=isset($insurance['idbh']) ? htmlspecialchars($insurance['idbh']) : $jatbi->lang("Không xác định")?></td> -->
+                                            <td><?=isset($insurance['numberbhxh']) ? htmlspecialchars($insurance['numberbhxh']) : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($insurance['money']) ? number_format($insurance['money'], 0, ',', '.') : '0'?></td>
+                                            <td><?=isset($insurance['daybhxh']) ? htmlspecialchars($insurance['daybhxh']) : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($insurance['placebhxh']) ? htmlspecialchars($insurance['placebhxh']) : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($insurance['numberyte']) ? htmlspecialchars($insurance['numberyte']) : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($insurance['dayyte']) ? htmlspecialchars($insurance['dayyte']) : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($insurance['placeyte']) ? htmlspecialchars($insurance['placeyte']) : $jatbi->lang("Không xác định")?></td>
+                                            <td><?=isset($insurance['day']) ? htmlspecialchars($insurance['day']) : $jatbi->lang("Không xác định")?></td>
+                                            <td>
+                                                <span class="badge <?= isset($insurance['status']) && $insurance['status'] == 'D' ? 'bg-success' : 'bg-danger' ?>">
+                                                    <?=isset($insurance['status']) && $insurance['status'] == 'D' ? $jatbi->lang("Đã kích hoạt") : $jatbi->lang("Chưa kích hoạt")?>
+                                                </span>
+                                            </td>
+                                            <td><i class="ti ti-edit"></i></td>
+                                            <td><i class="ti ti-eye"></i></td>
+                                        </tr>
+                                    <?php } ?>
+                                <?php } else { ?>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted"><?=$jatbi->lang("Không tìm thấy dữ liệu")?></td>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php } ?>
+</div>
