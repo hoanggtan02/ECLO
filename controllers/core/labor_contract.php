@@ -557,7 +557,6 @@
         }
     })->setPermissions(['labor_contract.edit']);
 
-
 // Route để hiển thị chi tiết hợp đồng
 $app->router("/labor_contract-view/{id}", 'GET', function($vars) use ($app, $jatbi) {
     // Lấy dữ liệu hợp đồng từ bảng employee_contracts và các bảng liên quan
@@ -583,13 +582,28 @@ $app->router("/labor_contract-view/{id}", 'GET', function($vars) use ($app, $jat
         "employee_contracts.id" => $vars['id'],
     ]);
 
-    // Lấy thông tin lương và phụ cấp từ bảng contract_salary
+    // Tính thời gian còn lại của hợp đồng
+    if ($vars['data']) {
+        $workingDate = strtotime($vars['data']['working_date']);
+        if ($workingDate && isset($vars['data']['contract_duration'])) {
+            $contractMonths = (int) $vars['data']['contract_duration'];
+            $contractEndDate = strtotime("+{$contractMonths} months", $workingDate);
+            $currentDate = time();
+            $remainingDays = round(($contractEndDate - $currentDate) / (60 * 60 * 24));
+            $vars['data']['remaining_days'] = formatRemainingTime($remainingDays, $jatbi);
+        } else {
+            $vars['data']['remaining_days'] = $jatbi->lang("Không xác định");
+        }
+    }
+
+  
     $salary_data = $app->select("contract_salary", [
         "[>]staff-salary" => ["Id_salary" => "id"],
     ], [
         "staff-salary.name(salary_name)",
         "staff-salary.price",
         "staff-salary.type",
+        "staff-salary.note(salary_note)",
     ], [
         "contract_salary.Id_contract" => $vars['id'],
     ]);
@@ -598,13 +612,7 @@ $app->router("/labor_contract-view/{id}", 'GET', function($vars) use ($app, $jat
     $vars['data']['salaries'] = array_filter($salary_data, fn($s) => $s['type'] == 1);
     $vars['data']['allowances'] = array_filter($salary_data, fn($s) => $s['type'] == 2);
 
-    // Kiểm tra xem hợp đồng có tồn tại không
-    if ($vars['data']) {
-        // Render modal hiển thị hợp đồng
-        echo $app->render('templates/labor_contract/contracts-view.html', $vars, 'global');
-    } else {
-        // Nếu không tìm thấy hợp đồng, hiển thị modal lỗi
-        echo $app->render('templates/common/error-modal.html', $vars, 'global');
-    }
+    echo $app->render('templates/labor_contract/contracts-view.html', $vars, 'global');
+
 })->setPermissions(['labor_contract']);
 ?>
