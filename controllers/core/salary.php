@@ -93,6 +93,7 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
         'salary.discipline',
         'salary.salaryAdvance',
         'salary.month',
+        'salary.currentSalary',
         'employee.name (personName)',
         ], $where, function ($data) use (&$datas,$jatbi,$app) {
             $insurance = (float)$app->sum("insurance", "money", [// bảo hiểm
@@ -131,29 +132,29 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                 $disciplineMoney += $item['amount'];
             }
 
-            $total = $data['workingDays'] + $data['paidLeave'];
+            // $total = $data['workingDays'] + $data['paidLeave'];
 
             $penalty = penalty ($app, $data['personSn'], $data['lateArrival'], $data['earlyLeave']);
 
-            $provisionalSalary = $total * $data['dailySalary'] -$insurance + $overtimeMoney + $rewardMoney + $disciplineMoney -$penalty;// tạm tính
+            // $provisionalSalary = $total * $data['dailySalary'] -$insurance + $overtimeMoney + $rewardMoney + $disciplineMoney -$penalty;// tạm tính
             $datas[] = [
                 "personSn"                  => $data['personSn'] . " - " . $data['personName'],
                 "departmentId"              => $data['departmentId'],
-                "workingDays"               => $data['workingDays'] . ' / ' . $data['totalWorkingDays'],
+                "workingDays"               => $data['workingDays'],
                 "insurance"                 => number_format($insurance, 0, '.', ','),
-                "dailySalary"               => number_format($data['dailySalary'], 0, '.', ','),
+                "dailySalary"               => 0,
                 "overtime"                  => number_format($overtimeMoney, 0, '.', ',') . " / " . count($overtime),
                 "lateArrival/earlyLeave"    => $data['lateArrival'] . ' / ' . $data['earlyLeave'],
                 "unpaidLeave"               => $data['unpaidLeave'],
                 "paidLeave"                 => $data['paidLeave'],
                 "unauthorizedLeave"         => $data['unauthorizedLeave'],
-                "total"                     => $total,
+                "total"                     => 00,
                 "reward"                    => number_format($rewardMoney, 0, '.', ',') . " / " . count($reward),
                 "discipline"                => number_format($disciplineMoney, 0, '.', ',') . " / " . count($discipline),
                 "penalty"                   => $penalty,
-                "provisionalSalary"         => number_format($provisionalSalary, 0, '.', ','),
+                "provisionalSalary"         => number_format($data["currentSalary"], 0, '.', ','),
                 "salaryAdvance"             => number_format($data['salaryAdvance'], 0, '.', ','),
-                "salaryReceived"            => number_format($provisionalSalary - $data['salaryAdvance'], 0, '.', ','),
+                "salaryReceived"            => number_format($data["currentSalary"] - $data['salaryAdvance'], 0, '.', ','),
             ];
     }); 
 
@@ -376,6 +377,7 @@ function attendanceTracking($app) {
         $paidLeave = 0;
         $unpaidLeave = 0;
         $unauthorizedLeave = 0;
+        $currentSalary = 00; 
         
         $workingDate = $app->get("employee_contracts", [
             "working_date",
@@ -393,6 +395,19 @@ function attendanceTracking($app) {
 
         while ($date->format('Y-m') == $s["month"]) {// duyệt từng ngày trong tháng
 
+            $dailySalary = $app->get("employee_contracts", [
+                "[>]contract_salary" => ["id" => "Id_contract"],
+                "[>]staff-salary" => ["contract_salary.Id_salary" => "id"], 
+            ], [
+                "staff-salary.price",
+                "staff-salary.priceValue",
+            ], [
+                "employee_contracts.person_sn"          => $s["personSn"],
+                "employee_contracts.working_date[<=]"   => $date->format('Y-m-d'),
+                "ORDER"             => ["employee_contracts.working_date" => "DESC"],
+                "LIMIT"             => 1
+            ]);
+
             $holiday = $app->has("staff-holiday", [// kiểm tra ngày lễ
                 "startDate[<=]" => $date->format('Y-m-d'),
                 "endDate[>=]"   => $date->format('Y-m-d'),
@@ -400,129 +415,142 @@ function attendanceTracking($app) {
             ]); 
             if(empty($holiday)) {
                 $d = $date->format('l');// lấy thứ hiện tại
-            $timeMin = $app->min("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
-                "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
-                "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
-                "personSn"       => $s["personSn"],
-            ]);
-            if(!empty($timeMin)) { $timeMin = new DateTime($timeMin); }
-            $timeMax = $app->max("record", "createTime", [
-                "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
-                "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
-                "personSn"       => $s["personSn"],
-            ]);
-            if(!empty($timeMax)) { $timeMax = new DateTime($timeMax); }
-            
-            switch ($d) {
-                case 'Monday':
-                    if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
+                $timeMin = $app->min("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
+                    "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
+                    "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
+                    "personSn"       => $s["personSn"],
+                ]);
+                if(!empty($timeMin)) { $timeMin = new DateTime($timeMin); }
+                $timeMax = $app->max("record", "createTime", [
+                    "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
+                    "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
+                    "personSn"       => $s["personSn"],
+                ]);
+                if(!empty($timeMax)) { $timeMax = new DateTime($timeMax); }
+                
+                switch ($d) {
+                    case 'Monday':
+                        if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
+                            break;
+                        } else $totalWorkingDays++;
+
+                        if($timeMin) {// nếu đi làm + 1 ngày công
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
+                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["monStart"]);
+                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["monEnd"]);
+                        }
+                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                         break;
-                    } else $totalWorkingDays++;
-   
-                    if($timeMin) {// nếu đi làm + 1 ngày công
-                        $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["monStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["monEnd"]);
+                    case 'Tuesday':
+                        if($s['tue_off'] == '1') {
+                            break;
+                        } else $totalWorkingDays++;
+                        if($timeMin) {
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["tueStart"], $s["tueEnd"], $dailySalary["price"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
+                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
+                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
+                            break;
+                        }
+                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                        break;
+                    case 'Wednesday':
+                        if($s['wed_off'] == '1') {
+                            break;
+                        } else $totalWorkingDays++;
+                        if($timeMin) {
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["wedStart"], $s["wedEnd"], $dailySalary["price"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
+                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["wedStart"]);
+                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["wedEnd"]);
+                            break;
+                        }
+                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                        break;
+                    case 'Thursday':
+                        if($s['thu_off'] == '1') {
+                            break;
+                        } else $totalWorkingDays++;
+                        if($timeMin) {
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["thursStart"], $s["thursEnd"], $dailySalary["price"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
+                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["thursStart"]);
+                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["thursEnd"]);
+                            break;
+                        }   
+                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                        break;
+                    case 'Friday':
+                        if($s['fri_off'] == '1') {
+                            break;
+                        } else $totalWorkingDays++;
+                        if($timeMin) {
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["friStart"], $s["friEnd"], $dailySalary["price"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
+                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["friStart"]);
+                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["friEnd"]);
+                            break;
+                        }
+                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                        break;
+                    case 'Saturday':
+                        if($s['sat_off'] == '1') {
+                            break;
+                        } else $totalWorkingDays++;
+                        if($timeMin) {
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["satStart"], $s["satEnd"], $dailySalary["price"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
+                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["satStart"]);
+                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["satEnd"]);
+                            break;
+                        }
+                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                        break;
+                    case 'Sunday':
+                        if($s['sun_off'] == '1') {
+                            break;
+                        } else $totalWorkingDays++;
+                        if($timeMin) {
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["sunStart"], $s["sunEnd"], $dailySalary["price"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
+                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["sunStart"]);
+                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["sunEnd"]);
+                            break;
+                        }
+                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break; 
+                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                        break;
+                    default:
+                        break;
                     }
-                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                    break;
-                case 'Tuesday':
-                    if($s['tue_off'] == '1') {
-                        break;
-                    } else $totalWorkingDays++;
-                    if($timeMin) {
-                        $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
-                        break;
+                } else {
+                    if(!empty($dailySalary) && $dailySalary["priceValue"] != 1) {
+                            $workingDays++;
+                            $totalWorkingDays++;
                     }
-                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                    break;
-                case 'Wednesday':
-                    if($s['wed_off'] == '1') {
-                        break;
-                    } else $totalWorkingDays++;
-                    if($timeMin) {
-                        $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["wedStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["wedEnd"]);
-                        break;
-                    }
-                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                    break;
-                case 'Thursday':
-                    if($s['thu_off'] == '1') {
-                        break;
-                    } else $totalWorkingDays++;
-                    if($timeMin) {
-                        $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["thursStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["thursEnd"]);
-                        break;
-                    }   
-                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                    break;
-                case 'Friday':
-                    if($s['fri_off'] == '1') {
-                        break;
-                    } else $totalWorkingDays++;
-                    if($timeMin) {
-                        $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["friStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["friEnd"]);
-                        break;
-                    }
-                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                    break;
-                case 'Saturday':
-                    if($s['sat_off'] == '1') {
-                        break;
-                    } else $totalWorkingDays++;
-                    if($timeMin) {
-                        $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["satStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["satEnd"]);
-                        break;
-                    }
-                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                    break;
-                case 'Sunday':
-                    if($s['sun_off'] == '1') {
-                        break;
-                    } else $totalWorkingDays++;
-                    if($timeMin) {
-                        $workingDays++;
-                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["sunStart"]);
-                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["sunEnd"]);
-                        break;
-                    }
-                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break; 
-                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                    break;
-                default:
-                    break;
                 }
-            }
+            if($date->format('Y-m-d') == date('Y-m-d')) break;
             $date->modify('+1 day');  
         }
 
-        $dailySalary = $app->get("employee_contracts", [
-            "[>]contract_salary" => ["id" => "Id_contract"],
-            "[>]staff-salary" => ["contract_salary.Id_salary" => "id"], 
-        ], [
-            "staff-salary.price",
-        ], [
-            "employee_contracts.person_sn"          => $s["personSn"],
-            "employee_contracts.working_date[<]"    => $date->format('Y-m-d'),
-            "ORDER"             => ["employee_contracts.working_date" => "DESC"],
-            "LIMIT"             => 1
-        ]);
+        // $dailySalary = $app->get("employee_contracts", [
+        //     "[>]contract_salary" => ["id" => "Id_contract"],
+        //     "[>]staff-salary" => ["contract_salary.Id_salary" => "id"], 
+        // ], [
+        //     "staff-salary.price",
+        // ], [
+        //     "employee_contracts.person_sn"          => $s["personSn"],
+        //     "employee_contracts.working_date[<]"    => $date->format('Y-m-d'),
+        //     "ORDER"             => ["employee_contracts.working_date" => "DESC"],
+        //     "LIMIT"             => 1
+        // ]);
 
         $salaryAdvance = $app->sum("salaryadvances", "Amount", [
             "sn"                => $s["personSn"],
@@ -530,8 +558,12 @@ function attendanceTracking($app) {
             "AppliedDate[>=]"   => $s["month"] . "-01",
             "AppliedDate[<]"    => $date->format('Y-m-d'),
         ]);
-
-        $leaveDay = 0;
+        
+        if(!empty($dailySalary)) {
+            if($dailySalary["priceValue"] == 1) $workingDays = $workingDays . " hours";
+            if($dailySalary["priceValue"] == 2) $workingDays = $workingDays . " days";
+            if($dailySalary["priceValue"] == 3) $workingDays = $workingDays . " / " . $totalWorkingDays;
+        }
 
         $insert = [
             "workingDays"       => $workingDays,
@@ -541,7 +573,8 @@ function attendanceTracking($app) {
             "paidLeave"         => $paidLeave,
             "unpaidLeave"       => $unpaidLeave,
             "unauthorizedLeave" => $unauthorizedLeave,
-            "dailySalary"       => $dailySalary["price"]??0,
+            // "dailySalary"       => $dailySalary["price"]??0,
+            "currentSalary"     => $currentSalary,
             "salaryAdvance"     => $salaryAdvance,
         ];
 
@@ -553,4 +586,18 @@ function attendanceTracking($app) {
         
         $app->update("salary",$insert,["id"=>$s['id']]);
     }
+}
+
+function hourlyAttendanceTracking($dayStart, $dayEnd, $salary, &$workingDays, &$currentSalary) {// tính công theo tiếng
+    $dayStart = new DateTime($dayStart);
+    $dayEnd = new DateTime($dayEnd);
+    $interval = $dayStart->diff($dayEnd);
+    $hours = $interval->h + ($interval->i / 60);
+    $workingDays += $hours;
+    $currentSalary += $hours*$salary;
+}
+
+function dailyAttendanceTracking($salary, &$workingDays, &$currentSalary) {// tính công theo ngày
+    $workingDays++;
+    $currentSalary += $salary;
 }
