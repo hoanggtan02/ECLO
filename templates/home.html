@@ -227,24 +227,24 @@
             <div class="tasks-left">
                 <div class="tasks-content">
                     <div class="tasks-header">
-                        Công việc
+                        Nhân viên 
                     </div>
                     <div class="task-grid">
                         <div class="task-item">
-                            <div>0</div>
-                            <div>Đã hoàn thành</div>
+                            <div><?=$late?></div>
+                            <div>Đi trễ</div>
                         </div>
                         <div class="task-item">
-                            <div>0</div>                            
-                            <span>Đánh giá</span>
+                            <div><?=$early?></div>                            
+                            <span>Về sớm</span>
                         </div>
                         <div class="task-item">
-                            <div>0</div>
-                            <span>Hoàn thành</span>
+                            <div><?=$cophep?></div>
+                            <span>Nghỉ có phép</span>
                         </div>
                         <div class="task-item">
-                            <div>0</div>
-                            <span>Quá hạn</span>
+                            <div><?=$kophep?></div>
+                            <span>Nghỉ không phép</span>
                         </div>
                     </div>
                 </div>
@@ -252,12 +252,12 @@
             <div class="tasks-right">
                 <div class="proposal-header">
                     <div class="proposal-header-item">
-                        <div>Cần phải hoàn thành</div>
-                        <div>bạn có 0 cần hoàn thành</div><br>
+                        <div>Yêu cầu tăng ca</div>
+                        <div>Bạn có <?=$overtime?> yêu cầu cần duyệt</div><br>
                     </div>
                     <div class="proposal-header-item">
-                        <div>Cần phải đánh giá</div>
-                        <div>bạn có 0 cần đánh giá</div><br>
+                        <div>Yêu cầu nhảy ca</div>
+                        <div>Bạn có <?=$shift?> yêu cầu cần duyệt</div><br>
                     </div>
                 </div>
                 <div class="banner">
