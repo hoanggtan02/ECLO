@@ -117,6 +117,9 @@ $app->router("/manager/employee", 'POST', function($vars) use ($app, $jatbi) {
 
 $app->router("/manager/employee-detail", 'GET', function($vars) use ($app, $jatbi, $setting) {
     $vars['title'] = $jatbi->lang("Chi tiết nhân viên");
+    $vars['title_labor'] = $jatbi->lang("Hợp đồng lao động");
+    $vars['title_isurance'] = $jatbi->lang("Bảo hiểm");
+
 
     // Lấy giá trị box (sn) từ query parameter
     $sn = $_GET['box'] ?? null;
@@ -174,6 +177,289 @@ $app->router("/manager/employee-detail", 'GET', function($vars) use ($app, $jatb
 
 })->setPermissions(['employee']);
 
+$app->router("/employee-detail", 'POST', function($vars) use ($app, $jatbi) {
+    $app->header([
+        'Content-Type' => 'application/json',
+    ]);
+
+    // Kiểm tra dữ liệu nhận từ DataTables
+    error_log("Received POST Data: " . print_r($_POST, true));
+
+    // Nhận dữ liệu từ DataTable
+    $draw = $_POST['draw'] ?? 0;
+    $start = $_POST['start'] ?? 0;
+    $length = $_POST['length'] ?? 10;
+    $searchValue = $_POST['search']['value'] ?? '';
+    $statu = $_POST['statu'] ?? '';
+
+    // Fix lỗi ORDER cột
+    $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột 1
+    $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
+
+    // Danh sách cột hợp lệ
+    $validColumns = ["idbh", "employee", "money", "moneybhxh", "numberbhxh", "daybhxh", "placebhxh", "numberyte", "dayyte", "placeyte", "statu"];
+    $orderColumn = $validColumns[$orderColumnIndex] ?? "type";
+
+    // Điều kiện lọc dữ liệu
+    $conditions = ["AND" => []];
+
+    if (!empty($searchValue)) {
+        $conditions["AND"]["OR"] = [
+            "employee.name[~]" => $searchValue,
+            "insurance.placebhxh[~]" => $searchValue,
+            "insurance.placeyte[~]" => $searchValue,
+            "insurance.numberyte[~]" => $searchValue,
+            "insurance.numberbhxh[~]" => $searchValue,
+        ];
+    }
+
+    if (!empty($statu)) {
+        $conditions["AND"]["insurance.statu"] = $statu;
+    }
+
+    // Kiểm tra nếu conditions bị trống, tránh lỗi SQL
+    if (empty($conditions["AND"])) {
+        unset($conditions["AND"]);
+    }
+
+    // Đếm số bản ghi
+    $count = $app->count("insurance", [
+        "[>]employee" => ["employee" => "sn"]
+    ], "insurance.idbh", $conditions);
+
+    // Truy vấn danh sách Khung thời gian
+    $datas = $app->select("insurance", [
+        "[>]employee" => ["employee" => "sn"] 
+    ], [
+        'insurance.idbh',
+        'employee.name(employee_name)', // Lấy tên nhân viên từ bảng employee
+        'insurance.money',
+        'insurance.moneybhxh',
+        'insurance.numberbhxh',
+        'insurance.daybhxh',
+        'insurance.placebhxh',
+        'insurance.numberyte',
+        'insurance.dayyte',
+        'insurance.placeyte',
+        'insurance.statu',
+        'insurance.note'
+    ], array_merge($conditions, [
+        "LIMIT" => [$start, $length],
+        "ORDER" => [$orderColumn => $orderDir]
+    ])) ?? [];
+
+    // Log dữ liệu truy vấn để kiểm tra
+    error_log("Fetched insurances Data: " . print_r($datas, true));
+
+    // Xử lý dữ liệu đầu ra
+    $formattedData = array_map(function($data) use ($app, $jatbi) {
+        $moneylabel = number_format($data['money'], 0, '.', ',');
+        $moneylabel2 = number_format($data['moneybhxh'], 0, '.', ',');
+
+        return [
+            "checkbox" => $app->component("box", ["data" => $data['idbh']]),
+            //"idbh" => $data['idbh'],
+            "employee" => $data['employee_name'] ?? $jatbi->lang("Không xác định"), // Hiển thị tên nhân viên
+            "money" => $moneylabel,
+            "moneybhxh" => $moneylabel2,
+            "numberbhxh" => $data['numberbhxh'],
+            "daybhxh" => $data['daybhxh'],
+            "placebhxh" => $data['placebhxh'],
+            "numberyte" => $data['numberyte'],
+            "dayyte" => $data['dayyte'],
+            "placeyte" => $data['placeyte'],
+            "statu" => $app->component("status",["url"=>"/insurance-status/".$data['idbh'],"data"=>$data['statu'],"permission"=>['insurance.edit']]),
+            "action" => $app->component("action", [
+                "button" => [          
+                    [
+                        'type' => 'button',
+                        'name' => $jatbi->lang("Sửa"),
+                        'permission' => ['insurance.edit'],
+                        'action' => ['data-url' => '/insurance-edit?idbh=' . $data['idbh'], 'data-action' => 'modal']
+                    ],
+                    [
+                        'type' => 'button',
+                        'name' => $jatbi->lang("Xóa"),
+                        'permission' => ['insurance.deleted'],
+                        'action' => ['data-url' => '/insurance-deleted?idbh=' . $data['idbh'], 'data-action' => 'modal']
+                    ],
+                    [
+                        'type' => 'button',
+                        'name' => $jatbi->lang("Chi tiết"),
+                        'permission' => ['insurance'],
+                        'action' => ['data-url' => '/insurance-detail?idbh=' . $data['idbh'], 'data-action' => 'modal']
+                    ],
+                ]
+            ]),                         
+        ];
+    }, $datas);
+
+    // Log dữ liệu đã format trước khi JSON encode
+    error_log("Formatted Data: " . print_r($formattedData, true));
+
+    // Kiểm tra lỗi JSON
+    $response = json_encode([
+        "draw" => $draw,
+        "recordsTotal" => $count,
+        "recordsFiltered" => $count,
+        "data" => $formattedData
+    ]);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("JSON Encode Error: " . json_last_error_msg());
+    }
+
+    echo $response;
+})->setPermissions(['insurance']);
+
+// $app->router("/labor_contract", 'POST', function($vars) use ($app, $jatbi) {
+//     $app->header(['Content-Type' => 'application/json']);
+
+//     // Nhận dữ liệu từ DataTable
+//     $draw = $_POST['draw'] ?? 0;
+//     $start = $_POST['start'] ?? 0;
+//     $length = $_POST['length'] ?? 10;
+//     $searchValue = $_POST['search']['value'] ?? '';
+
+//     // Fix lỗi ORDER cột
+//     $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột đầu tiên
+//     $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
+
+//     // Danh sách cột hợp lệ
+//     $validColumns = [
+//         "checkbox",
+//         "employee.name",
+//         "department.personName",
+//         "employee_contracts.contract_type",
+//         "employee_contracts.contract_number",
+//         "employee_contracts.contract_duration",
+//         "employee_contracts.remaining_days",
+//         "employee_contracts.working_date",
+//     ];
+//     $orderColumn = $validColumns[$orderColumnIndex] ?? "contract.created_at";
+
+//     // Điều kiện lọc dữ liệu
+//     $where = ["LIMIT" => [$start, $length], "ORDER" => [$orderColumn => $orderDir]];
+
+//     if (!empty($searchValue)) {
+//         $where["AND"]["OR"] = [
+//             "employee.name[~]" => $searchValue,
+//             "employee_contracts.contract_number[~]" => $searchValue
+//         ];
+//     }
+
+//     // Đếm số bản ghi
+//     $count = $app->count("employee_contracts", [
+//         "[>]employee" => ["person_sn" => "sn"]
+//     ], "employee_contracts.id");
+
+//     // Lấy danh sách hợp đồng
+//     $datas = $app->select("employee_contracts", [
+//         "[>]employee" => ["employee_contracts.person_sn" => "sn"],  
+//         "[>]department" => ["employee.departmentId" => "departmentId"],        
+//         ], [
+//         "employee_contracts.id",
+//         "employee.name",
+//         "department.personName",
+//         "employee_contracts.contract_type",
+//         "employee_contracts.contract_number",
+//         "employee_contracts.contract_duration",
+//         "employee_contracts.working_date",
+//     ], $where) ?? [];
+    
+//     // Xử lý dữ liệu đầu ra
+//     $formattedData = array_map(function($data) use ($app, $jatbi) {
+//         // Chuyển đổi ngày làm việc sang timestamp
+//         $workingDate = strtotime($data['working_date']); 
+    
+//         // Nếu không có ngày làm việc hoặc thời hạn hợp đồng, trả về "Không xác định"
+//         if (!$workingDate || !isset($data['contract_duration'])) {
+//             $remainingDays = $jatbi->lang("Không xác định");
+//         } else {
+//             // Thời hạn hợp đồng tính theo tháng → Chuyển thành ngày
+//             $contractMonths = (int) $data['contract_duration'];
+//             $contractEndDate = strtotime("+{$contractMonths} months", $workingDate);
+            
+//             // Ngày hiện tại
+//             $currentDate = time();
+    
+//             // Tính số ngày còn lại
+//             $remainingDays = round(($contractEndDate - $currentDate) / (60 * 60 * 24));
+    
+//             // Nếu số ngày nhỏ hơn 0, nghĩa là hợp đồng đã hết hạn
+//             if ($remainingDays < 0) {
+//                 $remainingDays = $jatbi->lang("Hết hạn");
+//             } else {
+//                 // Chuyển thành số tháng
+//                 $remainingMonths = floor($remainingDays / 30);
+//                 $remainingText = ($remainingMonths > 0) ? "$remainingMonths " . $jatbi->lang("tháng") : "$remainingDays " . $jatbi->lang("ngày");
+//                 $remainingDays = $remainingText;
+//             }
+//         }
+    
+//         return [
+//             "checkbox" => $app->component("box", ["data" => $data['id']]),
+    
+//             // TÊN NHÂN VIÊN
+//             "employee_name" => $data['name'] ?? $jatbi->lang("Không xác định"),
+    
+//             // PHÒNG BAN 
+//             "department" => $data['personName'] ?? $jatbi->lang("Không xác định"),
+    
+//             // LOẠI HỢP ĐỒNG
+//             "contract_type" => $jatbi->lang($data['contract_type']),
+    
+//             // SỐ HỢP ĐỒNG
+//             "contract_number" => $data['contract_number'],
+    
+//             // THỜI HẠN HỢP ĐỒNG
+//             "contract_duration" => isset($data['contract_duration']) 
+//                 ? $data['contract_duration'] . " " . $jatbi->lang("tháng") 
+//                 : $jatbi->lang("Không xác định"),
+    
+//             // CÒN LẠI (hiển thị dưới dạng số tháng/ngày)
+//             "remaining_days" => $remainingDays,
+    
+//             // NGÀY LÀM VIỆC
+//             "working_date" => date("d/m/Y", strtotime($data['working_date'])),
+    
+//             "action" => $app->component("action", [
+//                 "button" => [
+//                     [
+//                         'type' => 'button',
+//                         'name' => $jatbi->lang("Sửa"),
+//                         'permission' => ['labor_contract.edit'],
+//                         'action' => ['data-url' => '/labor_contract-edit?id='.$data['id'], 'data-action' => 'modal']
+//                     ],
+//                     [
+//                         'type' => 'button',
+//                         'name' => $jatbi->lang("Xóa"),
+//                         'permission' => ['labor_contract.deleted'],
+//                         'action' => ['data-url' => '/labor_contract-deleted?id='.$data['id'], 'data-action' => 'modal']
+//                     ],
+//                     [
+//                         'type' => 'button',
+//                         'name' => $jatbi->lang("Chi tiết"),
+//                         'permission' => ['labor_contract'],
+//                         'action' => ['data-url' => '/labor_contract-view/'.$data['id'], 'data-action' => 'modal']
+//                     ],
+//                 ]
+//             ]),
+
+//             "detail" => $app->component("action", [
+//                 "button" => []]),
+//         ];
+//     }, $datas);
+    
+//     // Trả về dữ liệu JSON
+//     echo json_encode([
+//         "draw" => $draw,
+//         "recordsTotal" => $count,
+//         "recordsFiltered" => $count,
+//         "data" => $formattedData,
+//     ]);
+    
+// })->setPermissions(['labor_contract']);
 
 
 

@@ -83,11 +83,6 @@
                         <h6 class="mb-0"><?=$jatbi->lang("Hợp đồng lao động")?></h6>
                         <div>
                             <?php if ($jatbi->permission(['labor_contract']) == 'true') { ?>
-                                <button class="btn btn-sm btn-danger rounded-pill me-1" data-action="modal" data-url="/manager/employee-deleted?sn=<?=$employee['sn']?>">
-                                    <i class="ti ti-trash"></i>
-                                </button>
-                            <?php } ?>
-                            <?php if ($jatbi->permission(['labor_contract']) == 'true') { ?>
                                 <button class="btn btn-sm btn-primary rounded-pill" data-action="modal" data-url="/labor_contract-add">
                                     <i class="ti ti-plus"></i>
                                 </button>
@@ -118,8 +113,16 @@
                                             <td><?=isset($contract['duration']) ? $contract['duration'] : $jatbi->lang("Không xác định")?></td>
                                             <td><?=isset($contract['remaining_time']) ? $contract['remaining_time'] : $jatbi->lang("Không xác định")?></td>
                                             <td><?=isset($contract['start_date']) ? $contract['start_date'] : $jatbi->lang("Không xác định")?></td>
-                                            <td><i class="ti ti-edit"></i></td>
-                                            <td><i class="ti ti-eye"></i></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-circle" title="Chỉnh sửa" data-action="modal" data-url="/labor_contract-edit?id=<?= $contract['id'] ?>">
+                                                    <i class="ti ti-edit"></i>
+                                                </button>                                                
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-circle" title="Xóa" data-action="modal" data-url="/labor_contract-deleted?id=<?= $contract['id'] ?>">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>                                                
+                                            </td> 
                                         </tr>
                                     <?php } ?>
                                 <?php } else { ?>
@@ -137,11 +140,6 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0"><?=$jatbi->lang("Bảo hiểm")?></h6>
                         <div>
-                            <?php if ($jatbi->permission(['employee.deleted']) == 'true') { ?>
-                                <button class="btn btn-sm btn-danger rounded-pill me-1" data-action="modal" data-url="/manager/employee-deleted?sn=<?=$employee['sn']?>">
-                                    <i class="ti ti-trash"></i>
-                                </button>
-                            <?php } ?>
                             <?php if ($jatbi->permission(['employee.add']) == 'true') { ?>
                                 <button class="btn btn-sm btn-primary rounded-pill" data-action="modal" data-url="/insurance-add">
                                     <i class="ti ti-plus"></i>
@@ -185,8 +183,16 @@
                                                     <?=isset($insurance['status']) && $insurance['status'] == 'D' ? $jatbi->lang("Đã kích hoạt") : $jatbi->lang("Chưa kích hoạt")?>
                                                 </span>
                                             </td>
-                                            <td><i class="ti ti-edit"></i></td>
-                                            <td><i class="ti ti-eye"></i></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-circle" title="Chỉnh sửa" data-action="modal" data-url="/insurance-edit?idbh=<?= $insurance['idbh'] ?>">
+                                                    <i class="ti ti-edit"></i>
+                                                </button>                                                
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-circle" title="Xóa" data-action="modal" data-url="/insurance-deleted?idbh=<?= $insurance['idbh'] ?>">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>                                                
+                                            </td>                                         
                                         </tr>
                                     <?php } ?>
                                 <?php } else { ?>
