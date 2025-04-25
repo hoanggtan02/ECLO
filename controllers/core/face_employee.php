@@ -511,21 +511,22 @@
     
         // Lấy ID từ query string
         $recordId = $app->xss($_GET['box'] ?? '');
+    
         if (empty($recordId)) {
-            echo json_encode(['status'=>'error',"content"=>$jatbi->lang("Không tìm thấy ID hồ sơ.")]);
+            echo json_encode(['status'=>'error', "content"=>$jatbi->lang("Không tìm thấy ID hồ sơ.")]);
             return;
         }
-    
     
         // Lấy thông tin record từ cơ sở dữ liệu
         $face_employee = $app->select("face_employee", ["employee_sn", "img_base64", "easy"], ["employee_sn" => $recordId]);
         $employee = $app->select("employee", ["sn"], ["sn" => $recordId]);
-
-
-        $vars['image'] = $face_employee[0]['img_base64'];
-        $vars['sn'] = $employee[0]['sn'];
-
-        // Render template HTML (không cần header JSON)
+    
+        // Gán giá trị nếu có, nếu không thì null
+        $vars['image'] = !empty($face_employee[0]['img_base64']) ? $face_employee[0]['img_base64'] : null;
+        $vars['sn'] = !empty($employee[0]['sn']) ? $employee[0]['sn'] : $recordId;
+    
         echo $app->render('templates/common/view-image-post.html', $vars, 'global');
     })->setPermissions(['face_employee']);
+    
+    
 ?>

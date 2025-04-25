@@ -25,7 +25,8 @@
             <!-- Sidebar Thông tin cá nhân -->
             <div class="col-xl-3 mb-4">
                 <div class="card bg-body bg-opacity-50 shadow border-0 rounded-4">
-                    <button class="btn btn-light position-absolute top-0 start-0 m-2" data-action="modal" data-url="/manager/employee-edit?id=<?= $employee['sn'] ?? 0 ?>"><i class="ti ti-edit" aria-hidden="true"></i></button>
+                    <button class="btn btn-light position-absolute top-0 start-0 m-2" data-action="modal" data-url="/manager/employee-edit?id=<?= $employee['sn']?>"><i class="ti ti-edit" aria-hidden="true"></i></button>
+                    <button class="btn btn-light position-absolute top-0 end-0 m-2" data-action="modal" data-url="/manager/face-viewimage?box=<?= $employee['sn']?>"><i class="ti ti-id-badge" aria-hidden="true"></i></button>
                     <div class="card-body">
                         <div class="text-center mb-3">
                             <?php if (!empty($face)) { ?> 
