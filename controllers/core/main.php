@@ -998,4 +998,162 @@
             echo $app->render('templates/error.html', $vars);
         }
     });
+
+    $app->router("/", 'POST', function($vars) use ($app, $jatbi) {
+        $app->header([
+            'Content-Type' => 'application/json',
+        ]);
+
+        // Kiểm tra dữ liệu nhận từ DataTables
+        error_log("Received POST Data: " . print_r($_POST, true));
+
+        // Nhận dữ liệu từ DataTable
+        $draw = $_POST['draw'] ?? 0;
+        $start = $_POST['start'] ?? 0;
+        $length = $_POST['length'] ?? 10;
+        $searchValue = $_POST['search']['value'] ?? '';
+        $statu = $_POST['statu'] ?? '';
+        $type = $_POST['type'] ?? '';
+        $dayStart = $_POST['dayStart'] ?? '';
+        $dayEnd = $_POST['dayEnd'] ?? '';
+
+        // Fix lỗi ORDER cột
+        $orderColumnIndex = $_POST['order'][0]['column'] ?? 1; // Mặc định cột acTzNumber
+        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
+
+        // Danh sách cột hợp lệ
+        $validColumns = ["checkbox", "type", "employee", "money", "dayStart", "dayEnd", "statu", "day", "note"];
+        $orderColumn = $validColumns[$orderColumnIndex] ?? "type";
+
+        // Điều kiện lọc dữ liệu
+        $conditions = ["AND" => []];
+
+        // Tìm kiếm toàn cục (searchValue)
+        if (!empty($searchValue)) {
+            $conditions["AND"]["OR"] = [
+                "employee.name[~]" => $searchValue, // Tìm kiếm theo tên nhân viên
+                "overtime.money[~]" => $searchValue,
+                "overtime.dayStart[~]" => $searchValue,
+                "overtime.dayEnd[~]" => $searchValue,
+                "overtime.day[~]" => $searchValue,
+                "overtime.note[~]" => $searchValue,
+            ];
+        }
+
+        // Lọc theo trạng thái (statu)
+        if (!empty($statu)) {
+            $conditions["AND"]["overtime.statu"] = $statu;
+        }
+
+        // Lọc theo loại tăng ca (type)
+        if (!empty($type)) {
+            $conditions["AND"]["overtime.type"] = $type;
+        }
+
+        // Lọc theo ngày bắt đầu
+        if (!empty($dayStart)) {
+            $conditions["AND"]["overtime.dayStart[>=]"] = $dayStart . ' 00:00:00';
+        }
+
+        // Lọc theo ngày kết thúc
+        if (!empty($dayEnd)) {
+            $conditions["AND"]["overtime.dayEnd[<=]"] = $dayEnd . ' 23:59:59';
+        }
+
+        // Kiểm tra nếu conditions bị trống, tránh lỗi SQL
+        if (empty($conditions["AND"])) {
+            unset($conditions["AND"]);
+        }
+
+        // Đếm tổng số bản ghi (không dùng LIMIT)
+        $count = $app->count("overtime", [
+            "[>]employee" => ["employee" => "sn"]
+        ], "overtime.ids", $conditions);
+
+        // Truy vấn danh sách Tăng ca
+        $datas = $app->select("overtime", [
+            "[>]employee" => ["employee" => "sn"] // Thực hiện JOIN: overtime.employee -> employee.sn
+        ], [
+            'overtime.ids',
+            'overtime.type',
+            'employee.name(employee_name)', // Lấy tên nhân viên từ bảng employee
+            'overtime.money',
+            'overtime.dayStart',
+            'overtime.dayEnd',
+            'overtime.note',
+            'overtime.statu',
+            'overtime.day'
+        ], array_merge($conditions, [
+            "LIMIT" => [$start, $length],
+            "ORDER" => [$orderColumn => $orderDir]
+        ])) ?? [];
+
+        // Log dữ liệu truy vấn để kiểm tra
+        error_log("Fetched overtimes Data: " . print_r($datas, true));
+
+        // Xử lý dữ liệu đầu ra
+        $formattedData = array_map(function($data) use ($app, $jatbi) {       
+            $typeLabels = array_column($app->select("staff-salary", ["id", "name"]), "name", "id");
+            $moneylabel = number_format($data['money'], 0, '.', ',');
+            
+            // Sửa lỗi cú pháp trong thẻ <a> và thêm điều kiện cho các trạng thái khác nếu cần
+            if ($data['statu'] === 'Approved') {
+                $temp = '<a href="#" class="status-link" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            } elseif ($data['statu'] === 'Pending') {                   
+                $temp = '<a href="#" class="status-link" style="color: green;" data-url="/overtime-approved?ids=' . $data['ids'] . '&statu=' . $data['statu'] . '" data-action="modal">' . $data['statu'] . '</a>';
+            } else {
+                $temp = $data['statu']; // Xử lý các trạng thái khác nếu có
+            }
+
+            $actionButtons = [];
+            if ($data['statu'] !== 'Approved') {
+                $actionButtons[] = [
+                    'type' => 'button',
+                    'name' => $jatbi->lang("Sửa"),
+                    'permission' => ['overtime.edit'],
+                    'action' => ['data-url' => '/overtime-edit?ids=' . $data['ids'], 'data-action' => 'modal']
+                ];
+            }
+            $actionButtons[] = [
+                'type' => 'button',
+                'name' => $jatbi->lang("Xóa"),
+                'permission' => ['overtime.deleted'],
+                'action' => ['data-url' => '/overtime-deleted?ids=' . $data['ids'], 'data-action' => 'modal']
+            ];
+            
+            return [
+                "checkbox" => $app->component("box", ["data" => $data['ids']]),
+                "ids" => $data['ids'],
+                "type" => $typeLabels[$data['type']] ?? $jatbi->lang("Không xác định"),
+                "employee" => $data['employee_name'] ?? $jatbi->lang("Không xác định"), // Hiển thị tên nhân viên
+                "money" => $moneylabel,
+                "dayStart" => $data['dayStart'],
+                "dayEnd" => $data['dayEnd'],
+                "note" => $data['note'],
+                "statu" => $temp,
+                "day" => $data['day'],
+                "action" => $app->component("action", [
+                    "button" => $actionButtons
+                ]),                         
+            ];
+        }, $datas);
+
+        // Log dữ liệu đã format trước khi JSON encode
+        error_log("Formatted Data: " . print_r($formattedData, true));
+
+        // Kiểm tra lỗi JSON
+        $response = json_encode([
+            "draw" => $draw,
+            "recordsTotal" => $count,
+            "recordsFiltered" => $count,
+            "data" => $formattedData
+        ]);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("JSON Encode Error: " . json_last_error_msg());
+        }
+
+        echo $response;
+    })
+
 ?>
