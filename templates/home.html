@@ -197,11 +197,6 @@
             padding: 5px 15px;
             border-radius: 5px;
         }
-        .storage {
-            text-align: right;
-            color: #34c759;
-            font-size: 0.9rem;
-        }
         .calendar table {
             width: 100%;
             border-collapse: collapse;
@@ -266,7 +261,7 @@
                     </div>
                 </div>
                 <div class="banner">
-                    Bận vừa chăm công việc<br>Và đi ra ngoài
+                    Bạn vừa chấm công lúc: <br>Và ra về lúc: 
                 </div>
             </div>
         </div>
@@ -275,13 +270,13 @@
         <div class="proposal-section">
             <div class="proposal-left">
                 <div class="empty-content">
-                    <h2>Công việc</h2>
+                    <h3>Công việc</h3>
                     <!-- Khung trống --><br><br><br><br><br><br>
                 </div>
             </div>
             <div class="proposal-right">
                 <div class="proposal-content">
-                    <h2>Đề xuất</h2>
+                    <h3>Đề xuất</h3>
                     <div class="proposal-item">
                         <span>#741 - Thu: mua nước</span>
                         <span>0</span>
@@ -302,76 +297,76 @@
         </div>
 
         <!-- Phần 3: Lịch -->
-        <div class="section calendar">
-            <div class="calendar-controls">
-                <h2>Tháng 4 năm 2025</h2>
-                <div>
-                    <button class="btn">Tháng</button>
-                    <button class="btn">Tuần</button>
+        <div class="" style="display:flex; gap:15px; background-color:transparent;">
+            <div class="section calendar" style="flex: 1;">
+                <div class="calendar-controls">
+                    <h2>Tháng 4 năm 2025</h2>
+                    <div>
+                        <button class="btn">Tháng</button>
+                        <button class="btn">Tuần</button>
+                    </div>
                 </div>
+                <table>
+                    <tr>
+                        <th>Th 2</th>
+                        <th>Th 3</th>
+                        <th>Th 4</th>
+                        <th>Th 5</th>
+                        <th>Th 6</th>
+                        <th>Th 7</th>
+                        <th>CN</th>
+                    </tr>
+                    <tr>
+                        <td>31</td>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>8</td>
+                        <td>9</td>
+                        <td>10</td>
+                        <td>11</td>
+                        <td>12</td>
+                        <td>13</td>
+                    </tr>
+                    <tr>
+                        <td>14</td>
+                        <td>15</td>
+                        <td>16</td>
+                        <td>17</td>
+                        <td>18</td>
+                        <td>19</td>
+                        <td>20</td>
+                    </tr>
+                    <tr>
+                        <td>21</td>
+                        <td>22</td>
+                        <td>23</td>
+                        <td>24</td>
+                        <td class="today">25</td>
+                        <td>26</td>
+                        <td>27</td>
+                    </tr>
+                    <tr>
+                        <td>28</td>
+                        <td>29</td>
+                        <td>30</td>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                    </tr>
+                </table>
             </div>
-            <div class="storage">DUNG LƯỢNG GIỚI HẠN: 14 MB sử dụng của 5GB</div>
-            <table>
-                <tr>
-                    <th>Th 2</th>
-                    <th>Th 3</th>
-                    <th>Th 4</th>
-                    <th>Th 5</th>
-                    <th>Th 6</th>
-                    <th>Th 7</th>
-                    <th>CN</th>
-                </tr>
-                <tr>
-                    <td>31</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>3</td>
-                    <td>4</td>
-                    <td>5</td>
-                    <td>6</td>
-                </tr>
-                <tr>
-                    <td>7</td>
-                    <td>8</td>
-                    <td>9</td>
-                    <td>10</td>
-                    <td>11</td>
-                    <td>12</td>
-                    <td>13</td>
-                </tr>
-                <tr>
-                    <td>14</td>
-                    <td>15</td>
-                    <td>16</td>
-                    <td>17</td>
-                    <td>18</td>
-                    <td>19</td>
-                    <td>20</td>
-                </tr>
-                <tr>
-                    <td>21</td>
-                    <td>22</td>
-                    <td>23</td>
-                    <td>24</td>
-                    <td class="today">25</td>
-                    <td>26</td>
-                    <td>27</td>
-                </tr>
-                <tr>
-                    <td>28</td>
-                    <td>29</td>
-                    <td>30</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>3</td>
-                    <td>4</td>
-                </tr>
-            </table>
+            <div class="section empty-calendar" style="flex: 0.5; background-color: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+                <h3>Dung lượng</h3>
+            </div>
         </div>
     </div>
-
-    <!-- Bootstrap JS và Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-</body>
+ </body>
 </html>
