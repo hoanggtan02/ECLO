@@ -8,7 +8,7 @@
             echo $app->render('templates/login.html', $vars);
         }
         else {
-            list($vars['late'], $vars['early'], $vars['kophep'], $vars['cophep'], $vars['overtime'], $vars['shift']) = getdata();
+            list($vars['late'], $vars['early'], $vars['kophep'], $vars['cophep'], $vars['overtime'], $vars['shift'], $vars['reward'], $vars['Creward'], $vars['discipline'], $vars['Cdiscipline'], $vars['createTime'], $vars['contract'], $vars['holiday']) = getdata();
             echo $app->render('templates/home.html', $vars);
         }
     });
@@ -1007,10 +1007,57 @@
         $early = $app->count("latetime", ["type" => "Về sớm", "Status" => "A"]); // Removed extra comma
         $kophep = $app->count("leavetype", ["SalaryType" => "Nghỉ có lương", "Status" => "A"]); // Removed extra comma
         $cophep = $app->count("leavetype", ["SalaryType" => "Nghỉ không lương", "Status" => "A"]); // Removed extra comma
-        $overtime = $app->count("overtime");
+        $overtime = $app->count("overtime", ["statu" => "Pending"]);
         $shift = $app->count("shift", ["statu" => "A"]);
 
-        return [$late, $early, $kophep, $cophep, $overtime, $shift];
+        $reward = $app->query("
+            SELECT personSN 
+            FROM reward_discipline 
+            WHERE type = 'reward' 
+            GROUP BY personSN 
+            ORDER BY COUNT(personSN) DESC 
+            LIMIT 1
+        ")->fetchColumn();
+        $Creward = $app->count("reward_discipline", ["personSN" => $reward, "type" => "reward"]);
+        $reward = $app->get("employee", "name", ["sn" => $reward]);
+
+        $discipline = $app->query("
+            SELECT personSN 
+            FROM reward_discipline 
+            WHERE type = 'discipline' 
+            GROUP BY personSN 
+            ORDER BY COUNT(personSN) DESC 
+            LIMIT 1
+        ")->fetchColumn();
+        $Cdiscipline = $app->count("reward_discipline", ["personSN" => $discipline, "type" => "discipline"]);
+        $discipline = $app->get("employee", "name", ["sn" => $discipline]);
+
+        $createTime = $app->query("
+            SELECT 
+                DATE(createTime) AS record_date, 
+                MIN(createTime) AS minTime, 
+                MAX(createTime) AS maxTime 
+            FROM record 
+            WHERE personType = 2 
+            GROUP BY DATE(createTime)
+            ORDER BY record_date DESC
+            LIMIT 7
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        $contract = $app->query("
+            SELECT person_sn AS contract, contract_duration AS time 
+            FROM employee_contracts 
+            ORDER BY contract_duration ASC 
+            LIMIT 4
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($contract as $key => $value) {
+            $contract[$key]['contract'] = $app->get("employee", "name", ["sn" => $value['contract']]);
+        }
+
+        $holiday = $app->select("staff-holiday", ["startDate", "endDate"], ["status" => "A"]);
+        //var_dump($holiday);
+        return [$late, $early, $kophep, $cophep, $overtime, $shift, $reward, $Creward, $discipline, $Cdiscipline, $createTime, $contract, $holiday];
     }
 
 ?>

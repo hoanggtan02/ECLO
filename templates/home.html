@@ -6,29 +6,54 @@
     <title>Trang Chủ</title>
 
     <style>
+        :root {
+            --min-width: 200px;
+            --width: 100%;
+            --height: auto;
+            --bottom: 0;
+            --right: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background-color: #f5faff;
             padding: 20px;
         }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
         .min-width {
             min-width: var(--min-width);
         }
+
         .bg-blur {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(5px);
         }
+
         .width, .height {
             width: var(--width);
             height: var(--height);
         }
+
         .bottom, .right {
             bottom: var(--bottom);
             right: var(--right);
         }
+
         .z-3 {
             z-index: 3;
         }
+
         /* CSS chung cho các khung */
         .section {
             background-color: white;
@@ -37,24 +62,29 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
+
         /* CSS cho phần Công việc */
         .tasks-container {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
         }
+
         .tasks-left {
-            flex: 1; /* Chiếm 1/3 chiều rộng */
+            flex: 1;
         }
+
         .tasks-right {
-            flex: 2; /* Chiếm 2/3 chiều rộng */
+            flex: 2;
         }
+
         .tasks-content {
-            background: linear-gradient(to bottom,rgb(41, 160, 71), #f5faff);
+            background: linear-gradient(to bottom, rgb(41, 160, 71), #f5faff);
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+
         .tasks-header {
             color: white;
             padding: 20px;
@@ -64,35 +94,42 @@
             font-weight: bold;
             text-align: left;
         }
+
         .task-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
         }
+
         .task-item {
             background-color: white;
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
             justify-content: space-between;
             height: 80px;
-            display: flex; flex-direction: column; align-items: left;
         }
+
         .task-item div:first-child {
             font-size: 1.5rem;
             font-weight: bold;
             color: #333;
         }
-        .task-item div:last-child {
+
+        .task-item div:last-child,
+        .task-item span {
             font-size: 1rem;
             color: #333;
-            display: block;
         }
+
         .proposal-header {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
         }
+
         .proposal-header-item {
             background-color: white;
             border-radius: 10px;
@@ -101,15 +138,16 @@
             flex: 1;
             text-align: left;
         }
+
         .proposal-header-item div:first-child {
             font-size: 1.2rem;
             font-weight: bold;
             color: #333;
         }
+
         .proposal-header-item div:last-child {
             font-size: 0.8rem;
             color: #333;
-            display: block;
         }
 
         .banner {
@@ -121,9 +159,8 @@
             font-size: 1.3rem;
             font-weight: bold;
             position: relative;
-            top: 20px;
-
         }
+
         .banner::before {
             content: '';
             background-image: url('templates/assets/icons/image.png');
@@ -135,6 +172,7 @@
             top: -60px;
             right: 10px;
         }
+
         .banner::after {
             content: '';
             background-image: url('controller/core/template/icon/image.png');
@@ -146,80 +184,276 @@
             top: 10px;
             right: 10px;
         }
+
         /* CSS cho phần Đề xuất */
         .proposal-section {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
         }
-        .proposal-left {
+
+        .proposal-left, .proposal-right {
             flex: 1;
+            height: 250px;
         }
-        .proposal-right {
-            flex: 1;
-        }
+
         .proposal-content, .empty-content {
             background-color: white;
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .proposal-item {
+            height: 100%;
             display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #ddd;
+            flex-direction: column;
         }
-        .proposal-item:last-child {
-            border-bottom: none;
+
+        .empty-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
-        /* CSS cho phần Lịch */
-        .calendar {
-            background-color: white;
+
+        .empty-content h4 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            color: #1f2937;
+        }
+
+        .reward-box, .discipline-box {
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            flex: 1;
         }
-        .calendar h2 {
-            margin-top: 0;
-            font-size: 1.2rem;
-            font-weight: bold;
+
+        .reward-box {
+            background-color: #f0fff0;
         }
+
+        .discipline-box {
+            background-color: #fff0f0;
+        }
+
+        .reward-box div, .discipline-box div {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+        }
+
+        .reward-box div {
+            color: green;
+        }
+
+        .discipline-box div {
+            color: red;
+        }
+
+        .contract-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 17px;
+            font-size: 0.9rem;
+            color: #00796b;
+        }
+
+        .contract-empty {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #00796b;
+        }
+
+        /* CSS cho phần Lịch và Cảnh báo */
+        .calendar-warning-section {
+            display: flex;
+            gap: 15px;
+            background-color: transparent;
+        }
+
+        .section.calendar {
+            flex: 1;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
         .calendar-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
         }
+
+        .calendar-controls .control-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .calendar-controls h2 {
+            margin: 0;
+            font-size: 22px;
+            color: #1f2937;
+            flex: 2;
+            text-align: center;
+        }
+
         .calendar-controls .btn {
-            background-color: #e9ecef;
+            padding: 8px 15px;
+            background-color: #1a3c5e;
+            color: white;
             border: none;
-            padding: 5px 15px;
             border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            flex: 1;
         }
-        .calendar table {
+
+        .calendar-controls .btn:hover {
+            background-color: #2563eb;
+        }
+
+        .calendar-table {
             width: 100%;
             border-collapse: collapse;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
         }
-        .calendar th, .calendar td {
+
+        .calendar-table th, .calendar-table td {
+            width: 14.28%;
+            padding: 15px;
             text-align: center;
-            padding: 10px;
+            border: 1px solid #e5e7eb;
         }
-        .calendar th {
-            font-weight: normal;
-            color: #666;
-            font-size: 0.9rem;
+
+        .calendar-table th {
+            background-color: #1a3c5e;
+            color: #ffffff;
+            font-weight: bold;
+            text-transform: uppercase;
         }
-        .calendar td {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 0.9rem;
+
+        .calendar-table td {
+            color: #374151;
+            font-size: 16px;
+            position: relative;
+            height: 60px;
+            vertical-align: middle;
         }
-        .calendar td.today {
-            background-color: #fff3cd;
+
+        .calendar-table td.empty {
+            background-color: #f1f5f9;
+        }
+
+        .calendar-table td.today {
+            background-color: #fef3c7;
+            font-weight: bold;
+            color: #d97706;
+            border: 2px solid #d97706;
+            border-radius: 50%;
+        }
+
+        .calendar-table td.holiday {
+            background-color:#fff0f0 !important; /* Yellow background for holidays */
+            border: 2px solid red !important; /* Add a border to make it more visible for debugging */
+        }
+
+        .calendar-table td:not(.empty):hover {
+            background-color: #f3f4f6;
+            cursor: pointer;
+        }
+
+        .section.calendar::before {
+            content: '';
+        }
+
+        .section.calendar::after {
+            content: '';
+        }
+
+        .section.empty-calendar {
+            flex: 0.65;
+        }
+
+        .proposal-content {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .proposal-content h3 {
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-transform: uppercase;
+        }
+
+        .warning-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .warning-table th, .warning-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .warning-table th {
+            background-color: #1a3c5e;
+            color: #ffffff;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .warning-table th:first-child,
+        .warning-table td:first-child {
+            width: 40%;
+        }
+
+        .warning-table th:nth-child(2),
+        .warning-table th:nth-child(3),
+        .warning-table td:nth-child(2),
+        .warning-table td:nth-child(3) {
+            width: 30%;
+        }
+
+        .warning-table td {
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .warning-table tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        .warning-table tbody tr:hover {
+            background-color: #f3f4f6;
+        }
+
+        .proposal-content p {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Phần 1: Công việc -->
@@ -227,24 +461,24 @@
             <div class="tasks-left">
                 <div class="tasks-content">
                     <div class="tasks-header">
-                        Nhân viên 
+                        Nhân viên
                     </div>
                     <div class="task-grid">
                         <div class="task-item">
-                            <div><?=$late?></div>
+                            <div><?= htmlspecialchars($late) ?></div>
                             <div>Đi trễ</div>
                         </div>
                         <div class="task-item">
-                            <div><?=$early?></div>                            
+                            <div><?= htmlspecialchars($early) ?></div>
                             <span>Về sớm</span>
                         </div>
                         <div class="task-item">
-                            <div><?=$cophep?></div>
+                            <div><?= htmlspecialchars($cophep) ?></div>
                             <span>Nghỉ có phép</span>
                         </div>
                         <div class="task-item">
-                            <div><?=$kophep?></div>
-                            <span>Nghỉ không phép</span>
+                            <div><?= htmlspecialchars($kophep) ?></div>
+                            <span>Nghỉ ko phép</span>
                         </div>
                     </div>
                 </div>
@@ -253,15 +487,15 @@
                 <div class="proposal-header">
                     <div class="proposal-header-item">
                         <div>Yêu cầu tăng ca</div>
-                        <div>Bạn có <?=$overtime?> yêu cầu cần duyệt</div><br>
+                        <div>Bạn có <?= htmlspecialchars($overtime) ?> yêu cầu cần duyệt</div>
                     </div>
                     <div class="proposal-header-item">
                         <div>Yêu cầu nhảy ca</div>
-                        <div>Bạn có <?=$shift?> yêu cầu cần duyệt</div><br>
+                        <div>Bạn có <?= htmlspecialchars($shift) ?> yêu cầu cần duyệt</div>
                     </div>
                 </div>
                 <div class="banner">
-                    Bạn vừa chấm công lúc: <br>Và ra về lúc: 
+                    Bạn vừa chấm công lúc: <br>Và ra về lúc:
                 </div>
             </div>
         </div>
@@ -270,103 +504,179 @@
         <div class="proposal-section">
             <div class="proposal-left">
                 <div class="empty-content">
-                    <h3>Công việc</h3>
-                    <!-- Khung trống --><br><br><br><br><br><br>
+                    <div class="reward-box">
+                        <h4>Nhân viên tiêu biểu</h4>
+                        <div>
+                            <span><?= htmlspecialchars($reward) ?></span>
+                            <span><?= htmlspecialchars($Creward) ?> Khen thưởng</span>
+                        </div>
+                    </div>
+                    <div class="discipline-box">
+                        <h4>Nhân viên khiển trách</h4>
+                        <div>
+                            <span><?= htmlspecialchars($discipline) ?></span>
+                            <span><?= htmlspecialchars($Cdiscipline) ?> Vi phạm</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="proposal-right">
                 <div class="proposal-content">
-                    <h3>Đề xuất</h3>
-                    <div class="proposal-item">
-                        <span>#741 - Thu: mua nước</span>
-                        <span>0</span>
-                        <span>16/09/2024</span>
-                    </div>
-                    <div class="proposal-item">
-                        <span>#742 - Chi: mua nước</span>
-                        <span>100,000</span>
-                        <span>18/09/2024</span>
-                    </div>
-                    <div class="proposal-item">
-                        <span>#740 - Thu: mua nước</span>
-                        <span>100,000</span>
-                        <span>18/09/2024</span>
-                    </div>
+                    <h3>Hợp đồng sắp hết hạn</h3>
+                    <?php if (!empty($contract)): ?>
+                        <?php foreach ($contract as $con): ?>
+                            <?php if (!empty($con['contract'])): ?>
+                                <div class="contract-item">
+                                    <span>Hợp đồng: <?= htmlspecialchars($con['contract']) ?></span>
+                                    <span>(Thời hạn còn lại: <?= htmlspecialchars($con['time']) ?> tháng)</span>
+                                </div>
+                            <?php else: ?>
+                                <div class="contract-item">
+                                    <span>Nhân viên không xác định</span>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="contract-empty">Không có hợp đồng nào sắp hết hạn.</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
 
-        <!-- Phần 3: Lịch -->
-        <div class="" style="display:flex; gap:15px; background-color:transparent;">
-            <div class="section calendar" style="flex: 1;">
+        <?php
+        // Thiết lập tháng và năm
+        $month = isset($_GET['month']) ? (int)$_GET['month'] : 4;
+        $year = isset($_GET['year']) ? (int)$_GET['year'] : 2025;
+        if ($month < 1) { $month = 12; $year--; }
+        if ($month > 12) { $month = 1; $year++; }
+
+        // Lấy ngày hiện tại
+        $currentDay = (date('Y-m') == "$year-$month") ? date('j') : null;
+
+        // Tính ngày đầu tiên của tháng
+        $firstDayOfMonth = new DateTime("$year-$month-01");
+        $firstDayOfWeek = $firstDayOfMonth->format('N'); // 1 (Monday) to 7 (Sunday)
+
+        // Số ngày trong tháng
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+
+        // Tính số ô trống trước ngày 1
+        $blankDays = $firstDayOfWeek - 1; // If Monday is the first column, subtract 1
+
+        // Tính tổng số ô và số hàng
+        $totalCells = $blankDays + $daysInMonth;
+        $rows = ceil($totalCells / 7);
+
+        // Dữ liệu ngày nghỉ
+        $holiday = $app->select("staff-holiday", ["startDate", "endDate"], ["status" => "A"]);
+
+        // Debug: Kiểm tra dữ liệu ngày nghỉ thô
+        echo "<!-- Debug: Raw Holiday Data = " . print_r($holiday, true) . " -->";
+
+        // Tạo danh sách các ngày nghỉ
+        $holidayDates = [];
+        foreach ($holiday as $h) {
+            $start = new DateTime($h['startDate']);
+            $end = new DateTime($h['endDate']);
+            $interval = new DateInterval('P1D');
+            $endClone = clone $end;
+            $period = new DatePeriod($start, $interval, $endClone->modify('+1 day'));
+            foreach ($period as $date) {
+                if ($date->format('Y-m') == sprintf("%d-%02d", $year, $month)) {
+                    $holidayDates[] = (int)$date->format('j');
+                }
+            }
+        }
+
+        // Debug: Kiểm tra danh sách ngày nghỉ
+        echo "<!-- Debug: Holiday Dates = " . implode(", ", $holidayDates) . " -->";
+        echo "<!-- Debug: Blank Days = $blankDays, Days in Month = $daysInMonth -->";
+        ?>
+
+        <div class="calendar-warning-section">
+            <div class="section calendar">
                 <div class="calendar-controls">
-                    <h2>Tháng 4 năm 2025</h2>
-                    <div>
-                        <button class="btn">Tháng</button>
-                        <button class="btn">Tuần</button>
+                    <div class="control-buttons">
+                        <button class="btn prev-month">← Tháng trước</button>
+                        <h2>Lịch nghỉ lễ <br> Tháng <?= $month ?> năm <?= $year ?></h2>
+                        <button class="btn next-month">Tháng sau →</button>
                     </div>
                 </div>
-                <table>
-                    <tr>
-                        <th>Th 2</th>
-                        <th>Th 3</th>
-                        <th>Th 4</th>
-                        <th>Th 5</th>
-                        <th>Th 6</th>
-                        <th>Th 7</th>
-                        <th>CN</th>
-                    </tr>
-                    <tr>
-                        <td>31</td>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>7</td>
-                        <td>8</td>
-                        <td>9</td>
-                        <td>10</td>
-                        <td>11</td>
-                        <td>12</td>
-                        <td>13</td>
-                    </tr>
-                    <tr>
-                        <td>14</td>
-                        <td>15</td>
-                        <td>16</td>
-                        <td>17</td>
-                        <td>18</td>
-                        <td>19</td>
-                        <td>20</td>
-                    </tr>
-                    <tr>
-                        <td>21</td>
-                        <td>22</td>
-                        <td>23</td>
-                        <td>24</td>
-                        <td class="today">25</td>
-                        <td>26</td>
-                        <td>27</td>
-                    </tr>
-                    <tr>
-                        <td>28</td>
-                        <td>29</td>
-                        <td>30</td>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                    </tr>
+                <table class="calendar-table">
+                    <thead>
+                        <tr>
+                            <th>Th 2</th>
+                            <th>Th 3</th>
+                            <th>Th 4</th>
+                            <th>Th 5</th>
+                            <th>Th 6</th>
+                            <th>Th 7</th>
+                            <th>CN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $dayCount = 1;
+                        for ($row = 0; $row < $rows; $row++): ?>
+                            <tr>
+                                <?php for ($col = 0; $col < 7; $col++): ?>
+                                    <?php
+                                    $currentPos = $row * 7 + $col + 1;
+                                    if ($currentPos <= $blankDays || $dayCount > $daysInMonth) {
+                                        echo '<td class="empty"></td>';
+                                    } else {
+                                        $isToday = ($dayCount == $currentDay) ? 'today' : '';
+                                        $isHoliday = in_array($dayCount, $holidayDates) ? 'holiday' : '';
+                                        $classes = trim("$isToday $isHoliday");
+                                        $classAttr = $classes ? "class='$classes'" : '';
+                                        echo "<td $classAttr>$dayCount</td>";
+                                        $dayCount++;
+                                    }
+                                    ?>
+                                <?php endfor; ?>
+                            </tr>
+                        <?php endfor; ?>
+                    </tbody>
                 </table>
             </div>
-            <div class="section empty-calendar" style="flex: 0.5; background-color: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
-                <h3>Dung lượng</h3>
+            <div class="section empty-calendar">
+                <div class="proposal-content">
+                    <h3>Cảnh báo người lạ</h3>
+                    <?php if (!empty($createTime)): ?>
+                        <table class="warning-table">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Đến</th>
+                                    <th>Đi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($createTime as $time): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($time['record_date']) ?></td>
+                                        <td><?= htmlspecialchars(date('H:i:s', strtotime($time['minTime']))) ?></td>
+                                        <td><?= htmlspecialchars(date('H:i:s', strtotime($time['maxTime']))) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else: ?>
+                        <p>Không có dữ liệu cảnh báo người lạ.</p>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
- </body>
+
+    <script>
+        document.querySelector('.prev-month').addEventListener('click', () => {
+            window.location.href = '?month=<?= $month - 1 ?>&year=<?= $month == 1 ? $year - 1 : $year ?>';
+        });
+
+        document.querySelector('.next-month').addEventListener('click', () => {
+            window.location.href = '?month=<?= $month + 1 ?>&year=<?= $month == 12 ? $year + 1 : $year ?>';
+        });
+    </script>
+</body>
 </html>
