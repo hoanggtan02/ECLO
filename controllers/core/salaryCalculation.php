@@ -328,9 +328,42 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     ]) ?? [];
     error_log("Salaries in POST: " . print_r($salaries, true));
 
+    // Lấy dữ liệu từ bảng staff-holiday
+    $holidays = $app->select("staff-holiday", [
+        "id", "departmentId", "name", "startDate", "endDate", "salaryCoefficient"
+    ], [
+        "AND" => [
+            "startDate[<=]" => $monthEnd,
+            "endDate[>=]" => $monthStart,
+            "status" => 'A'
+        ]
+    ]) ?? [];
+    error_log("Holiday Data for month $year-$month: " . print_r($holidays, true));
+
+    // Tạo mảng ánh xạ ngày nghỉ lễ
+    $holidayMap = [];
+    foreach ($holidays as $holiday) {
+        $start = max(strtotime($monthStart), strtotime($holiday['startDate']));
+        $end = min(strtotime($monthEnd), strtotime($holiday['endDate']));
+        $startDate = date('Y-m-d', $start);
+        $endDate = date('Y-m-d', $end);
+        $currentDate = $startDate;
+
+        while (strtotime($currentDate) <= strtotime($endDate)) {
+            $holidayMap[$currentDate][] = [
+                'departmentId' => $holiday['departmentId'],
+                'name' => $holiday['name'],
+                'coefficient' => $holiday['salaryCoefficient']
+            ];
+            $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
+        }
+    }
+    error_log("Holiday Map: " . print_r($holidayMap, true));
+
     foreach ($employees as $index => $employee) {
         $sn = $employee['sn'];
         $department = $employee['personName'] ?? 'Không xác định'; // Lấy trực tiếp từ kết quả join
+        $departmentId = $employee['departmentId'] ?? 0; // Lấy departmentId của nhân viên
 
         $salaryData = [];
         $totalSalary = 0;
@@ -339,6 +372,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
         $totalWorkingDays = 0;
         $actualWorkingDays = 0;
+        $holidayWorkingDays = []; // Lưu số ngày làm việc trong các ngày nghỉ lễ
         $overtimeHours = 0;
         $unauthorizedLeaveFromRecords = 0; // Nghỉ không phép từ chấm công
         $assignments = $assignmentMap[$sn] ?? [];
@@ -348,7 +382,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         // Mảng để theo dõi các ngày đã được tính là ngày công (tránh tính trùng)
         $processedDays = [];
 
-        // Duyệt qua từng ngày trong tháng để tính ngày công và nghỉ không phép
+        // Duyệt qua từng ngày trong tháng để tính ngày công, nghỉ không phép, và kiểm tra ngày nghỉ lễ
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $date = "$year-$month-" . sprintf("%02d", $day);
             $dayOfWeek = date('N', strtotime($date));
@@ -360,6 +394,16 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
             // Lấy giá trị work_credit cho ngày này, mặc định là 1 nếu không có
             $workCredit = $timePeriod && isset($timePeriod[$creditKey]) ? (float)$timePeriod[$creditKey] : 1.0;
             $records = $attendanceData[$sn][$date] ?? [];
+
+            // Kiểm tra xem ngày này có phải ngày nghỉ lễ không
+            $holidaysOnDate = $holidayMap[$date] ?? [];
+            $applicableHolidays = [];
+            foreach ($holidaysOnDate as $holiday) {
+                // Kiểm tra xem ngày nghỉ lễ áp dụng cho phòng ban của nhân viên không
+                if ($holiday['departmentId'] == 0 || $holiday['departmentId'] == $departmentId) {
+                    $applicableHolidays[] = $holiday;
+                }
+            }
 
             if (!$isOffDay) {
                 // Ngày làm việc
@@ -380,7 +424,15 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                             }
                         } else {
                             // Không có nghỉ phép, tính bình thường
-                            $actualWorkingDays += $workCredit;
+                            $dayWorkCredit = $workCredit;
+                            // Áp dụng hệ số lương nếu là ngày nghỉ lễ
+                            if (!empty($applicableHolidays)) {
+                                // Lấy hệ số cao nhất nếu có nhiều kỳ nghỉ lễ trùng ngày
+                                $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $applicableHolidays));
+                                $dayWorkCredit *= $maxCoefficient; // Áp dụng hệ số lương
+                                $holidayWorkingDays[$date] = $dayWorkCredit; // Lưu số ngày công đã áp dụng hệ số
+                            }
+                            $actualWorkingDays += $dayWorkCredit;
                         }
                         $processedDays[$date] = true;
                     }
@@ -413,7 +465,21 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                         $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
                                     }
                                 } else {
-                                    $actualWorkingDays += $workCredit;
+                                    $dayWorkCredit = $workCredit;
+                                    // Áp dụng hệ số lương nếu ngày bù (day2) là ngày nghỉ lễ
+                                    $day2Holidays = $holidayMap[$day2] ?? [];
+                                    $day2ApplicableHolidays = [];
+                                    foreach ($day2Holidays as $holiday) {
+                                        if ($holiday['departmentId'] == 0 || $holiday['departmentId'] == $departmentId) {
+                                            $day2ApplicableHolidays[] = $holiday;
+                                        }
+                                    }
+                                    if (!empty($day2ApplicableHolidays)) {
+                                        $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $day2ApplicableHolidays));
+                                        $dayWorkCredit *= $maxCoefficient;
+                                        $holidayWorkingDays[$date] = $dayWorkCredit;
+                                    }
+                                    $actualWorkingDays += $dayWorkCredit;
                                 }
                                 $processedDays[$date] = true;
                             }
@@ -435,8 +501,15 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                     }
 
                     if (!$hasShiftCompensation && !isset($leaveDaysMap[$sn][$date])) {
-                        // Không có chấm công, không nhảy ca, và không có đăng ký nghỉ phép → tính là nghỉ không phép
-                        $unauthorizedLeaveFromRecords += $workCredit;
+                        // Không có chấm công, không nhảy ca, và không có đăng ký nghỉ phép
+                        if (!empty($applicableHolidays)) {
+                            // Nếu là ngày nghỉ lễ, vẫn tính ngày công bình thường (không áp dụng hệ số vì không đi làm)
+                            $actualWorkingDays += $workCredit;
+                            $processedDays[$date] = true;
+                        } else {
+                            // Nếu không phải ngày nghỉ lễ, tính là nghỉ không phép
+                            $unauthorizedLeaveFromRecords += $workCredit;
+                        }
                     }
                 }
             } else {
@@ -456,7 +529,14 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                         $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
                                     }
                                 } else {
-                                    $actualWorkingDays += $workCredit;
+                                    $dayWorkCredit = $workCredit;
+                                    // Áp dụng hệ số lương nếu là ngày nghỉ lễ
+                                    if (!empty($applicableHolidays)) {
+                                        $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $applicableHolidays));
+                                        $dayWorkCredit *= $maxCoefficient;
+                                        $holidayWorkingDays[$originalDay] = $dayWorkCredit;
+                                    }
+                                    $actualWorkingDays += $dayWorkCredit;
                                 }
                                 $processedDays[$originalDay] = true;
                             }
