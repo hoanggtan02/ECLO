@@ -108,14 +108,6 @@
             $temp = $shiftLabels[$data['shift']] ?? $jatbi->lang("Không xác định");
             $temp2 = $shiftLabels[$data['shift2']] ?? $jatbi->lang("Không xác định");
 
-            // Tùy chỉnh hiển thị trạng thái (statu) với màu sắc
-            $statuDisplay = $data['statu'];
-            if ($data['statu'] === 'Approved') {
-                $statuDisplay = '<a href="#" class="status-link" data-url="/shift-status/' . $data['idshift'] . '" data-action="modal">' . $data['statu'] . '</a>';
-            } elseif ($data['statu'] === 'Pending') {
-                $statuDisplay = '<a href="#" class="status-link" style="color: green;" data-url="/shift-status/' . $data['idshift'] . '" data-action="modal">' . $data['statu'] . '</a>';
-            }
-
             return [
                 "checkbox" => $app->component("box", ["data" => $data['idshift']]),
                 "idshift" => $data['idshift'],
@@ -123,7 +115,7 @@
                 "shift" => "{$temp} : {$data['day']} || {$data['timeStart']} : {$data['timeEnd']}",
                 "shift2" => "{$temp2} : {$data['day2']} || {$data['timeStart2']} : {$data['timeEnd2']}",
                 "note" => $data['note'],
-                "statu" => $statuDisplay,
+                "statu" => $app->component("status",["url"=>"/shift-status/".$data['idshift'],"data"=>$data['statu'],"permission"=>['shift.edit']]),
                 "dayCreat" => $data['dayCreat'],
                 "action" => $app->component("action", [
                     "button" => [          
