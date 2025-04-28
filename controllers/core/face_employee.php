@@ -128,7 +128,7 @@
                             'type' => 'button',
                             'name' => $jatbi->lang("Xóa"),
                             'permission' => ['face_employee.deleted'],
-                            'action' => ['data-url' => '/manager/face_employee-deleted?id='.$data['employee_sn'], 'data-action' => 'modal']
+                            'action' => ['data-url' => '/manager/face_employee-deleted?box='.$data['employee_sn'], 'data-action' => 'modal']
                         ],
                     ]
                 ]),        
