@@ -381,7 +381,7 @@ $app->router("/staffConfiguration/position-delete", 'POST', function($vars) use 
         echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Xóa thành công.")]);
     }
     else {
-        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
+        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xảảy ra.")]);
     }
 })->setPermissions(['staffConfiguration-position.delete']);
 
@@ -596,7 +596,7 @@ $app->router("/staffConfiguration/salary-delete", 'POST', function($vars) use ($
         echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Xóa thành công.")]);
     }
     else {
-        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
+        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xảảy ra.")]);
     }
 })->setPermissions(['staffConfiguration-salary.delete']);
 
@@ -830,7 +830,7 @@ $app->router("/staffConfiguration/holiday-delete", 'POST', function($vars) use (
         echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Xóa thành công.")]);
     }
     else {
-        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
+        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xảảy ra.")]);
     }
 })->setPermissions(['staffConfiguration-holiday.delete']);
 $vars['title'] = $jatbi->lang("Chức vụ");
