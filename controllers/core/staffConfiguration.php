@@ -180,11 +180,11 @@ $app->router("/staffConfiguration/department-delete", 'POST', function($vars) us
         'Content-Type' => 'application/json',
     ]);
     $boxid = explode(',', $app->xss($_GET['box']));
-    $datas = $app->select("department","*",["id"=>$boxid]);
+    $datas = $app->select("department","*",["departmentId"=>$boxid]);
 
     if(count($datas)>0){
         foreach($datas as $data){
-            $app->delete("department",["departmentId"=>$data['id']]);
+            $app->delete("department",["departmentId"=>$data['departmentId']]);
         }
         $jatbi->logs('staffConfiguration','department-delete',$datas);
         echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Xóa thành công.")]);
