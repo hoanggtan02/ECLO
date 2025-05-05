@@ -558,8 +558,7 @@
         $firstDayOfWeek = $firstDayOfMonth->format('N'); // 1 (Monday) to 7 (Sunday)
 
         // Số ngày trong tháng
-        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
-
+        $daysInMonth = date('t', mktime(0, 0, 0, $month, 1, $year));
         // Tính số ô trống trước ngày 1
         $blankDays = $firstDayOfWeek - 1; // If Monday is the first column, subtract 1
 
