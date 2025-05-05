@@ -142,7 +142,7 @@ $app->router("/salary", 'POST', function($vars) use ($app, $jatbi) {
                 "departmentId"              => $data['departmentId'],
                 "workingDays"               => $data['workingDays'],
                 "insurance"                 => number_format($insurance, 0, '.', ','),
-                "dailySalary"               => 0,
+                "dailySalary"               => $data['dailySalary'],
                 "overtime"                  => number_format($overtimeMoney, 0, '.', ',') . " / " . count($overtime),
                 "lateArrival/earlyLeave"    => $data['lateArrival'] . ' / ' . $data['earlyLeave'],
                 "unpaidLeave"               => $data['unpaidLeave'],
@@ -344,6 +344,7 @@ function attendanceTracking($app) {
     ], [
         'salary.id',
         'salary.personSn',
+        'salary.departmentId',
         'salary.month',
         'timeperiod.monStart',
         'timeperiod.monEnd',
@@ -359,6 +360,13 @@ function attendanceTracking($app) {
         'timeperiod.satEnd',
         'timeperiod.sunStart',
         'timeperiod.sunEnd',
+        'timeperiod.mon_work_credit',
+        'timeperiod.tue_work_credit',
+        'timeperiod.wed_work_credit',
+        'timeperiod.thu_work_credit',
+        'timeperiod.fri_work_credit',
+        'timeperiod.sat_work_credit',
+        'timeperiod.sun_work_credit',
         'timeperiod.mon_off',
         'timeperiod.tue_off',
         'timeperiod.wed_off',
@@ -377,7 +385,7 @@ function attendanceTracking($app) {
         $paidLeave = 0;
         $unpaidLeave = 0;
         $unauthorizedLeave = 0;
-        $currentSalary = 00; 
+        $currentSalary = 0; 
         
         $workingDate = $app->get("employee_contracts", [
             "working_date",
@@ -408,134 +416,273 @@ function attendanceTracking($app) {
                 "LIMIT"             => 1
             ]);
 
-            $holiday = $app->has("staff-holiday", [// kiểm tra ngày lễ
+            $dayOff = $app->get("leave_requests", [
+                "[>]leavetype"          => ["LeaveId" => "LeaveTypeID"],
+            ],[
+                'leave_requests.leave_days',
+                'leave_requests.start_date',
+                'leave_requests.end_date',
+                'leavetype.SalaryType',
+            ],[
+                'leave_requests.personSN'       => $s["personSn"],
+                'leave_requests.start_date[<=]' => $date->format('Y-m-d') . " 23:59:59",
+                'leave_requests.end_date[>=]'   => $date->format('Y-m-d') . " 00:00:00",
+                "ORDER"             => ["leave_requests.created_at" => "DESC"],
+                "LIMIT"             => 1
+            ]);
+
+            $holiday = $app->get("staff-holiday", [
+                "salaryCoefficient"
+            ], [
                 "startDate[<=]" => $date->format('Y-m-d'),
                 "endDate[>=]"   => $date->format('Y-m-d'),
                 "status"        => 'A',
-            ]); 
-            if(empty($holiday)) {
-                $d = $date->format('l');// lấy thứ hiện tại
-                $timeMin = $app->min("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
-                    "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
-                    "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
-                    "personSn"       => $s["personSn"],
-                ]);
-                if(!empty($timeMin)) { $timeMin = new DateTime($timeMin); }
-                $timeMax = $app->max("record", "createTime", [
-                    "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
-                    "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
-                    "personSn"       => $s["personSn"],
-                ]);
-                if(!empty($timeMax)) { $timeMax = new DateTime($timeMax); }
-                
-                switch ($d) {
-                    case 'Monday':
-                        if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
-                            break;
-                        } else $totalWorkingDays++;
+                "OR" => [
+                    "departmentId" => [0, $s["departmentId"]]
+                ],
+                "ORDER" => ["salaryCoefficient" => "DESC"],
+            ]);
+            
+            $timeMin = $app->min("record", "createTime", [// lấy thời gian ra vào lớn nhất và bé nhất của ngày hiện tại
+                "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
+                "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
+                "personSn"       => $s["personSn"],
+            ]);
+            if(!empty($timeMin)) { $timeMin = new DateTime($timeMin); }
+            $timeMax = $app->max("record", "createTime", [
+                "createTime[>=]" => $date->format('Y-m-d') . " 00:00:00",
+                "createTime[<=]" => $date->format('Y-m-d') . " 23:59:59",
+                "personSn"       => $s["personSn"],
+            ]);
+            if(!empty($timeMax)) { $timeMax = new DateTime($timeMax); }
+            // if(empty($holiday)) {
 
-                        if($timeMin) {// nếu đi làm + 1 ngày công
-                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], $workingDays, $currentSalary);
-                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
-                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["monStart"]);
-                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["monEnd"]);
+            $d = $date->format('l');// lấy thứ hiện tại
+            switch ($d) {
+                case 'Monday':
+                    if($s['mon_off'] == '1') {// bỏ qua ngày nghỉ
+                        $dayOff = 1;
+                        break;
+                    } else $totalWorkingDays++;
+
+                    $arrivalTime = $s["monStart"];
+                    $departureTime = $s["monEnd"];
+                    
+
+
+                    // if($dayOff) {
+                    //     $timeArrive = new DateTime($date->format('Y-m-d') . " " . $s["monStart"] . ":00");
+                    //     $timeLeave = new DateTime($date->format('Y-m-d') . " " . $s["monEnd"] . ":00");
+                    //     $dayOff["start_date"] = new DateTime($dayOff["start_date"]);
+                    //     $dayOff["end_date"] = new DateTime($dayOff["end_date"]);
+
+                    //     if($dayOff["start_date"] <= $timeArrive && $dayOff["end_date"] >= $timeLeave) {
+                    //         if($dayOff["SalaryType"] == "Nghỉ có lương") {
+                    //             if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], 1, $paidLeave, $currentSalary);
+                    //             if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["mon_work_credit"], $dailySalary["price"], 1, $paidLeave, $currentSalary);
+                    //         } else {
+                    //             if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], 1, $unpaidLeave, $currentSalary);
+                    //             if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["mon_work_credit"], $dailySalary["price"], 1, $unpaidLeave, $currentSalary);
+                    //         }
+                    //         break;
+                    //     }
+                    //     if($dayOff["start_date"] <= $timeArrive) {
+                    //         // if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                    //         // if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["mon_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                    //     }
+                    // }
+
+                    if(!empty($holiday)) {
+                        if($timeMin) {// ngày lễ đi làm nhân hệ số lương
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["mon_work_credit"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
                         }
-                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                        break;
-                    case 'Tuesday':
-                        if($s['tue_off'] == '1') {
-                            break;
-                        } else $totalWorkingDays++;
-                        if($timeMin) {
-                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["tueStart"], $s["tueEnd"], $dailySalary["price"], $workingDays, $currentSalary);
-                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
-                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
-                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
-                            break;
+                        else {// ngày lễ nghỉ thì tính luong ngày đi làm bình thườngthường
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["mon_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
                         }
-                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                         break;
-                    case 'Wednesday':
-                        if($s['wed_off'] == '1') {
-                            break;
-                        } else $totalWorkingDays++;
-                        if($timeMin) {
-                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["wedStart"], $s["wedEnd"], $dailySalary["price"], $workingDays, $currentSalary);
-                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
-                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["wedStart"]);
-                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["wedEnd"]);
-                            break;
+                    } 
+                    
+                    if($timeMin) {// nếu đi làm + 1 ngày công
+                        if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["monStart"], $s["monEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["mon_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["monStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["monEnd"]);
+                    }
+                    
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                    break;
+                case 'Tuesday':
+                    if($s['tue_off'] == '1') {
+                        break;
+                    } else $totalWorkingDays++;
+                    if(!empty($holiday)) {
+                        if($timeMin) {// ngày lễ đi làm nhân hệ số lương
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["tueStart"], $s["tueEnd"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["tue_work_credit"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
                         }
-                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                        break;
-                    case 'Thursday':
-                        if($s['thu_off'] == '1') {
-                            break;
-                        } else $totalWorkingDays++;
-                        if($timeMin) {
-                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["thursStart"], $s["thursEnd"], $dailySalary["price"], $workingDays, $currentSalary);
-                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
-                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["thursStart"]);
-                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["thursEnd"]);
-                            break;
-                        }   
-                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                        break;
-                    case 'Friday':
-                        if($s['fri_off'] == '1') {
-                            break;
-                        } else $totalWorkingDays++;
-                        if($timeMin) {
-                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["friStart"], $s["friEnd"], $dailySalary["price"], $workingDays, $currentSalary);
-                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
-                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["friStart"]);
-                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["friEnd"]);
-                            break;
+                        else {// ngày lễ nghỉ thì tính luong ngày đi làm bình thườngthường
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["tueStart"], $s["tueEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["tue_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
                         }
-                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
                         break;
-                    case 'Saturday':
-                        if($s['sat_off'] == '1') {
-                            break;
-                        } else $totalWorkingDays++;
-                        if($timeMin) {
-                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["satStart"], $s["satEnd"], $dailySalary["price"], $workingDays, $currentSalary);
-                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
-                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["satStart"]);
-                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["satEnd"]);
-                            break;
-                        }
-                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
-                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                        break;
-                    case 'Sunday':
-                        if($s['sun_off'] == '1') {
-                            break;
-                        } else $totalWorkingDays++;
-                        if($timeMin) {
-                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["sunStart"], $s["sunEnd"], $dailySalary["price"], $workingDays, $currentSalary);
-                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($dailySalary["price"], $workingDays, $currentSalary);
-                            $lateArrival += checkArrive($timeMin->format('H:i'), $s["sunStart"]);
-                            $earlyLeave += checkLeave($timeMax->format('H:i'), $s["sunEnd"]);
-                            break;
-                        }
-                        if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break; 
-                        if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
-                        break;
-                    default:
+                    } 
+
+                    if($timeMin) {
+                        if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["tueStart"], $s["tueEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["tue_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["tueStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["tueEnd"]);
                         break;
                     }
-                } else {
-                    if(!empty($dailySalary) && $dailySalary["priceValue"] != 1) {
-                            $workingDays++;
-                            $totalWorkingDays++;
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                    break;
+                case 'Wednesday':
+                    if($s['wed_off'] == '1') {
+                        break;
+                    } else $totalWorkingDays++;
+                    if(!empty($holiday)) {
+                        if($timeMin) {// ngày lễ đi làm nhân hệ số lương
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["wedStart"], $s["wedEnd"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["wed_work_credit"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                        }
+                        else {// ngày lễ nghỉ thì tính luong ngày đi làm bình thườngthường
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["wedStart"], $s["wedEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["wed_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        }
+                        break;
+                    } 
+
+                    if($timeMin) {
+                        if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["wedStart"], $s["wedEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["wed_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["wedStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["wedEnd"]);
+                        break;
                     }
-                }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                    break;
+                case 'Thursday':
+                    if($s['thu_off'] == '1') {
+                        break;
+                    } else $totalWorkingDays++;
+                    if(!empty($holiday)) {
+                        if($timeMin) {// ngày lễ đi làm nhân hệ số lương
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["thursStart"], $s["thursEnd"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["thu_work_credit"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                        }
+                        else {// ngày lễ nghỉ thì tính luong ngày đi làm bình thườngthường
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["thursStart"], $s["thursEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["thu_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        }
+                        break;
+                    } 
+
+                    if($timeMin) {
+                        if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["thursStart"], $s["thursEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["thu_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary['priceValue'] == 2) monthlyAttendanceTracking($s["thu_work_credit"], $dailySalary["price"], $workingDays, $workingDays, $currentSalarys);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["thursStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["thursEnd"]);
+                        break;
+                    }   
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                    break;
+                case 'Friday':
+                    if($s['fri_off'] == '1') {
+                        break;
+                    } else $totalWorkingDays++;
+                    if(!empty($holiday)) {
+                        if($timeMin) {// ngày lễ đi làm nhân hệ số lương
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["friStart"], $s["friEnd"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["fri_work_credit"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                        }
+                        else {// ngày lễ nghỉ thì tính luong ngày đi làm bình thườngthường
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["friStart"], $s["friEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["fri_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        }
+                        break;
+                    } 
+
+                    if($timeMin) {
+                        if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["friStart"], $s["friEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["fri_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["friStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["friEnd"]);
+                        break;
+                    }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                    break;
+                case 'Saturday':
+                    if($s['sat_off'] == '1') {
+                        break;
+                    } else $totalWorkingDays++;
+                    if(!empty($holiday)) {
+                        if($timeMin) {// ngày lễ đi làm nhân hệ số lương
+                            if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["satStart"], $s["satEnd"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["sat_work_credit"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                        }
+                        else {// ngày lễ nghỉ thì tính luong ngày đi làm bình thườngthường
+                            if($dailySalary && $dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["satStart"], $s["satEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                            if($dailySalary && $dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["sat_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        }
+                        break;
+                    } 
+
+                    if($timeMin) {
+                        if($dailySalary && $dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["satStart"], $s["satEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary && $dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["sat_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["satStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["satEnd"]);
+                        break;
+                    }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break;
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                    break;
+                case 'Sunday':
+                    if($s['sun_off'] == '1') {
+                        break;
+                    } else $totalWorkingDays++;
+                    if(!empty($holiday)) {
+                        if($timeMin) {// ngày lễ đi làm nhân hệ số lương
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["sunStart"], $s["sunEnd"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["sun_work_credit"], $dailySalary["price"], $holiday["salaryCoefficient"], $workingDays, $currentSalary);
+                        }
+                        else {// ngày lễ nghỉ thì tính luong ngày đi làm bình thườngthường
+                            if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["sunStart"], $s["sunEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                            if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["sun_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        }
+                        break;
+                    } 
+
+                    if($timeMin) {
+                        if($dailySalary['priceValue'] == 1) hourlyAttendanceTracking($s["sunStart"], $s["sunEnd"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        if($dailySalary['priceValue'] == 2) dailyAttendanceTracking($s["sun_work_credit"], $dailySalary["price"], 1, $workingDays, $currentSalary);
+                        $lateArrival += checkArrive($timeMin->format('H:i'), $s["sunStart"]);
+                        $earlyLeave += checkLeave($timeMax->format('H:i'), $s["sunEnd"]);
+                        break;
+                    }
+                    if(checkDayOff ($app, $s["personSn"], $date->format('Y-m-d'), $paidLeave, $unpaidLeave)) break; 
+                    if ($date->format('Y-m-d') <= date("Y-m-d")) $unauthorizedLeave++;
+                    break;
+                default:
+                    break;
+            }
+                // } else {
+                //     if(!empty($dailySalary) && $dailySalary["priceValue"] == 3) {
+                //             $workingDays++;
+                //             $totalWorkingDays++;
+                            
+
+                //     }
+
+                // }
             if($date->format('Y-m-d') == date('Y-m-d')) break;
             $date->modify('+1 day');  
         }
@@ -560,9 +707,18 @@ function attendanceTracking($app) {
         ]);
         
         if(!empty($dailySalary)) {
-            if($dailySalary["priceValue"] == 1) $workingDays = $workingDays . " hours";
-            if($dailySalary["priceValue"] == 2) $workingDays = $workingDays . " days";
-            if($dailySalary["priceValue"] == 3) $workingDays = $workingDays . " / " . $totalWorkingDays;
+            if($dailySalary["priceValue"] == 1) {
+                $workingDays = $workingDays . " hours";
+                $basicSalary = number_format($dailySalary["price"], 0, '.', ',') . " / hour"; 
+            }
+            if($dailySalary["priceValue"] == 2) {
+                $workingDays = $workingDays . " days";
+                $basicSalary = number_format($dailySalary["price"], 0, '.', ',') . " / day"; 
+            }
+            if($dailySalary["priceValue"] == 3) {
+                $workingDays = $workingDays . " / " . $totalWorkingDays;
+                $basicSalary = number_format($dailySalary["price"], 0, '.', ',') . " / month"; 
+            }
         }
 
         $insert = [
@@ -573,9 +729,10 @@ function attendanceTracking($app) {
             "paidLeave"         => $paidLeave,
             "unpaidLeave"       => $unpaidLeave,
             "unauthorizedLeave" => $unauthorizedLeave,
-            // "dailySalary"       => $dailySalary["price"]??0,
+            "dailySalary"       => $basicSalary??"",
             "currentSalary"     => $currentSalary,
             "salaryAdvance"     => $salaryAdvance,
+            "currentSalary"     => $currentSalary,
         ];
 
         if($s["month"] != date("Y-m")) {
@@ -588,16 +745,22 @@ function attendanceTracking($app) {
     }
 }
 
-function hourlyAttendanceTracking($dayStart, $dayEnd, $salary, &$workingDays, &$currentSalary) {// tính công theo tiếng
+function hourlyAttendanceTracking($dayStart, $dayEnd, $salary, $salaryCoefficient, &$workingDays, &$currentSalary) {// tính công theo tiếng
     $dayStart = new DateTime($dayStart);
     $dayEnd = new DateTime($dayEnd);
     $interval = $dayStart->diff($dayEnd);
     $hours = $interval->h + ($interval->i / 60);
     $workingDays += $hours;
-    $currentSalary += $hours*$salary;
+    $currentSalary += $hours * $salary * $salaryCoefficient;
 }
 
-function dailyAttendanceTracking($salary, &$workingDays, &$currentSalary) {// tính công theo ngày
-    $workingDays++;
-    $currentSalary += $salary;
+function dailyAttendanceTracking($shiftWork, $salary, $salaryCoefficient, &$workingDays, &$currentSalary) {// tính công theo ngày
+    $workingDays += $shiftWork;
+    $currentSalary += $salary * $shiftWork * $salaryCoefficient;
+}
+
+function monthlyAttendanceTracking($shiftWork, $salary, &$workingDays, $totalWorkingDays, &$currentSalary) {// tính công theo ngày
+    $workingDays += $shiftWork;
+    $currentSalary += ($shiftWork / $totalWorkingDays) * $salary;
+    $currentSalary = round($currentSalary);
 }

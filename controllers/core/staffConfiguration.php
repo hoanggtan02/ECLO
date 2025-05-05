@@ -126,9 +126,10 @@ $app->router("/staffConfiguration/department-add", 'POST', function($vars) use (
         echo json_encode(["status"=>"error","content"=>$jatbi->lang("Tên Phòng ban không được để trống.")]);
     } else {
         $insert = [
-            "departmentName" => $app->xss($_POST['departmentName']),
-            "note"           => $app->xss($_POST['note'])?? '',
-            "status"         => $app->xss($_POST['status']),
+            "departmentId"  => $app->xss($_POST['departmentId']),
+            "personName"    => $app->xss($_POST['departmentName']),
+            "note"          => $app->xss($_POST['note'])?? '',
+            "status"        => $app->xss($_POST['status']),
         ];
         $app->insert("department",$insert);
         $jatbi->logs('staffConfiguration','department-add',$insert);
@@ -158,9 +159,9 @@ $app->router("/staffConfiguration/department-edit/{id}", 'POST', function($vars)
         echo json_encode(["status"=>"error","content"=>$jatbi->lang("Tên Phòng ban không được để trống.")]);
     } else {
         $insert = [
-            "departmentName" => $app->xss($_POST['departmentName']),
-            "note"           => $app->xss($_POST['note'])?? '',
-            "status"         => $app->xss($_POST['status']),
+            "personName"    => $app->xss($_POST['departmentName']),
+            "note"          => $app->xss($_POST['note'])?? '',
+            "status"        => $app->xss($_POST['status']),
         ];
         $app->update("department",$insert,["departmentId"=>$vars['id']]);
         $jatbi->logs('staffConfiguration','department-edit departmentId = '.$vars['id'],$insert);
@@ -183,13 +184,13 @@ $app->router("/staffConfiguration/department-delete", 'POST', function($vars) us
 
     if(count($datas)>0){
         foreach($datas as $data){
-            $app->delete("department",["id"=>$data['id']]);
+            $app->delete("department",["departmentId"=>$data['id']]);
         }
         $jatbi->logs('staffConfiguration','department-delete',$datas);
         echo json_encode(['status'=>'success',"content"=>$jatbi->lang("Xóa thành công.")]);
     }
     else {
-        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xẩy ra.")]);
+        echo json_encode(['status'=>'error','content'=>$jatbi->lang("Có lỗi xảy ra.")]);
     }
 })->setPermissions(['staffConfiguration-department.delete']);
 
