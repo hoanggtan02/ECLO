@@ -24,84 +24,89 @@
         <div class="mb-3">
           <div class="row">
             <div class="col-md-6">
-              <strong>Nhân viên:</strong>
-              <?=$vars['data']['employee_name'] ?? 'N/A'?>
+              Nhân viên:
+              <strong><?=$vars['data']['employee_name'] ?? 'N/A'?></strong>
             </div>
             <div class="col-md-6">
-              <strong>Ngày phỏng vấn:</strong>
-              <?=$vars['data']['interview_date'] ? date('d/m/Y', strtotime($vars['data']['interview_date'])) : 'N/A'?>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <strong>Ngày hợp đồng:</strong>
-              <?=$vars['data']['working_date'] ? date('d/m/Y', strtotime($vars['data']['working_date'])) : 'N/A'?>
-            </div>
-            <div class="col-md-6">
-              <strong>Ngày làm việc:</strong>
-              <?=$vars['data']['working_date'] ? date('d/m/Y', strtotime($vars['data']['working_date'])) : 'N/A'?>
+              Ngày phỏng vấn:
+              <strong
+                ><?=$vars['data']['interview_date'] ? date('d/m/Y', strtotime($vars['data']['interview_date'])) : 'N/A'?></strong
+              >
             </div>
           </div>
           <div class="row">
             <div class="col-md-6">
-              <strong>Loại hợp đồng:</strong>
-              <?=$jatbi->lang($vars['data']['contract_type'] ?? 'N/A')?>
+              Ngày hợp đồng:
+              <strong
+                ><?=$vars['data']['working_date'] ? date('d/m/Y', strtotime($vars['data']['working_date'])) : 'N/A'?></strong
+              >
             </div>
             <div class="col-md-6">
-              <strong>Trình độ:</strong>
-              <?=$vars['data']['education_level'] ?? 'N/A'?>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <strong>Số hợp đồng:</strong>
-              <?=$vars['data']['contract_number'] ?? 'N/A'?>
-            </div>
-            <div class="col-md-6">
-              <strong>Bằng cấp:</strong>
-              <?=$vars['data']['degree'] ?? 'N/A'?>
+              Ngày làm việc:
+              <strong
+                ><?=$vars['data']['working_date'] ? date('d/m/Y', strtotime($vars['data']['working_date'])) : 'N/A'?></strong
+              >
             </div>
           </div>
           <div class="row">
             <div class="col-md-6">
-              <strong>Thời hạn hợp đồng:</strong>
-              <?=$vars['data']['contract_duration'] ? $vars['data']['contract_duration'] . ' tháng' : 'N/A'?>
+              Loại hợp đồng:
+              <strong
+                ><?=$jatbi->lang($vars['data']['contract_type'] ??
+                'N/A')?></strong
+              >
             </div>
             <div class="col-md-6">
-              <strong>Thời gian còn lại:</strong>
-              <?=$vars['data']['remaining_days'] ?? 'N/A'?>
+              Trình độ:
+              <strong><?=$vars['data']['education_level'] ?? 'N/A'?></strong>
             </div>
           </div>
           <div class="row">
             <div class="col-md-6">
-              <strong>Công việc:</strong>
-              <?=$vars['data']['department_name'] ?? 'N/A'?>
+              Số hợp đồng:
+              <strong><?=$vars['data']['contract_number'] ?? 'N/A'?></strong>
+            </div>
+            <div class="col-md-6">
+              Bằng cấp:
+              <strong><?=$vars['data']['degree'] ?? 'N/A'?></strong>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              Thời hạn hợp đồng:
+              <strong
+                ><?=$vars['data']['contract_duration'] ? $vars['data']['contract_duration'] . ' tháng' : 'N/A'?></strong
+              >
+            </div>
+            <div class="col-md-6">
+              Thời gian còn lại:
+              <strong><?=$vars['data']['remaining_days'] ?? 'N/A'?></strong>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              Công việc:
+              <strong><?=$vars['data']['department_name'] ?? 'N/A'?></strong>
             </div>
           </div>
         </div>
 
         <div class="mb-3">
-          <h6 class="fw-bold">Tiền lương</h6>
+          <h6>Tiền lương</h6>
           <div class="row bg-light p-2">
-            <div class="col-md-4">
-              <strong>Nội dung</strong>
-            </div>
-            <div class="col-md-4">
-              <strong>Số tiền</strong>
-            </div>
-            <div class="col-md-4">
-              <strong>Ghi chú</strong>
-            </div>
+            <div class="col-md-4">Nội dung</div>
+            <div class="col-md-4">Số tiền</div>
+            <div class="col-md-4">Ghi chú</div>
             <?php if (!empty($vars['data']['salaries'])): ?>
             <?php foreach ($vars['data']['salaries'] as $salary): ?>
             <div class="col-md-4">
-              <?=$salary['salary_name']?>
+              <strong><?=$salary['salary_name']?></strong>
             </div>
             <div class="col-md-4">
-              <?=number_format($salary['price']) . ' / Tháng'?>
+              <strong><?=number_format($salary['price']) . ' / Tháng'?></strong>
             </div>
             <div class="col-md-4">
-              <?=$salary['salary_note'] ?? ''?>
+              <strong><?=$salary['salary_note'] ?? ''?></strong>
             </div>
             <?php endforeach; ?>
             <?php else: ?>
@@ -113,27 +118,23 @@
         </div>
 
         <div class="mb-3">
-          <h6 class="fw-bold">Tiền trợ cấp</h6>
+          <h6>Tiền trợ cấp</h6>
           <div class="row bg-light p-2">
-            <div class="col-md-4">
-              <strong>Nội dung</strong>
-            </div>
-            <div class="col-md-4">
-              <strong>Số tiền</strong>
-            </div>
-            <div class="col-md-4">
-              <strong>Ghi chú</strong>
-            </div>
+            <div class="col-md-4">Nội dung</div>
+            <div class="col-md-4">Số tiền</div>
+            <div class="col-md-4">Ghi chú</div>
             <?php if (!empty($vars['data']['allowances'])): ?>
             <?php foreach ($vars['data']['allowances'] as $allowance): ?>
             <div class="col-md-4">
-              <?=$allowance['salary_name']?>
+              <strong><?=$allowance['salary_name']?></strong>
             </div>
             <div class="col-md-4">
-              <?=number_format($allowance['price']) . ' / Tháng'?>
+              <strong
+                ><?=number_format($allowance['price']) . ' / Tháng'?></strong
+              >
             </div>
             <div class="col-md-4">
-              <?=$allowance['salary_note'] ?? ''?>
+              <strong><?=$allowance['salary_note'] ?? ''?></strong>
             </div>
             <?php endforeach; ?>
             <?php else: ?>
@@ -145,8 +146,10 @@
         </div>
 
         <div class="mb-3">
-          <h6 class="fw-bold">Ghi chú:</h6>
-          <div><?=$vars['data']['note'] ?? ''?></div>
+          <h6>Ghi chú:</h6>
+          <div>
+            <strong><?=$vars['data']['note'] ?? ''?></strong>
+          </div>
         </div>
       </div>
     </div>
