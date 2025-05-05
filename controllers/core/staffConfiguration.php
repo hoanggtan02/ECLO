@@ -122,7 +122,7 @@ $app->router("/staffConfiguration/department-add", 'POST', function($vars) use (
     $app->header([
         'Content-Type' => 'application/json',
     ]);
-    if($app->xss($_POST['departmentName'])=='') {
+    if($app->xss($_POST['departmentId']) =='' && $app->xss($_POST['departmentName']) =='') {
         echo json_encode(["status"=>"error","content"=>$jatbi->lang("Tên Phòng ban không được để trống.")]);
     } else {
         $insert = [
