@@ -151,7 +151,11 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     ]) ?? [];
     $assignmentMap = [];
     foreach ($assignments as $assignment) {
-        $assignmentMap[$assignment['employee_id']][] = $assignment;
+        $employeeId = $assignment['employee_id'];
+        if (!isset($assignmentMap[$employeeId])) {
+            $assignmentMap[$employeeId] = [];
+        }
+        $assignmentMap[$employeeId][] = $assignment;
     }
 
     $records = $app->select("record", ["personSn", "createTime"], [
@@ -246,19 +250,35 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     error_log("Leave Data: " . print_r($leaveData, true));
     error_log("Leave Days Map: " . print_r($leaveDaysMap, true));
 
-    // Lấy dữ liệu từ latetime
-    $latetimes = $app->select("latetime", ["sn", "apply_date", "type", "status", "amount", "value"], [
+    // Lấy dữ liệu từ bảng latetime để áp dụng luật phạt
+    $latetimes = $app->select("latetime", ["sn", "type", "value", "amount", "apply_date"], [
         "AND" => [
-            "apply_date[>=]" => $monthStart,
-            "apply_date[<=]" => $monthEnd
-        ]
+            "apply_date[<=]" => $monthEnd,
+            "status" => 'A'
+        ],
+        "ORDER" => ["apply_date" => "DESC"]
     ]) ?? [];
-    error_log("Raw Latetime Data for month $year-$month: " . print_r($latetimes, true));
-    $latetimeData = [];
+    $latetimeRules = [];
     foreach ($latetimes as $lt) {
-        $latetimeData[$lt['sn']][] = $lt;
+        $sn = $lt['sn'];
+        $type = $lt['type'];
+        $applyDate = strtotime($lt['apply_date']);
+        if (!isset($latetimeRules[$sn])) {
+            $latetimeRules[$sn] = [];
+        }
+        if (!isset($latetimeRules[$sn][$type])) {
+            $latetimeRules[$sn][$type] = [];
+        }
+        // Chỉ lưu luật mới nhất cho mỗi loại (Đi trễ/Về sớm) của nhân viên
+        if (empty($latetimeRules[$sn][$type]) || $applyDate > strtotime($latetimeRules[$sn][$type]['apply_date'])) {
+            $latetimeRules[$sn][$type] = [
+                'threshold' => $lt['value'],
+                'penalty' => $lt['amount'],
+                'apply_date' => $lt['apply_date']
+            ];
+        }
     }
-    error_log("Latetime Data for month $year-$month: " . print_r($latetimeData, true));
+    error_log("Latetime Rules: " . print_r($latetimeRules, true));
 
     // Lấy dữ liệu từ reward_discipline
     $rewards = $app->select("reward_discipline", ["personSN", "amount", "type"], [
@@ -369,31 +389,63 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $totalSalary = 0;
         $basicSalary = 0;
         $dailySalary = 0;
-
         $totalWorkingDays = 0;
         $actualWorkingDays = 0;
+        $totalWorkingHours = 0; // Tổng số giờ làm việc thực tế
         $holidayWorkingDays = []; // Lưu số ngày làm việc trong các ngày nghỉ lễ
         $overtimeHours = 0;
         $unauthorizedLeaveFromRecords = 0; // Nghỉ không phép từ chấm công
         $assignments = $assignmentMap[$sn] ?? [];
-        $timeperiodId = end($assignments)['timeperiod_id'] ?? '1';
-        $timePeriod = $timePeriodMap[$timeperiodId] ?? [];
-
-        // Mảng để theo dõi các ngày đã được tính là ngày công (tránh tính trùng)
         $processedDays = [];
+        $totalLateMinutes = 0; // Tổng số phút đi trễ
+        $totalEarlyMinutes = 0; // Tổng số phút về sớm
+        $totalLatePenalty = 0; // Tổng tiền phạt đi trễ
+        $totalEarlyPenalty = 0; // Tổng tiền phạt về sớm
 
-        // Duyệt qua từng ngày trong tháng để tính ngày công, nghỉ không phép, và kiểm tra ngày nghỉ lễ
+        // Duyệt qua từng ngày trong tháng để tính ngày công, giờ làm việc, nghỉ không phép, và kiểm tra đi trễ/về sớm
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $date = "$year-$month-" . sprintf("%02d", $day);
-            $dayOfWeek = date('N', strtotime($date));
+            $dateTimestamp = strtotime($date);
+            $dayOfWeek = date('N', $dateTimestamp);
             $offKey = $dayMap[$dayOfWeek]['off'];
             $creditKey = $dayMap[$dayOfWeek]['credit'];
+            $startKey = $dayMap[$dayOfWeek]['start'];
+            $endKey = $dayMap[$dayOfWeek]['end'];
+
+            // Xác định timeperiod_id dựa trên ngày áp dụng gần nhất
+            $applicableTimePeriod = null;
+            if (!empty($assignments)) {
+                $latestApplyDate = null;
+                $timeperiodId = '1'; // Giá trị mặc định nếu không có bản ghi phù hợp
+                foreach ($assignments as $assignment) {
+                    $applyDateTimestamp = strtotime($assignment['apply_date']);
+                    if ($applyDateTimestamp <= $dateTimestamp && ($latestApplyDate === null || $applyDateTimestamp > $latestApplyDate)) {
+                        $latestApplyDate = $applyDateTimestamp;
+                        $timeperiodId = $assignment['timeperiod_id'];
+                    }
+                }
+                $applicableTimePeriod = $timePeriodMap[$timeperiodId] ?? [];
+            } else {
+                $applicableTimePeriod = $timePeriodMap['1'] ?? [];
+            }
 
             // Kiểm tra xem ngày đó có phải ngày nghỉ theo lịch làm việc không
-            $isOffDay = $timePeriod && isset($timePeriod[$offKey]) && $timePeriod[$offKey];
+            $isOffDay = $applicableTimePeriod && isset($applicableTimePeriod[$offKey]) && $applicableTimePeriod[$offKey];
             // Lấy giá trị work_credit cho ngày này, mặc định là 1 nếu không có
-            $workCredit = $timePeriod && isset($timePeriod[$creditKey]) ? (float)$timePeriod[$creditKey] : 1.0;
+            $workCredit = $applicableTimePeriod && isset($applicableTimePeriod[$creditKey]) ? (float)$applicableTimePeriod[$creditKey] : 1.0;
             $records = $attendanceData[$sn][$date] ?? [];
+
+            // Tính số giờ làm việc tiêu chuẩn trong ngày và lấy thời gian bắt đầu/kết thúc
+            $hoursForDay = 0;
+            $startTime = null;
+            $endTime = null;
+            if ($applicableTimePeriod && isset($applicableTimePeriod[$startKey], $applicableTimePeriod[$endKey])) {
+                $startTime = strtotime("$date " . $applicableTimePeriod[$startKey]);
+                $endTime = strtotime("$date " . $applicableTimePeriod[$endKey]);
+                if ($endTime > $startTime) {
+                    $hoursForDay = ($endTime - $startTime) / 3600;
+                }
+            }
 
             // Kiểm tra xem ngày này có phải ngày nghỉ lễ không
             $holidaysOnDate = $holidayMap[$date] ?? [];
@@ -412,38 +464,65 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                 // Kiểm tra chấm công trực tiếp
                 if (!empty($records)) {
                     if (!isset($processedDays[$date])) {
+                        // Sắp xếp records theo thời gian để lấy lần chấm công đầu tiên và cuối cùng
+                        usort($records, fn($a, $b) => strtotime($a) <=> strtotime($b));
+                        $firstRecord = $records[0]; // Lần chấm công đầu tiên (check-in)
+                        $lastRecord = end($records); // Lần chấm công cuối cùng (check-out)
+
+                        // Tính đi trễ với delay 15 phút
+                        if ($startTime && $firstRecord) {
+                            $checkInTime = strtotime($firstRecord);
+                            $lateThreshold = $startTime + (15 * 60); // Thêm 15 phút vào startTime
+                            if ($checkInTime > $lateThreshold) {
+                                $lateMinutes = ($checkInTime - $startTime) / 60; // Số phút đi trễ tính từ startTime
+                                $totalLateMinutes += $lateMinutes;
+                                // Kiểm tra luật phạt đi trễ từ bảng latetime
+                                $lateRule = $latetimeRules[$sn]['Đi trễ'] ?? null;
+                                if ($lateRule && $lateMinutes >= $lateRule['threshold']) {
+                                    $totalLatePenalty += $lateRule['penalty'];
+                                }
+                            }
+                        }
+
+                        // Tính về sớm với delay 15 phút
+                        if ($endTime && $lastRecord) {
+                            $checkOutTime = strtotime($lastRecord);
+                            $earlyThreshold = $endTime - (15 * 60); // Trừ 15 phút từ endTime
+                            if ($checkOutTime < $earlyThreshold) {
+                                $earlyMinutes = ($endTime - $checkOutTime) / 60; // Số phút về sớm tính từ endTime
+                                $totalEarlyMinutes += $earlyMinutes;
+                                // Kiểm tra luật phạt về sớm từ bảng latetime
+                                $earlyRule = $latetimeRules[$sn]['Về sớm'] ?? null;
+                                if ($earlyRule && $earlyMinutes >= $earlyRule['threshold']) {
+                                    $totalEarlyPenalty += $earlyRule['penalty'];
+                                }
+                            }
+                        }
+
                         // Kiểm tra xem ngày này có trong leaveDaysMap không
                         $leaveInfo = $leaveDaysMap[$sn][$date] ?? null;
                         if ($leaveInfo) {
                             if ($leaveInfo['type'] === 'Nghỉ có lương') {
-                                // Trường hợp 1: Nghỉ có lương 0.5 ngày và có đi làm
-                                $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // Cộng ngày công theo tỷ lệ
+                                // Trường hợp 1: Nghỉ có lương 0.5 ngày và có đi làm -> Tính full lương
+                                $actualWorkingDays += $workCredit; // Full ngày công
+                                $totalWorkingHours += $hoursForDay; // Full giờ làm việc (8.5 tiếng)
                             } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
-                                // Trường hợp 2: Nghỉ không lương 0.5 ngày và có đi làm
-                                $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // Chỉ tính ngày công theo tỷ lệ
+                                // Trường hợp 2: Nghỉ không lương 0.5 ngày và có đi làm -> Tính 0.5 ngày
+                                $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // Chỉ tính 0.5 ngày
+                                $totalWorkingHours += $hoursForDay * (1 - $leaveInfo['days']); // Chỉ tính 0.5 giờ (4.25 tiếng)
                             }
                         } else {
-                            // Không có nghỉ phép, tính bình thường
+                            // Không có nghỉ phép, tính giờ làm việc tiêu chuẩn
                             $dayWorkCredit = $workCredit;
-                            // Áp dụng hệ số lương nếu là ngày nghỉ lễ
                             if (!empty($applicableHolidays)) {
-                                // Lấy hệ số cao nhất nếu có nhiều kỳ nghỉ lễ trùng ngày
                                 $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $applicableHolidays));
-                                $dayWorkCredit *= $maxCoefficient; // Áp dụng hệ số lương
-                                $holidayWorkingDays[$date] = $dayWorkCredit; // Lưu số ngày công đã áp dụng hệ số
+                                $dayWorkCredit *= $maxCoefficient;
+                                $holidayWorkingDays[$date] = $dayWorkCredit;
                             }
                             $actualWorkingDays += $dayWorkCredit;
+                            $totalWorkingHours += $hoursForDay; // Sử dụng giờ tiêu chuẩn từ timeperiod
                         }
                         $processedDays[$date] = true;
-                    }
-                    $checkIn = min(array_map('strtotime', $records));
-                    $checkOut = max(array_map('strtotime', $records));
-                    $startTime = strtotime("$date " . ($timePeriod[$dayMap[$dayOfWeek]['start']] ?? '09:00'));
-                    $endTime = strtotime("$date " . ($timePeriod[$dayMap[$dayOfWeek]['end']] ?? '17:00'));
-                    $workHours = ($endTime - $startTime) / 3600;
-                    $actualHours = ($checkOut - $checkIn) / 3600;
-                    if ($actualHours > $workHours) {
-                        $overtimeHours += $actualHours - $workHours;
                     }
                 } else {
                     // Không có chấm công, kiểm tra nhảy ca
@@ -456,17 +535,83 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                         if (!empty($day2Records)) {
                             // Có chấm công vào ngày bù (day2)
                             if (!isset($processedDays[$date])) {
-                                // Kiểm tra xem ngày này có trong leaveDaysMap không
+                                // Sắp xếp records của ngày bù để tính đi trễ/về sớm
+                                usort($day2Records, fn($a, $b) => strtotime($a) <=> strtotime($b));
+                                $firstRecord = $day2Records[0];
+                                $lastRecord = end($day2Records);
+
+                                // Lấy thời gian bắt đầu/kết thúc của ngày bù
+                                $day2OfWeek = date('N', strtotime($day2));
+                                $day2StartKey = $dayMap[$day2OfWeek]['start'];
+                                $day2EndKey = $dayMap[$day2OfWeek]['end'];
+                                $day2StartTime = null;
+                                $day2EndTime = null;
+                                if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
+                                    $day2StartTime = strtotime("$day2 " . $applicableTimePeriod[$day2StartKey]);
+                                    $day2EndTime = strtotime("$day2 " . $applicableTimePeriod[$day2EndKey]);
+                                }
+
+                                // Tính đi trễ cho ngày bù với delay 15 phút
+                                if ($day2StartTime && $firstRecord) {
+                                    $checkInTime = strtotime($firstRecord);
+                                    $lateThreshold = $day2StartTime + (15 * 60); // Thêm 15 phút
+                                    if ($checkInTime > $lateThreshold) {
+                                        $lateMinutes = ($checkInTime - $day2StartTime) / 60;
+                                        $totalLateMinutes += $lateMinutes;
+                                        $lateRule = $latetimeRules[$sn]['Đi trễ'] ?? null;
+                                        if ($lateRule && $lateMinutes >= $lateRule['threshold']) {
+                                            $totalLatePenalty += $lateRule['penalty'];
+                                        }
+                                    }
+                                }
+
+                                // Tính về sớm cho ngày bù với delay 15 phút
+                                if ($day2EndTime && $lastRecord) {
+                                    $checkOutTime = strtotime($lastRecord);
+                                    $earlyThreshold = $day2EndTime - (15 * 60); // Trừ 15 phút
+                                    if ($checkOutTime < $earlyThreshold) {
+                                        $earlyMinutes = ($day2EndTime - $checkOutTime) / 60;
+                                        $totalEarlyMinutes += $earlyMinutes;
+                                        $earlyRule = $latetimeRules[$sn]['Về sớm'] ?? null;
+                                        if ($earlyRule && $earlyMinutes >= $earlyRule['threshold']) {
+                                            $totalEarlyPenalty += $earlyRule['penalty'];
+                                        }
+                                    }
+                                }
+
                                 $leaveInfo = $leaveDaysMap[$sn][$date] ?? null;
                                 if ($leaveInfo) {
                                     if ($leaveInfo['type'] === 'Nghỉ có lương') {
-                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
+                                        $actualWorkingDays += $workCredit; // Full ngày công
+                                        $day2OfWeek = date('N', strtotime($day2));
+                                        $day2StartKey = $dayMap[$day2OfWeek]['start'];
+                                        $day2EndKey = $dayMap[$day2OfWeek]['end'];
+                                        $day2HoursForDay = 0;
+                                        if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
+                                            $startTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2StartKey]);
+                                            $endTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2EndKey]);
+                                            if ($endTimeDay2 > $startTimeDay2) {
+                                                $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
+                                            }
+                                        }
+                                        $totalWorkingHours += $day2HoursForDay; // Full giờ
                                     } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
-                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
+                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // 0.5 ngày
+                                        $day2OfWeek = date('N', strtotime($day2));
+                                        $day2StartKey = $dayMap[$day2OfWeek]['start'];
+                                        $day2EndKey = $dayMap[$day2OfWeek]['end'];
+                                        $day2HoursForDay = 0;
+                                        if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
+                                            $startTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2StartKey]);
+                                            $endTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2EndKey]);
+                                            if ($endTimeDay2 > $startTimeDay2) {
+                                                $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
+                                            }
+                                        }
+                                        $totalWorkingHours += $day2HoursForDay * (1 - $leaveInfo['days']); // 0.5 giờ
                                     }
                                 } else {
                                     $dayWorkCredit = $workCredit;
-                                    // Áp dụng hệ số lương nếu ngày bù (day2) là ngày nghỉ lễ
                                     $day2Holidays = $holidayMap[$day2] ?? [];
                                     $day2ApplicableHolidays = [];
                                     foreach ($day2Holidays as $holiday) {
@@ -480,20 +625,20 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                         $holidayWorkingDays[$date] = $dayWorkCredit;
                                     }
                                     $actualWorkingDays += $dayWorkCredit;
+                                    $day2OfWeek = date('N', strtotime($day2));
+                                    $day2StartKey = $dayMap[$day2OfWeek]['start'];
+                                    $day2EndKey = $dayMap[$day2OfWeek]['end'];
+                                    $day2HoursForDay = 0;
+                                    if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
+                                        $startTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2StartKey]);
+                                        $endTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2EndKey]);
+                                        if ($endTimeDay2 > $startTimeDay2) {
+                                            $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
+                                        }
+                                    }
+                                    $totalWorkingHours += $day2HoursForDay;
                                 }
                                 $processedDays[$date] = true;
-                            }
-
-                            // Tính giờ làm thêm nếu có
-                            $day2OfWeek = date('N', strtotime($day2));
-                            $checkIn = min(array_map('strtotime', $day2Records));
-                            $checkOut = max(array_map('strtotime', $day2Records));
-                            $startTime = strtotime("$day2 " . ($timePeriod[$dayMap[$day2OfWeek]['start']] ?? '09:00'));
-                            $endTime = strtotime("$day2 " . ($timePeriod[$dayMap[$day2OfWeek]['end']] ?? '17:00'));
-                            $workHours = ($endTime - $startTime) / 3600;
-                            $actualHours = ($checkOut - $checkIn) / 3600;
-                            if ($actualHours > $workHours) {
-                                $overtimeHours += $actualHours - $workHours;
                             }
                             $hasShiftCompensation = true;
                             break;
@@ -501,58 +646,81 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                     }
 
                     if (!$hasShiftCompensation && !isset($leaveDaysMap[$sn][$date])) {
-                        // Không có chấm công, không nhảy ca, và không có đăng ký nghỉ phép
                         if (!empty($applicableHolidays)) {
-                            // Nếu là ngày nghỉ lễ, vẫn tính ngày công bình thường (không áp dụng hệ số vì không đi làm)
                             $actualWorkingDays += $workCredit;
+                            $totalWorkingHours += $hoursForDay;
                             $processedDays[$date] = true;
                         } else {
-                            // Nếu không phải ngày nghỉ lễ, tính là nghỉ không phép
                             $unauthorizedLeaveFromRecords += $workCredit;
+                        }
+                    } elseif (!isset($processedDays[$date]) && isset($leaveDaysMap[$sn][$date])) {
+                        $leaveInfo = $leaveDaysMap[$sn][$date];
+                        if ($leaveInfo['type'] === 'Nghỉ có lương') {
+                            $totalWorkingHours += $hoursForDay * $leaveInfo['days'];
+                            $processedDays[$date] = true;
                         }
                     }
                 }
             } else {
-                // Ngày nghỉ, kiểm tra xem có phải ngày bù (day2) của nhảy ca không
                 $isCompensatedDay = false;
                 foreach ($shiftData[$sn] ?? [] as $originalDay => $shiftRecords) {
                     foreach ($shiftRecords as $shift) {
                         if ($shift['day2'] === $date && !empty($records)) {
-                            // Đây là ngày bù (day2) và có chấm công
                             if (!isset($processedDays[$originalDay])) {
-                                // Kiểm tra xem ngày này có trong leaveDaysMap không
+                                // Sắp xếp records của ngày bù để tính đi trễ/về sớm
+                                usort($records, fn($a, $b) => strtotime($a) <=> strtotime($b));
+                                $firstRecord = $records[0];
+                                $lastRecord = end($records);
+
+                                // Tính đi trễ/về sớm cho ngày bù với delay 15 phút
+                                if ($startTime && $firstRecord) {
+                                    $checkInTime = strtotime($firstRecord);
+                                    $lateThreshold = $startTime + (15 * 60); // Thêm 15 phút
+                                    if ($checkInTime > $lateThreshold) {
+                                        $lateMinutes = ($checkInTime - $startTime) / 60;
+                                        $totalLateMinutes += $lateMinutes;
+                                        $lateRule = $latetimeRules[$sn]['Đi trễ'] ?? null;
+                                        if ($lateRule && $lateMinutes >= $lateRule['threshold']) {
+                                            $totalLatePenalty += $lateRule['penalty'];
+                                        }
+                                    }
+                                }
+                                if ($endTime && $lastRecord) {
+                                    $checkOutTime = strtotime($lastRecord);
+                                    $earlyThreshold = $endTime - (15 * 60); // Trừ 15 phút
+                                    if ($checkOutTime < $earlyThreshold) {
+                                        $earlyMinutes = ($endTime - $checkOutTime) / 60;
+                                        $totalEarlyMinutes += $earlyMinutes;
+                                        $earlyRule = $latetimeRules[$sn]['Về sớm'] ?? null;
+                                        if ($earlyRule && $earlyMinutes >= $earlyRule['threshold']) {
+                                            $totalEarlyPenalty += $earlyRule['penalty'];
+                                        }
+                                    }
+                                }
+
                                 $leaveInfo = $leaveDaysMap[$sn][$date] ?? null;
                                 if ($leaveInfo) {
                                     if ($leaveInfo['type'] === 'Nghỉ có lương') {
-                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
+                                        $actualWorkingDays += $workCredit; // Full ngày công
+                                        $totalWorkingHours += $hoursForDay; // Full giờ
                                     } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
-                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days']));
+                                        $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // 0.5 ngày
+                                        $totalWorkingHours += $hoursForDay * (1 - $leaveInfo['days']); // 0.5 giờ
                                     }
                                 } else {
                                     $dayWorkCredit = $workCredit;
-                                    // Áp dụng hệ số lương nếu là ngày nghỉ lễ
                                     if (!empty($applicableHolidays)) {
                                         $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $applicableHolidays));
                                         $dayWorkCredit *= $maxCoefficient;
                                         $holidayWorkingDays[$originalDay] = $dayWorkCredit;
                                     }
                                     $actualWorkingDays += $dayWorkCredit;
+                                    $totalWorkingHours += $hoursForDay;
                                 }
                                 $processedDays[$originalDay] = true;
                             }
-
-                            // Tính giờ làm thêm nếu có
-                            $checkIn = min(array_map('strtotime', $records));
-                            $checkOut = max(array_map('strtotime', $records));
-                            $startTime = strtotime("$date " . ($timePeriod[$dayMap[$dayOfWeek]['start']] ?? '09:00'));
-                            $endTime = strtotime("$date " . ($timePeriod[$dayMap[$dayOfWeek]['end']] ?? '17:00'));
-                            $workHours = ($endTime - $startTime) / 3600;
-                            $actualHours = ($checkOut - $checkIn) / 3600;
-                            if ($actualHours > $workHours) {
-                                $overtimeHours += $actualHours - $workHours;
-                            }
                             $isCompensatedDay = true;
-                            break 2; // Thoát khỏi cả 2 vòng lặp
+                            break 2;
                         }
                     }
                 }
@@ -564,18 +732,13 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $contractsForEmployee = $contractMap[$sn] ?? [];
         foreach ($contractsForEmployee as $c) {
             $workingDate = strtotime($c['working_date']);
-            $contractDuration = (int)$c['contract_duration']; // Thời hạn hợp đồng (tháng)
+            $contractDuration = (int)$c['contract_duration'];
             $endDate = strtotime("+$contractDuration months", $workingDate);
 
-            // Kiểm tra hợp đồng có hiệu lực trong tháng tính lương
-            // - working_date <= $monthEnd
-            // - working_date + contract_duration >= $monthStart
-            // Hợp đồng không thời hạn luôn hiệu lực
             $isValidContract = $c['contract_type'] === 'Không thời hạn' ||
                 ($workingDate <= $monthEndTimestamp && $endDate >= $monthStartTimestamp);
 
             if ($isValidContract) {
-                // Nếu có nhiều hợp đồng thỏa mãn, lấy hợp đồng có working_date gần nhất với $monthStart
                 if ($contract === null || $workingDate > strtotime($contract['working_date'])) {
                     $contract = $c;
                 }
@@ -591,7 +754,22 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
             $monthlyTotal = 0;
             $dailyTotal = 0;
+            $hourlyTotal = 0;
+            $hasHourlySalary = false;
 
+            // Tách biệt lương cứng (type = 1) và phụ cấp (type = 2)
+            $basicSalaryData = null; // Lương cứng
+            $allowanceData = null;   // Phụ cấp
+
+            foreach ($employeeSalaries as $es) {
+                if ($es['type'] == 1) {
+                    $basicSalaryData = $es;
+                } elseif ($es['type'] == 2) {
+                    $allowanceData = $es;
+                }
+            }
+
+            // Xử lý hiển thị dữ liệu lương
             foreach ($salaries as $s) {
                 $price = 0;
                 $priceValue = 3;
@@ -619,33 +797,55 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                 }
 
                 $salaryData["salaryData_" . $s['id']] = $unitLabel . ' / ' . number_format($price, 0, ',', '.');
+            }
 
-                $monthlyPrice = 0;
-                if ($priceValue == 1) {
-                    $monthlyPrice = $price * 9 * 26;
-                } elseif ($priceValue == 2) {
-                    $monthlyPrice = $price * 26;
-                } else {
-                    $monthlyPrice = $price;
-                }
-                $totalSalary += $monthlyPrice;
+            // Tính lương cứng (type = 1)
+            if ($basicSalaryData) {
+                $price = is_numeric($basicSalaryData['price']) ? (int)$basicSalaryData['price'] : 0;
+                $priceValue = $basicSalaryData['priceValue'];
 
-                if ($s['type'] == 1) {
-                    $basicSalary = $monthlyPrice;
-                }
-
-                if ($priceValue == 1) {
-                    $dailyTotal += $price * 9;
-                } elseif ($priceValue == 2) {
+                if ($priceValue == 1) { // Theo giờ
+                    $hasHourlySalary = true;
+                    $hourlyTotal += $price * $totalWorkingHours;
+                    $basicSalary = $hourlyTotal;
+                } elseif ($priceValue == 2) { // Theo ngày
                     $dailyTotal += $price;
-                } else {
+                    $basicSalary = $price * $totalWorkingDays;
+                } else { // Theo tháng
+                    $monthlyTotal += $price;
+                    $basicSalary = $price;
+                }
+            }
+
+            // Tính phụ cấp (type = 2)
+            if ($allowanceData) {
+                $price = is_numeric($allowanceData['price']) ? (int)$allowanceData['price'] : 0;
+                $priceValue = $allowanceData['priceValue'];
+
+                if ($priceValue == 1) { // Theo giờ
+                    $hasHourlySalary = true;
+                    $hourlyTotal += $price * $totalWorkingHours;
+                } elseif ($priceValue == 2) { // Theo ngày
+                    $dailyTotal += $price;
+                } else { // Theo tháng
                     $monthlyTotal += $price;
                 }
             }
 
-            $dailySalary = $dailyTotal;
-            if ($monthlyTotal > 0 && $totalWorkingDays > 0) {
-                $dailySalary += $monthlyTotal / $totalWorkingDays;
+            // Tính tổng lương
+            $totalSalary = $hourlyTotal + ($dailyTotal * $totalWorkingDays) + $monthlyTotal;
+
+            // Tính dailySalary
+            if ($hasHourlySalary) {
+                $dailySalary = 0; // Nếu có lương theo giờ, đặt dailySalary = 0
+            } else {
+                $dailySalary = $dailyTotal;
+                if ($hourlyTotal > 0 && $actualWorkingDays > 0) {
+                    $dailySalary += $hourlyTotal / $actualWorkingDays;
+                }
+                if ($monthlyTotal > 0 && $totalWorkingDays > 0) {
+                    $dailySalary += $monthlyTotal / $totalWorkingDays;
+                }
             }
         } else {
             foreach ($salaries as $s) {
@@ -653,6 +853,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
             }
             $totalSalary = 0;
             $dailySalary = 0;
+            $hourlyTotal = 0;
         }
 
         error_log("Salary Data for employee $sn: " . print_r($salaryData, true));
@@ -662,7 +863,6 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $insuranceInfo = $insuranceMap[$sn] ?? null;
         error_log("Employee SN: $sn, Insurance Info: " . print_r($insuranceInfo, true));
         if ($insuranceInfo && $insuranceInfo['statu'] === 'A') {
-            // Lấy số tiền bảo hiểm từ cột money
             $insurance = (float)str_replace(',', '', $insuranceInfo['money']);
         }
 
@@ -674,89 +874,81 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
         if (isset($overtimeData[$sn])) {
             foreach ($overtimeData[$sn] as $ot) {
-                // Tính số giờ tăng ca từ dayEnd - dayStart
                 $hours = (strtotime($ot['end']) - strtotime($ot['start'])) / 3600;
                 $overtimeHoursFromTable += $hours;
-                // Lấy số tiền tăng ca từ cột money
                 $money = (float)$ot['money'];
                 $overtimeMoneyFromTable += $money;
-                // Lấy thời gian dayStart và dayEnd (hiển thị cả ngày và giờ)
                 $startTime = date('Y-m-d H:i', strtotime($ot['start']));
                 $endTime = date('Y-m-d H:i', strtotime($ot['end']));
-                // Định dạng số tiền
                 $moneyFormatted = number_format($money, 0, ',', '.');
-                // Thêm chi tiết tăng ca: ngày, giờ, tiền
                 $overtimeDetails[] = "$startTime-$endTime ($moneyFormatted)";
             }
         }
 
-        // Chỉ sử dụng dữ liệu từ bảng overtime
         $finalOvertimeHours = $overtimeHoursFromTable;
         $finalOvertimeMoney = $overtimeMoneyFromTable;
 
-        // Định dạng cột overtime: "Số lần: [dayStart-dayEnd (money), ...]. Tổng tiền: [tổng tiền]"
         $countOvertime = count($overtimeDetails);
         $detailsString = $countOvertime > 0 ? '[' . implode(', ', $overtimeDetails) . ']' : '';
         $overtimeDisplay = "$countOvertime lần: $detailsString. Tổng tiền: " . number_format($finalOvertimeMoney, 0, ',', '.');
 
-        // Tính tổng số phút đi trễ và về sớm
-        $lateMinutes = array_sum(array_map(
-            fn($lt) => $lt['value'],
-            array_filter($latetimeData[$sn] ?? [], fn($lt) => $lt['type'] === 'Đi trễ' && $lt['status'] === 'A')
-        ));
-        $earlyMinutes = array_sum(array_map(
-            fn($lt) => $lt['value'],
-            array_filter($latetimeData[$sn] ?? [], fn($lt) => $lt['type'] === 'Về sớm' && $lt['status'] === 'A')
-        ));
-
-        // Tính tổng số tiền phạt
-        $latePenalty = array_sum(array_map(
-            fn($lt) => $lt['amount'],
-            array_filter($latetimeData[$sn] ?? [], fn($lt) => $lt['type'] === 'Đi trễ' && $lt['status'] === 'A')
-        ));
-        $earlyPenalty = array_sum(array_map(
-            fn($lt) => $lt['amount'],
-            array_filter($latetimeData[$sn] ?? [], fn($lt) => $lt['type'] === 'Về sớm' && $lt['status'] === 'A')
-        ));
-
-        // Tổng số tiền phạt
-        $totalPenalty = $latePenalty + $earlyPenalty;
+        // Tổng tiền phạt đi trễ/về sớm
+        $totalPenalty = $totalLatePenalty + $totalEarlyPenalty;
         $totalPenaltyFormatted = number_format($totalPenalty, 0, ',', '.');
 
-        // Tính nghỉ có lương và không lương từ bảng leave_requests
         $unpaidLeave = 0;
         $paidLeave = 0;
+        $workedPaidLeaveDays = 0; // Theo dõi số ngày nghỉ có lương nhưng vẫn đi làm
         foreach ($leaveData[$sn] ?? [] as $leave) {
             $start = max(strtotime("$year-$month-01 00:00:00"), strtotime($leave['start_date']));
             $end = min(strtotime("$year-$month-$daysInMonth 23:59:59"), strtotime($leave['end_date']));
-            // Tính số ngày nghỉ dựa trên leave_days
-            $days = $leave['leave_days'];
+            $startDate = date('Y-m-d', $start);
+            $endDate = date('Y-m-d', $end);
+            $currentDate = $startDate;
 
-            // Dựa trên SalaryType để xác định loại nghỉ
-            if ($leave['SalaryType'] === 'Nghỉ có lương') {
-                $paidLeave += $days;
-            } elseif ($leave['SalaryType'] === 'Nghỉ không lương') {
-                $unpaidLeave += $days;
+            while (strtotime($currentDate) <= strtotime($endDate)) {
+                $hasAttendance = !empty($attendanceData[$sn][$currentDate]);
+                $hasShiftCompensation = false;
+                foreach ($shiftData[$sn][$currentDate] ?? [] as $shift) {
+                    $day2 = $shift['day2'];
+                    if (!empty($attendanceData[$sn][$day2])) {
+                        $hasShiftCompensation = true;
+                        break;
+                    }
+                }
+
+                $leaveInfo = $leaveDaysMap[$sn][$currentDate] ?? null;
+                if ($leaveInfo) {
+                    $days = $leaveInfo['days'];
+                    if ($leaveInfo['type'] === 'Nghỉ có lương') {
+                        if ($hasAttendance || $hasShiftCompensation) {
+                            $workedPaidLeaveDays += $days; // Ghi nhận số ngày nghỉ có lương nhưng vẫn đi làm
+                        } else {
+                            $paidLeave += $days; // Chỉ cộng vào paidLeave nếu không đi làm
+                        }
+                    } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
+                        $unpaidLeave += $days;
+                    }
+                }
+                $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
             }
         }
 
-        // Nghỉ không phép chỉ tính từ chấm công (đã loại trừ các ngày nghỉ phép)
         $unauthorizedLeave = $unauthorizedLeaveFromRecords;
 
+        // Tính totalAttendance, không cộng workedPaidLeaveDays vào
         $totalAttendance = $actualWorkingDays + $paidLeave;
 
-        // Tính khen thưởng và kỷ luật
         $reward = 0;
         $discipline = 0;
         foreach ($rewardData[$sn] ?? [] as $rd) {
             if ($rd['type'] === 'reward') {
                 $reward += $rd['amount'];
             } elseif ($rd['type'] === 'discipline') {
-                $discipline += abs($rd['amount']); // Lấy giá trị tuyệt đối vì amount đã âm
+                $discipline += abs($rd['amount']);
             }
         }
 
-        // Tính ứng lương và hoàn ứng
         $salaryAdvance = array_sum(array_map(fn($ad) => $ad['TypeID'] == 1 ? (float)str_replace(',', '', $ad['Amount']) : 0, $advanceData[$sn] ?? []));
         error_log("Salary Advance for $sn: " . $salaryAdvance);
 
@@ -766,10 +958,12 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $netAdvance = $salaryAdvance - $salaryRepayment;
         error_log("Net Advance for $sn: " . $netAdvance);
 
-        // Tính tổng thực lãnh, trừ thêm tiền phạt đi trễ và về sớm, cộng tiền tăng ca
-        $totalReceived = ($dailySalary * $totalAttendance) - $insurance + $reward - $discipline - $netAdvance - ($latePenalty + $earlyPenalty) + $finalOvertimeMoney;
+        if ($hasHourlySalary) {
+            $totalReceived = $hourlyTotal - $insurance + $reward - $discipline - $netAdvance - $totalPenalty + $finalOvertimeMoney;
+        } else {
+            $totalReceived = ($dailySalary * $totalAttendance) - $insurance + $reward - $discipline - $netAdvance - $totalPenalty + $finalOvertimeMoney;
+        }
 
-        // Tạo entry cho DataTables
         $entry = [
             "personSn" => $employee['name'] ?? '',
             "departmentId" => $department ?? 'Không xác định',
@@ -785,7 +979,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $entry["insurance"] = is_numeric($insurance) ? number_format($insurance, 0, ',', '.') : '0';
         $entry["workingDays"] = round($totalWorkingDays, 2) . "/" . round($actualWorkingDays, 2);
         $entry["overtime"] = $overtimeDisplay ?? '';
-        $entry["lateArrival/earlyLeave"] = "Đi trễ: $lateMinutes phút / Về sớm: $earlyMinutes phút. Tổng: $totalPenaltyFormatted";
+        $entry["lateArrival/earlyLeave"] = "Đi trễ: " . round($totalLateMinutes) . " phút / Về sớm: " . round($totalEarlyMinutes) . " phút. Tổng: $totalPenaltyFormatted";
         $entry["unpaidLeave"] = $unpaidLeave ?? 0;
         $entry["paidLeave"] = $paidLeave ?? 0;
         $entry["unauthorizedLeave"] = round($unauthorizedLeave, 2) ?? 0;

@@ -351,11 +351,11 @@ $app->router("/manager/attendance", 'POST', function($vars) use ($app, $jatbi) {
                     $lateMinutes = (strtotime($records[0]) - $checkInStd) / 60;
                     $earlyMinutes = ($checkOutStd - strtotime(end($records))) / 60;
 
-                    if ($checkIn && $checkOut && $lateMinutes <= 30 && $earlyMinutes <= 30) {
+                    if ($checkIn && $checkOut && $lateMinutes <= 15 && $earlyMinutes <= 15) {
                         $status[] = 'checked';
                     } else {
-                        if ($lateMinutes > 30) $status[] = 'late';
-                        if (!$checkOut || $earlyMinutes > 30) $status[] = 'not-checked';
+                        if ($lateMinutes > 15) $status[] = 'late';
+                        if (!$checkOut || $earlyMinutes > 15) $status[] = 'not-checked';
                     }
                 } else {
                     $status[] = 'no-record';
