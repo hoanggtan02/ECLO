@@ -388,6 +388,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         $salaryData = [];
         $totalSalary = 0;
         $basicSalary = 0;
+        $allowanceSalary = 0;
         $dailySalary = 0;
         $totalWorkingDays = 0;
         $actualWorkingDays = 0;
@@ -505,11 +506,11 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                             if ($leaveInfo['type'] === 'Nghỉ có lương') {
                                 // Trường hợp 1: Nghỉ có lương 0.5 ngày và có đi làm -> Tính full lương
                                 $actualWorkingDays += $workCredit; // Full ngày công
-                                $totalWorkingHours += $hoursForDay; // Full giờ làm việc (8.5 tiếng)
+                                $totalWorkingHours += $hoursForDay; // Full giờ làm việc
                             } elseif ($leaveInfo['type'] === 'Nghỉ không lương') {
                                 // Trường hợp 2: Nghỉ không lương 0.5 ngày và có đi làm -> Tính 0.5 ngày
                                 $actualWorkingDays += ($workCredit * (1 - $leaveInfo['days'])); // Chỉ tính 0.5 ngày
-                                $totalWorkingHours += $hoursForDay * (1 - $leaveInfo['days']); // Chỉ tính 0.5 giờ (4.25 tiếng)
+                                $totalWorkingHours += $hoursForDay * (1 - $leaveInfo['days']); // Chỉ tính 0.5 giờ
                             }
                         } else {
                             // Không có nghỉ phép, tính giờ làm việc tiêu chuẩn
@@ -518,9 +519,11 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                 $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $applicableHolidays));
                                 $dayWorkCredit *= $maxCoefficient;
                                 $holidayWorkingDays[$date] = $dayWorkCredit;
+                                $totalWorkingHours += $hoursForDay * $maxCoefficient; // Adjust hours for holiday coefficient
+                            } else {
+                                $totalWorkingHours += $hoursForDay;
                             }
                             $actualWorkingDays += $dayWorkCredit;
-                            $totalWorkingHours += $hoursForDay; // Sử dụng giờ tiêu chuẩn từ timeperiod
                         }
                         $processedDays[$date] = true;
                     }
@@ -588,8 +591,8 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                         $day2EndKey = $dayMap[$day2OfWeek]['end'];
                                         $day2HoursForDay = 0;
                                         if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
-                                            $startTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2StartKey]);
-                                            $endTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2EndKey]);
+                                            $startTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2StartKey]);
+                                            $endTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2EndKey]);
                                             if ($endTimeDay2 > $startTimeDay2) {
                                                 $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
                                             }
@@ -602,8 +605,8 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                         $day2EndKey = $dayMap[$day2OfWeek]['end'];
                                         $day2HoursForDay = 0;
                                         if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
-                                            $startTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2StartKey]);
-                                            $endTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2EndKey]);
+                                            $startTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2StartKey]);
+                                            $endTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2EndKey]);
                                             if ($endTimeDay2 > $startTimeDay2) {
                                                 $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
                                             }
@@ -623,20 +626,33 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                         $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $day2ApplicableHolidays));
                                         $dayWorkCredit *= $maxCoefficient;
                                         $holidayWorkingDays[$date] = $dayWorkCredit;
+                                        $day2OfWeek = date('N', strtotime($day2));
+                                        $day2StartKey = $dayMap[$day2OfWeek]['start'];
+                                        $day2EndKey = $dayMap[$day2OfWeek]['end'];
+                                        $day2HoursForDay = 0;
+                                        if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
+                                            $startTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2StartKey]);
+                                            $endTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2EndKey]);
+                                            if ($endTimeDay2 > $startTimeDay2) {
+                                                $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
+                                            }
+                                        }
+                                        $totalWorkingHours += $day2HoursForDay * $maxCoefficient; // Adjust hours for holiday coefficient
+                                    } else {
+                                        $day2OfWeek = date('N', strtotime($day2));
+                                        $day2StartKey = $dayMap[$day2OfWeek]['start'];
+                                        $day2EndKey = $dayMap[$day2OfWeek]['end'];
+                                        $day2HoursForDay = 0;
+                                        if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
+                                            $startTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2StartKey]);
+                                            $endTimeDay2 = strtotime("$day2 " . $applicableTimePeriod[$day2EndKey]);
+                                            if ($endTimeDay2 > $startTimeDay2) {
+                                                $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
+                                            }
+                                        }
+                                        $totalWorkingHours += $day2HoursForDay;
                                     }
                                     $actualWorkingDays += $dayWorkCredit;
-                                    $day2OfWeek = date('N', strtotime($day2));
-                                    $day2StartKey = $dayMap[$day2OfWeek]['start'];
-                                    $day2EndKey = $dayMap[$day2OfWeek]['end'];
-                                    $day2HoursForDay = 0;
-                                    if ($applicableTimePeriod && isset($applicableTimePeriod[$day2StartKey], $applicableTimePeriod[$day2EndKey])) {
-                                        $startTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2StartKey]);
-                                        $endTimeDay2 = strtotime("2025-01-01 " . $applicableTimePeriod[$day2EndKey]);
-                                        if ($endTimeDay2 > $startTimeDay2) {
-                                            $day2HoursForDay = ($endTimeDay2 - $startTimeDay2) / 3600;
-                                        }
-                                    }
-                                    $totalWorkingHours += $day2HoursForDay;
                                 }
                                 $processedDays[$date] = true;
                             }
@@ -713,9 +729,11 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
                                         $maxCoefficient = max(array_map(fn($h) => $h['coefficient'], $applicableHolidays));
                                         $dayWorkCredit *= $maxCoefficient;
                                         $holidayWorkingDays[$originalDay] = $dayWorkCredit;
+                                        $totalWorkingHours += $hoursForDay * $maxCoefficient; // Adjust hours for holiday coefficient
+                                    } else {
+                                        $totalWorkingHours += $hoursForDay;
                                     }
                                     $actualWorkingDays += $dayWorkCredit;
-                                    $totalWorkingHours += $hoursForDay;
                                 }
                                 $processedDays[$originalDay] = true;
                             }
@@ -752,9 +770,6 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
             $salaryIds = $contractSalaryMap[$contractId];
             $employeeSalaries = array_filter($salaries, fn($s) => in_array($s['id'], $salaryIds));
 
-            $monthlyTotal = 0;
-            $dailyTotal = 0;
-            $hourlyTotal = 0;
             $hasHourlySalary = false;
 
             // Tách biệt lương cứng (type = 1) và phụ cấp (type = 2)
@@ -806,14 +821,15 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
                 if ($priceValue == 1) { // Theo giờ
                     $hasHourlySalary = true;
-                    $hourlyTotal += $price * $totalWorkingHours;
-                    $basicSalary = $hourlyTotal;
+                    $basicSalary = $price * $totalWorkingHours;
                 } elseif ($priceValue == 2) { // Theo ngày
-                    $dailyTotal += $price;
-                    $basicSalary = $price * $totalWorkingDays;
+                    $basicSalary = $price * $actualWorkingDays;
                 } else { // Theo tháng
-                    $monthlyTotal += $price;
-                    $basicSalary = $price;
+                    if ($actualWorkingDays > 0) {
+                        $basicSalary = $price * ($actualWorkingDays / $totalWorkingDays);
+                    } else {
+                        $basicSalary = 0;
+                    }
                 }
             }
 
@@ -824,27 +840,29 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
 
                 if ($priceValue == 1) { // Theo giờ
                     $hasHourlySalary = true;
-                    $hourlyTotal += $price * $totalWorkingHours;
+                    $allowanceSalary = $price * $totalWorkingHours;
                 } elseif ($priceValue == 2) { // Theo ngày
-                    $dailyTotal += $price;
+                    $allowanceSalary = $price * $actualWorkingDays;
                 } else { // Theo tháng
-                    $monthlyTotal += $price;
+                    if ($actualWorkingDays > 0) {
+                        $allowanceSalary = $price * ($actualWorkingDays / $totalWorkingDays);
+                    } else {
+                        $allowanceSalary = 0;
+                    }
                 }
             }
 
             // Tính tổng lương
-            $totalSalary = $hourlyTotal + ($dailyTotal * $totalWorkingDays) + $monthlyTotal;
+            $totalSalary = $basicSalary + $allowanceSalary;
 
             // Tính dailySalary
             if ($hasHourlySalary) {
                 $dailySalary = 0; // Nếu có lương theo giờ, đặt dailySalary = 0
             } else {
-                $dailySalary = $dailyTotal;
-                if ($hourlyTotal > 0 && $actualWorkingDays > 0) {
-                    $dailySalary += $hourlyTotal / $actualWorkingDays;
-                }
-                if ($monthlyTotal > 0 && $totalWorkingDays > 0) {
-                    $dailySalary += $monthlyTotal / $totalWorkingDays;
+                if ($actualWorkingDays > 0) {
+                    $dailySalary = $totalSalary / $actualWorkingDays;
+                } else {
+                    $dailySalary = 0;
                 }
             }
         } else {
@@ -853,7 +871,6 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
             }
             $totalSalary = 0;
             $dailySalary = 0;
-            $hourlyTotal = 0;
         }
 
         error_log("Salary Data for employee $sn: " . print_r($salaryData, true));
@@ -959,7 +976,7 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
         error_log("Net Advance for $sn: " . $netAdvance);
 
         if ($hasHourlySalary) {
-            $totalReceived = $hourlyTotal - $insurance + $reward - $discipline - $netAdvance - $totalPenalty + $finalOvertimeMoney;
+            $totalReceived = $totalSalary - $insurance + $reward - $discipline - $netAdvance - $totalPenalty + $finalOvertimeMoney;
         } else {
             $totalReceived = ($dailySalary * $totalAttendance) - $insurance + $reward - $discipline - $netAdvance - $totalPenalty + $finalOvertimeMoney;
         }
@@ -1005,4 +1022,3 @@ $app->router("/salaryCalculation", 'POST', function($vars) use ($app, $jatbi) {
     error_log("Response: " . print_r($response, true));
     echo json_encode($response);
 })->setPermissions(['salaryCalculation']);
-?>
